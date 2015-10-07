@@ -952,8 +952,10 @@ class wfUtils {
 		if ($readmePath === null) {
 			$readmePath = ABSPATH . 'readme.html';
 		}
+
 		if (file_exists($readmePath)) {
 			$readmePathInfo = pathinfo($readmePath);
+			require_once ABSPATH . WPINC . '/pluggable.php';
 			$hiddenReadmeFile = $readmePathInfo['filename'] . '.' . wp_hash('readme') . '.' . $readmePathInfo['extension'];
 			return @rename($readmePath, $readmePathInfo['dirname'] . '/' . $hiddenReadmeFile);
 		}
@@ -969,6 +971,7 @@ class wfUtils {
 			$readmePath = ABSPATH . 'readme.html';
 		}
 		$readmePathInfo = pathinfo($readmePath);
+		require_once ABSPATH . WPINC . '/pluggable.php';
 		$hiddenReadmeFile = $readmePathInfo['dirname'] . '/' . $readmePathInfo['filename'] . '.' . wp_hash('readme') . '.' . $readmePathInfo['extension'];
 		if (file_exists($hiddenReadmeFile)) {
 			return @rename($hiddenReadmeFile, $readmePath);
