@@ -590,7 +590,7 @@ class wfConfig {
 			self::$cache[$key] = $val;
 		}
 		$val = self::$cache[$key];
-		return $val ? $val : $default;
+		return $val !== null ? $val : $default;
 	}
 	public static function loadFromDiskCache($key){
 		if(! self::$diskCacheDisabled){
