@@ -184,7 +184,7 @@ fully compatible with both IPv4 and IPv6 whether you run both or only one addres
 == Changelog ==
 
 = 6.0.21 =
-* Enhancement: Added better handling of Googlebot verification.
+* Enhancement: Added better handling of Googlebot verification. 
 
 = 6.0.20 =
 * Fix: Fixed bug with options that are enabled by default but disabled by the user are reset to defaults.
