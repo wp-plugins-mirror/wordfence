@@ -6,14 +6,17 @@
 	$helpLabel = "Learn more about Password Auditing";
 	include('pageTitle.php'); ?>
 	<?php if (!wfConfig::get('isPaid')) { ?>
-		<div class="wfPaidOnlyNotice">
-			<strong>Password Auditing is only available to Premium Members at this time</strong><br/><br/>
-			Wordfence Password Auditing uses our high performance password auditing cluster to test the strength of your admin and user passwords.
-			We securely simulate a high-performance password cracking attack on your password database and will alert you to weak passwords.
-			We then provide a way to change weak passwords or alert members that they need to improve their password strength.
-			To activate this feature, simply
-			<a href="https://www.wordfence.com/gnl1pwAuditUp1/wordfence-signup/" target="_blank">click here and get a premium Wordfence API Key</a>, and then copy and paste it into your options page. You can
-			<a href="http://docs.wordfence.com/en/Wordfence_Password_Auditing" target="_blank">learn more about Password Auditing on our Documentation Website</a>.
+		<div class="wf-premium-callout" style="margin: 20px 0 20px 20px; width: 700px;">
+			<h3>Password Auditing is only available to Premium Members</h3>
+			<p>Wordfence Password Auditing uses our high performance password auditing cluster to test the strength of your admin and user passwords. We securely simulate a high-performance password cracking attack on your password database and will alert you to weak passwords. We then provide a way to change weak passwords or alert members that they need to improve their password strength. Upgrade to Premium today:</p>
+			<ul>
+				<li>You can upgrade now for less than $5 per month</li>
+				<li>Other advanced features like IP reputation monitoring, an advanced comment spam filter, advanced scanning options, cell phone sign-in and country blocking give you the best protection available</li>
+				<li>Access to Premium Support</li>
+				<li>Discounts of up to 90% available for multiyear and multi-license purchases</li>
+			</ul>
+
+			<p class="center"><a class="button button-primary" href="https://www.wordfence.com/gnl1pwAuditUp1/wordfence-signup/">Get Premium</a></p>
 		</div>
 	<?php } ?>
 

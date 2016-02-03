@@ -9,11 +9,21 @@ WFAD.countryMap = <?php echo json_encode($wfBulkCountries); ?>;
 	<?php require('menuHeader.php'); ?>
 	<?php $pageTitle = "Block Selected Countries from Accessing your Site"; $helpLink="http://docs.wordfence.com/en/Country_blocking"; $helpLabel="Learn more about Country Blocking"; include('pageTitle.php'); ?>
 <?php if(! wfConfig::get('isPaid')){ ?>
-		<div class="wfPaidOnlyNotice">
-			<strong>Country Blocking is only available to Premium Members at this time</strong><br /><br />
-			Country Blocking is a premium feature because we have licensed a very accurate commercial geolocation database to provide this feature. If you would like to
-			activate this feature, simply <a href="https://www.wordfence.com/gnl1countryBlock1/wordfence-signup/" target="_blank">click here and get a premium Wordfence API Key</a>, and then copy and paste it into your options page. You can <a href="http://docs.wordfence.com/en/Country_blocking" target="_blank">learn more about Country Blocking on our documentation website</a>.
-		</div>
+	<div class="wf-premium-callout" style="margin: 20px">
+		<h3>Country Blocking is only available to Premium Members</h3>
+		<p>Country Blocking is a premium feature because we have licensed a very accurate commercial geolocation
+			database to provide this feature. Upgrade to Premium today:</p>
+		<ul>
+			<li>You can upgrade now for less than $5 per month</li>
+			<li>Other advanced features like IP reputation monitoring, an advanced comment spam filter, advanced
+				scanning options and cell phone sign-in give you the best protection available
+			</li>
+			<li>Access to Premium Support</li>
+			<li>Discounts of up to 90% available for multiyear and multi-license purchases</li>
+		</ul>
+		<p class="center"><a class="button button-primary"
+		                     href="https://www.wordfence.com/gnl1countryBlock1/wordfence-signup/">Get Premium</a></p>
+	</div>
 <?php } ?>
 		<?php if(wfConfig::get('cacheType') == 'falcon'){ ?>
 		<div class="wfFalconNotice">

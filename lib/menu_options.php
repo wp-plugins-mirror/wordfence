@@ -45,7 +45,7 @@ $w = new wfConfig();
 			</tr>
 			<tr>
 				<td colspan="2">
-					<?php if ( wfConfig::get( 'isPaid' ) ) { ?>
+					<?php if (wfConfig::get('isPaid')): ?>
 						<table border="0">
 							<tr>
 								<td><a href="https://www.wordfence.com/gnl1optMngKys/manage-wordfence-api-keys/"
@@ -56,9 +56,25 @@ $w = new wfConfig();
 								           onclick="WFAD.downgradeLicense();"/></td>
 							</tr>
 						</table>
-					<?php } ?>
-
-
+					<?php else: ?>
+						<div class="wf-premium-callout">
+							<h3>Upgrade to Wordfence Premium today for less than $5 per month</h3>
+							<ul>
+								<li>Advanced features like IP reputation monitoring, country blocking, an advanced
+									comment spam filter and cell phone sign-in give you the best protection available
+								</li>
+								<li>Remote, frequent and scheduled scans</li>
+								<li>Access to Premium Support</li>
+								<li>Discounts of up to 90% for multiyear and multi-license purchases</li>
+							</ul>
+							<p class="center">
+								<a class="button button-primary"
+								   href="https://www.wordfence.com/gnl1optCallout1/wordfence-signup/">
+									Get Premium</a></p>
+						</div>
+					<?php endif ?>
+				</td>
+			</tr>
 			<tr>
 				<td colspan="2"><h2>Basic Options<a href="http://docs.wordfence.com/en/Wordfence_options#Basic_Options"
 				                                    target="_blank" class="wfhelp"></a></h2></td>

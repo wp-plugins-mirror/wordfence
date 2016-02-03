@@ -169,70 +169,17 @@ class wfLog {
 	 * @return bool
 	 */
 	public function isWhitelisted($IP) {
-		$wfIPBlock = new wfUserIPRange('69.46.36.[1-32]');
-		if ($wfIPBlock->isIPInRange($IP)) { //IP is in Wordfence's IP block which would prevent our scanning server manually kicking off scans that are stuck
-			return true;
-		}
-		//We now whitelist all private addrs 
-		if (wfUtils::isPrivateAddress($IP)) {
-			return true;
-		}
-		//These belong to sucuri's scanning servers which will get blocked by Wordfence as a false positive if you try a scan. So we whitelisted them.
-		$externalWhite = array('97.74.127.171', '69.164.203.172', '173.230.128.135', '66.228.34.49', '66.228.40.185', '50.116.36.92', '50.116.36.93', '50.116.3.171', '198.58.96.212', '50.116.63.221', '192.155.92.112', '192.81.128.31', '198.58.106.244', '192.155.95.139', '23.239.9.227', '198.58.112.103', '192.155.94.43', '162.216.16.33', '173.255.233.124', '173.255.233.124', '192.155.90.179', '50.116.41.217', '192.81.129.227', '198.58.111.80', '162.216.19.183');
-		if (in_array($IP, $externalWhite)) {
-			return true;
-		}
-		$list = wfConfig::get('whitelisted');
-		if (!$list) {
-			return false;
-		}
-		$list = explode(',', $list);
-		if (sizeof($list) < 1) {
-			return false;
-		}
-		foreach ($list as $whiteIP) {
-			$white_ip_block = new wfUserIPRange($whiteIP);
-			if ($white_ip_block->isIPInRange($IP)) {
+		foreach (wfUtils::getIPWhitelist() as $subnet) {
+			if ($subnet instanceof wfUserIPRange) {
+				if ($subnet->isIPInRange($IP)) {
+					return true;
+				}
+			} elseif (wfUtils::subnetContainsIP($subnet, $IP)) {
 				return true;
 			}
 		}
+
 		return false;
-	}
-
-	/**
-	 * Get an array of static IPs, tuple for a numeric IP range, or a wfUserIPRange object to define and test a range
-	 * like [127-128].0.0.[1-40]
-	 *
-	 * @see wfUserIPRange
-	 * @param null $user_whitelisted
-	 * @return array
-	 */
-	public function getWhitelistedIPs($user_whitelisted = null) {
-		$white_listed_ips = array();
-		// Wordfence's IP block which would prevent our scanning server manually kicking off scans that are stuck
-		$white_listed_ips[] = array(1160651777, 1160651808);
-
-		// Private range
-		$private_range = wfUtils::getPrivateAddrs();
-		foreach ($private_range as $ip_range) {
-			$white_listed_ips[] = array($ip_range[1], $ip_range[2]);
-		}
-
-		// These belong to sucuri's scanning servers which will get blocked by Wordfence as a false positive if you try a scan. So we whitelisted them.
-		$white_listed_ips = array_merge($white_listed_ips, array_map(array('wfUtils', 'inet_pton'), array('97.74.127.171', '69.164.203.172', '173.230.128.135', '66.228.34.49', '66.228.40.185', '50.116.36.92', '50.116.36.93', '50.116.3.171', '198.58.96.212', '50.116.63.221', '192.155.92.112', '192.81.128.31', '198.58.106.244', '192.155.95.139', '23.239.9.227', '198.58.112.103', '192.155.94.43', '162.216.16.33', '173.255.233.124', '173.255.233.124', '192.155.90.179', '50.116.41.217', '192.81.129.227', '198.58.111.80', '162.216.19.183')));
-
-		if ($user_whitelisted === null) {
-			$user_whitelisted = wfConfig::get('whitelisted');
-		}
-
-		if ($user_whitelisted) {
-			$user_whitelisted = explode(',', $user_whitelisted);
-			foreach ($user_whitelisted as $whiteIP) {
-				$white_listed_ips[] = new wfUserIPRange($whiteIP);
-			}
-		}
-
-		return $white_listed_ips;
 	}
 
 	public function unblockAllIPs(){

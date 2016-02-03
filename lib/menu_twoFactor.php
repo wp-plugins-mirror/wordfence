@@ -3,13 +3,28 @@
 	<?php require('menuHeader.php'); ?>
 	<?php $pageTitle = "Cellphone Sign-in"; $helpLink="http://docs.wordfence.com/en/Cellphone_sign-in"; $helpLabel="Learn more about Cellphone Sign-in"; include('pageTitle.php'); ?>
 <?php if(! wfConfig::get('isPaid')){ ?>
-			<div class="wfPaidOnlyNotice">
-				<strong>Cellphone Sign-in is only available to Premium Members at this time</strong><br /><br />
-				Cellphone Sign-in is a premium feature because we are charged per SMS we send when a user signs in. If you would like to
-				activate this feature, simply <a href="https://www.wordfence.com/gnl1twoFac1/wordfence-signup/" target="_blank">click here and get a premium Wordfence API Key</a>, and then copy and paste it into your options page.
-				<br /><br />
-				Wordfence's Cellphone Sign-in uses a technique called "Two Factor Authentication" which is used by banks, government agencies and military world-wide as one of the most secure forms of remote system authentication. It's now available from Wordfence for your WordPress website. We recommend you enable Cellphone Sign-in for all Administrator level accounts. You can <a href="http://docs.wordfence.com/en/Cellphone_sign-in" target="_blank">learn more about Cellphone Sign-in on our documentation website</a>.
-			</div>
+	<div class="wf-premium-callout" style="margin: 20px 0 20px 20px; width: 700px;">
+		<h3>Cellphone Sign-in is only available to Premium Members</h3>
+
+		<p>This is a premium feature because we are charged per SMS we send when a user signs in. Upgrade to Premium
+			today:</p>
+		<ul>
+			<li>You can upgrade now for less than $5 per month</li>
+			<li>Other advanced features like IP reputation monitoring, an advanced comment spam filter, advanced
+				scanning options and country blocking give you the best protection available
+			</li>
+			<li>Access to Premium Support</li>
+			<li>Discounts of up to 90% available for multiyear and multi-license purchases</li>
+		</ul>
+		<p>Wordfence's Cellphone Sign-in uses a technique called "Two Factor Authentication" which is used by banks,
+			government agencies and military world-wide as one of the most secure forms of remote system authentication.
+			It's now available from Wordfence for your WordPress website. We recommend you enable Cellphone Sign-in for
+			all Administrator level accounts.</p>
+
+		<p class="center"><a class="button button-primary"
+		                     href="https://www.wordfence.com/gnl1twoFac1/wordfence-signup/">Get Premium</a></p>
+	</div>
+
 <?php } ?>
 
 	<div class="wordfenceWrap" style="margin: 20px 20px 20px 30px;">

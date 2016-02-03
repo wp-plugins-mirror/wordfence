@@ -2,25 +2,6 @@
 require_once('wfConfig.php');
 require_once('wfCountryMap.php');
 class wfUtils {
-	#We've modified this and removed some addresses which may be routable on the Net and cause auto-whitelisting. 
-	private static $privateAddrs = array(
-		//array('0.0.0.0/8',0,16777215), #Broadcast addr
-		array('10.0.0.0/8',167772160,184549375), #Private addrs
-		//array('100.64.0.0/10',1681915904,1686110207), #carrier-grade-nat for comms between ISP and subscribers
-		array('127.0.0.0/8',2130706432,2147483647), #loopback
-		//array('169.254.0.0/16',2851995648,2852061183), #link-local when DHCP fails e.g. os x
-		array('172.16.0.0/12',2886729728,2887778303), #private addrs
-		array('192.0.0.0/29',3221225472,3221225479), #used for NAT with IPv6, so basically a private addr
-		//array('192.0.2.0/24',3221225984,3221226239), #Only for use in docs and examples, not for public use
-		//array('192.88.99.0/24',3227017984,3227018239), #Used by 6to4 anycast relays
-		array('192.168.0.0/16',3232235520,3232301055), #Used for local communications within a private network
-		//array('198.18.0.0/15',3323068416,3323199487), #Used for testing of inter-network communications between two separate subnets
-		//array('198.51.100.0/24',3325256704,3325256959), #Assigned as "TEST-NET-2" in RFC 5737 for use solely in documentation and example source code and should not be used publicly.
-		//array('203.0.113.0/24',3405803776,3405804031), #Assigned as "TEST-NET-3" in RFC 5737 for use solely in documentation and example source code and should not be used publicly.
-		//array('224.0.0.0/4',3758096384,4026531839), #Reserved for multicast assignments as specified in RFC 5771
-		//array('240.0.0.0/4',4026531840,4294967295), #Reserved for future use, as specified by RFC 6890
-		//array('255.255.255.255/32',4294967295,4294967295) #Reserved for the "limited broadcast" destination address, as specified by RFC 6890
-	);
 	private static $isWindows = false;
 	public static $scanLockFH = false;
 	private static $lastErrorReporting = false;
@@ -81,6 +62,124 @@ class wfUtils {
 		// $bytes /= (1 << (10 * $pow)); 
 
 		return round($bytes, $precision) . ' ' . $units[$pow];
+	}
+
+	/**
+	 * Check if an IP address is in a network block
+	 *
+	 * @param string	$subnet	Single IP or subnet in CIDR notation (e.g. '192.168.100.0' or '192.168.100.0/22')
+	 * @param string	$ip		IPv4 or IPv6 address in dot or colon notation
+	 * @return boolean
+	 */
+	public static function subnetContainsIP($subnet, $ip) {
+		list($network, $prefix) = array_pad(explode('/', $subnet, 2), 2, null);
+
+		if (filter_var($network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+			// If no prefix was supplied, 32 is implied for IPv4
+			if ($prefix === null) {
+				$prefix = 32;
+			}
+
+			// Validate the IPv4 network prefix
+			if ($prefix < 0 || $prefix > 32) {
+				return false;
+			}
+
+			// Increase the IPv4 network prefix to work in the IPv6 address space
+			$prefix += 96;
+		} else {
+			// If no prefix was supplied, 128 is implied for IPv6
+			if ($prefix === null) {
+				$prefix = 128;
+			}
+
+			// Validate the IPv6 network prefix
+			if ($prefix < 1 || $prefix > 128) {
+				return false;
+			}
+		}
+
+		// Convert human readable addresses to 128 bit (IPv6) binary strings
+		// Note: self::inet_pton converts IPv4 addresses to IPv6 compatible versions
+		$binary_network = str_pad(wfHelperBin::bin2str(self::inet_pton($network)), 128, '0', STR_PAD_LEFT);
+		$binary_ip = str_pad(wfHelperBin::bin2str(self::inet_pton($ip)), 128, '0', STR_PAD_LEFT);
+
+		return 0 === substr_compare($binary_ip, $binary_network, 0, $prefix);
+	}
+
+	/**
+	 * Convert CIDR notation to a wfUserIPRange object
+	 *
+	 * @param string $cidr
+	 * @return wfUserIPRange
+	 */
+	public static function CIDR2wfUserIPRange($cidr) {
+		list($network, $prefix) = array_pad(explode('/', $cidr, 2), 2, null);
+		$ip_range = new wfUserIPRange();
+
+		if (filter_var($network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+			// If no prefix was supplied, 32 is implied for IPv4
+			if ($prefix === null) {
+				$prefix = 32;
+			}
+
+			// Validate the IPv4 network prefix
+			if ($prefix < 0 || $prefix > 32) {
+				return $ip_range;
+			}
+
+			// Increase the IPv4 network prefix to work in the IPv6 address space
+			$prefix += 96;
+		} else {
+			// If no prefix was supplied, 128 is implied for IPv6
+			if ($prefix === null) {
+				$prefix = 128;
+			}
+
+			// Validate the IPv6 network prefix
+			if ($prefix < 1 || $prefix > 128) {
+				return $ip_range;
+			}
+		}
+
+		// Convert human readable address to 128 bit (IPv6) binary string
+		// Note: self::inet_pton converts IPv4 addresses to IPv6 compatible versions
+		$binary_network = self::inet_pton($network);
+		$binary_mask = wfHelperBin::str2bin(str_pad(str_repeat('1', $prefix), 128, '0', STR_PAD_RIGHT));
+
+		// Calculate first and last address
+		$binary_first = $binary_network & $binary_mask;
+		$binary_last = $binary_network | ~ $binary_mask;
+
+		// Convert binary addresses back to human readable strings
+		$first = self::inet_ntop($binary_first);
+		$last = self::inet_ntop($binary_last);
+
+		// Split addresses into segments
+		$first_array = preg_split('/[\.\:]/', $first);
+		$last_array = preg_split('/[\.\:]/', $last);
+
+		// Make sure arrays are the same size. IPv6 '::' could cause problems otherwise.
+		// The strlen filter should leave zeros in place
+		$first_array = array_pad(array_filter($first_array, 'strlen'), count($last_array), '0');
+
+		$range_segments = array();
+
+		foreach ($first_array as $index => $segment) {
+			if ($segment === $last_array[$index]) {
+				$range_segments[] = $segment;
+			} else if ($segment === '' || $last_array[$index] === '') {
+				$range_segments[] = '';
+			} else {
+				$range_segments[] = "[{$segment}-{$last_array[$index]}]";
+			}
+		}
+
+		$delimiter = filter_var($network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? '.' : ':';
+
+		$ip_range->setIPString(implode($delimiter, $range_segments));
+
+		return $ip_range;
 	}
 
 	/**
@@ -267,15 +366,48 @@ class wfUtils {
 	}
 
 	/**
+	 * Get the list of whitelisted IPs and networks
+	 *
+	 * Results may include wfUserIPRange objects for now. Ideally everything would be in CIDR notation.
+	 *
+	 * @param string	$filter	Group name to filter whitelist by
+	 * @return array
+	 */
+	public static function getIPWhitelist($filter = null) {
+		static $wfIPWhitelist;
+
+		if (!isset($wfIPWhitelist)) {
+			include('wfIPWhitelist.php');
+
+			// Memoize user defined whitelist IPs and ranges
+			// TODO: Convert everything to CIDR
+			$wfIPWhitelist['user'] = array();
+
+			foreach (array_filter(explode(',', wfConfig::get('whitelisted'))) as $ip) {
+				$wfIPWhitelist['user'][] = new wfUserIPRange($ip);
+			}
+		}
+
+		$whitelist = array();
+
+		foreach ($wfIPWhitelist as $group => $values) {
+			if ($filter === null || $group === $filter) {
+				$whitelist = array_merge($whitelist, $values);
+			}
+		}
+
+		return $whitelist;
+	}
+
+	/**
 	 * @param string $addr Should be in dot or colon notation (127.0.0.1 or ::1)
 	 * @return bool
 	 */
 	public static function isPrivateAddress($addr) {
 		// Run this through the preset list for IPv4 addresses.
 		if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-			$num = self::inet_aton($addr);
-			foreach (self::$privateAddrs as $a) {
-				if ($num >= $a[1] && $num <= $a[2]) {
+			foreach (self::getIPWhitelist('private') as $a) {
+				if (self::subnetContainsIP($a, $addr)) {
 					return true;
 				}
 			}
@@ -899,13 +1031,6 @@ class wfUtils {
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 * @return array
-	 */
-	public static function getPrivateAddrs() {
-		return self::$privateAddrs;
 	}
 
 	/**

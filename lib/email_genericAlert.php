@@ -6,18 +6,14 @@ The Wordfence administrative URL for this site is: <?php echo $adminURL; ?>admin
 <?php if($IPMsg){ echo "\n$IPMsg\n"; } ?>
 
 <?php if(! $isPaid){ ?>
-NOTE: You are using the free version of Wordfence. Upgrading to the paid version of Wordfence gives you 
-two factor authentication (sign-in via cellphone) and country blocking which are both effective methods to block attacks.
-A Premium Wordfence license also includes remote scanning with each scan of your site which can detect 
-several additional website infections. Premium members can also schedule when website scans occur and
-can scan more than once per day.
+NOTE: You are using the free version of Wordfence. Upgrade to Premium today for less than $5 per month!
+ - Advanced features like IP reputation monitoring, country blocking, an advanced comment spam filter and cell phone sign-in give you the best protection available
+ - Remote, frequent and scheduled scans
+ - Access to Premium Support
+ - Discounts of up to 90% for multiyear and multi-license purchases
 
-As a Premium member you also get access to our priority support system located at http://support.wordfence.com/ and can file
-priority support tickets using our ticketing system. 
-
-Click here to sign-up for the Premium version of Wordfence now.
+Click here to upgrade to Wordfence Premium:
 https://www.wordfence.com/zz1/wordfence-signup/
-
 <?php } ?>
 
 --

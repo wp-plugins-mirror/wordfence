@@ -482,3 +482,34 @@ table.block-ranges-table tr td {
 	border: 1px solid #ffd975;
 	border-width: 1px 1px 1px 10px;
 }
+
+.wf-premium-callout {
+	border: 1px solid #00709E;
+	background-color: #ffffff;
+	padding: 16px;
+	margin: 20px 0 0;
+	max-width: 860px;
+}
+.wf-premium-callout h3 {
+	margin: 0 0 8px;
+	color: #11967A;
+}
+.wf-premium-callout ul {
+	margin: 8px 0;
+	padding: 0 0 0 15px;
+}
+.wf-premium-callout ul li {
+	list-style-type: disc;
+	margin: 0;
+	padding: 0;
+}
+.wf-premium-callout .center {
+	text-align: center;
+	margin: 0;
+}
+.wf-premium-callout .button-primary {
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: bold;
+	background-color: #00709E;
+}

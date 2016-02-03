@@ -3,12 +3,23 @@
 	<?php require('menuHeader.php'); ?>
 	<?php $pageTitle = "Schedule when Wordfence Scans Occur"; $helpLink="http://docs.wordfence.com/en/Wordfence_scan_scheduling"; $helpLabel="Learn more about Scheduling Wordfence Scans"; include('pageTitle.php'); ?>
 <?php if(! wfConfig::get('isPaid')){ ?>
-			<div class="wfPaidOnlyNotice">
-				<strong>Scan Scheduling is only available to Premium Members at this time</strong><br /><br />
-				Scan Scheduling is a premium feature because it places additional load on our scanning servers. If you would like to
-				activate this feature, simply <a href="https://www.wordfence.com/gnl1scanSched1/wordfence-signup/" target="_blank">click here and get a premium Wordfence API Key</a>, and then copy and paste it into your options
-				page.
-			</div>
+	<div class="wf-premium-callout" style="margin: 20px;">
+		<h3>Scan Scheduling is only available to Premium Members</h3>
+		<p>Scan Scheduling is a premium feature because it places additional load on our scanning servers. Premium users
+			can increase their WordPress protection by controlling scan frequency up to once per hour. Premium also
+			allows you to control when Wordfence initiates a scan, selecting optimal times that don’t interfere with
+			high-traffic or optimal usage of your site. Upgrade to Premium today:</p>
+		<ul>
+			<li>You can upgrade now for less than $5 per month</li>
+			<li>Other advanced features like IP reputation monitoring, an advanced comment spam filter, country blocking
+				and cell phone sign-in give you the best protection available
+			</li>
+			<li>Access to Premium Support</li>
+			<li>Discounts of up to 90% available for multiyear and multi-license purchases</li>
+		</ul>
+		<p class="center"><a class="button button-primary"
+		                     href="https://www.wordfence.com/gnl1scanSched1/wordfence-signup/">Get Premium</a></p>
+	</div>
 <?php } ?>
 
 	<div class="wordfenceWrap" style="margin: 20px 20px 20px 30px;">

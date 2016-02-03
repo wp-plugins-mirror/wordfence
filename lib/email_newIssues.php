@@ -32,18 +32,18 @@
 
 
 <?php if(! $isPaid){ ?>
-<p>NOTE: You are using the free version of Wordfence. Upgrading to the paid version of Wordfence gives you 
-two factor authentication (sign-in via cellphone) and country blocking which are both effective methods to block attacks.
-A Premium Wordfence license also includes remote scanning with each scan of your site which can detect 
-several additional website infections. Premium members can also schedule when website scans occur and
-can scan more than once per day.</p>
+	<p>NOTE: You are using the free version of Wordfence. Upgrade to Premium today for less than $5 per month!</p>
+	<ul>
+		<li>Advanced features like IP reputation monitoring, country blocking, an advanced comment spam filter and cell phone sign-in give you the best protection available</li>
+		<li>Remote, frequent and scheduled scans</li>
+		<li>Access to Premium Support</li>
+		<li>Discounts of up to 90% for multiyear and multi-license purchases</li>
+	</ul>
 
-<p>As a Premium member you also get access to our priority support system located at http://support.wordfence.com/ and can file
-priority support tickets using our ticketing system. </p>
-
-<p>Click here to sign-up for the Premium version of Wordfence now.<br>
-<a href="https://www.wordfence.com/zz2/wordfence-signup/">https://www.wordfence.com/zz2/wordfence-signup/</a></p>
-
+	<p>
+		Click here to upgrade to Wordfence Premium:<br>
+		<a href="https://www.wordfence.com/zz2/wordfence-signup/">https://www.wordfence.com/zz2/wordfence-signup/</a>
+	</p>
 <?php } ?>
 
 
