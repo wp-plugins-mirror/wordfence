@@ -96,6 +96,18 @@
 				<?php $unknownFilesLink = wfUtils::siteURLRelative() . '?_wfsf=unknownFiles&nonce=' . wp_create_nonce('wp-ajax'); ?>
 			</div>
 
+			<div class="wf-premium-callout" style="margin: 20px 0 20px 2px;width: 765px;">
+				<h3>Have you been hacked?</h3>
+				<p>If your site has been compromised by attackers it is vitally important to restore it to working
+					order as quickly as possible. But cleaning up a hacked website can be difficult if you've never
+					done it before, sometimes it takes professional intervention. Let our team of seasoned Security
+					Analysts resolve it for you quickly and professionally.</p>
+				<p class="center"><a class="button button-primary"
+				                     href="https://www.wordfence.com/gnl1scanGetHelp/wordfence-site-cleanings/">
+						Get Help</a></p>
+			</div>
+
+
 		</div>
 		<div style="margin-top: 20px;">
 			<div id="wfTabs">
