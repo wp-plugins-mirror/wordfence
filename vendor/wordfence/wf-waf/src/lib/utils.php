@@ -132,6 +132,18 @@ class wfWAFUtils {
 	}
 
 	/**
+	 * Expand a compressed printable representation of an IPv6 address.
+	 *
+	 * @param string $ip
+	 * @return string
+	 */
+	public static function expandIPv6Address($ip) {
+		$hex = bin2hex(self::inet_pton($ip));
+		$ip = substr(preg_replace("/([a-f0-9]{4})/i", "$1:", $hex), 0, -1);
+		return $ip;
+	}
+
+	/**
 	 * Compare two strings in constant time. It can leak the length of a string.
 	 *
 	 * @param string $a Expected string.

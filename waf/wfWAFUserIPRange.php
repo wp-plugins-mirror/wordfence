@@ -51,7 +51,7 @@ class wfWAFUserIPRange {
 			// IPv6 range
 		} else if (strpos($ip_string, ':') !== false && strpos($ip, ':') !== false) {
 			if (preg_match('/\[[a-f0-9]+\-[a-f0-9]+\]/', $ip_string)) {
-				$IPparts = explode(':', strtolower(wfUtils::expandIPv6Address($ip)));
+				$IPparts = explode(':', strtolower(wfWAFUtils::expandIPv6Address($ip)));
 				$whiteParts = explode(':', strtolower(self::expandIPv6Range($ip_string)));
 				$mismatch = false;
 				for ($i = 0; $i <= 7; $i++) {
@@ -125,7 +125,7 @@ class wfWAFUserIPRange {
 			$sql = substr($sql, 0, -5) . ')';
 			return $sql;
 		}
-		return $wpdb->prepare("($column = %s)", wfUtils::inet_pton($ip_string));
+		return $wpdb->prepare("($column = %s)", wfWAFUtils::inet_pton($ip_string));
 	}
 
 	/**
