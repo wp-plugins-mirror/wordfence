@@ -15,8 +15,12 @@ class wordfenceScanner {
 	protected $patterns = "";
 	protected $api = false;
 	protected static $excludePattern = NULL;
+	/** @var wfScanEngine */
+	protected $scanEngine;
+
 	public function __sleep(){
-		return array('path', 'results', 'errorMsg', 'apiKey', 'wordpressVersion', 'urlHoover', 'totalFilesScanned', 'startTime', 'lastStatusTime', 'patterns');
+		return array('path', 'results', 'errorMsg', 'apiKey', 'wordpressVersion', 'urlHoover', 'totalFilesScanned',
+			'startTime', 'lastStatusTime', 'patterns', 'scanEngine');
 	}
 	public function __wakeup(){
 	}
@@ -38,18 +42,48 @@ class wordfenceScanner {
 	}
 
 	/**
+	 * Get scan regexes from noc1 and add any user defined regexes, including descriptions, ID's and time added.
 	 * @todo add caching to this.
 	 * @throws Exception
 	 */
 	protected function setupSigs() {
 		$this->api = new wfAPI($this->apiKey, $this->wordpressVersion);
 		$sigData = $this->api->call('get_patterns', array(), array());
-		//For testing, comment out above two, include server sig file and get local sigs
-		//$sigData = wfSigs::getSigData();
-		if(! (is_array($sigData) && isset($sigData['sigPattern'])) ){
+		if(! (is_array($sigData) && isset($sigData['rules'])) ){
 			throw new Exception("Wordfence could not get the attack signature patterns from the scanning server.");
 		}
+
+		if (is_array($sigData['rules'])) {
+			$finalPattern = '/';
+			foreach ($sigData['rules'] as $signatureRow) {
+				list($id, $timeAdded, $pattern, $description) = $signatureRow;
+				$finalPattern .= ($pattern . '|');
+			}
+			$finalPattern = substr($finalPattern, 0, -1) . '/i';
+			if(@preg_match($finalPattern, null) === false){
+				throw new Exception("The regex Wordfence received from it's servers is invalid. The pattern is: " . $finalPattern);
+			}
+		}
+
+		$extra = wfConfig::get('scan_include_extra');
+		if (!empty($extra)) {
+			$regexs = explode("\n", $extra);
+			$id = 1000001;
+			foreach($regexs as $r){
+				$r = rtrim($r, "\r");
+				try {
+					preg_match('/' . $r . '/i', "");
+				} catch(Exception $e){
+					throw new Exception("The following user defined scan pattern has an error: $r");
+				}
+				$sigData['rules'][] = array($id++, time(), $r, "User defined scan pattern");
+			}
+		}
+
 		$this->patterns = $sigData;
+		if (isset($this->patterns['signatureUpdateTime'])) {
+			wfConfig::set('signatureUpdateTime', $this->patterns['signatureUpdateTime']);
+		}
 	}
 
 	/**
@@ -78,7 +112,13 @@ class wordfenceScanner {
 		return self::$excludePattern;
 	}
 
+	/**
+	 * @param wfScanEngine $forkObj
+	 * @return array
+	 */
 	public function scan($forkObj){
+		$this->scanEngine = $forkObj;
+		$loader = $this->scanEngine->getKnownFilesLoader();
 		if(! $this->startTime){
 			$this->startTime = microtime(true);
 		}
@@ -154,6 +194,9 @@ class wordfenceScanner {
 					continue;
 				}
 				$totalRead = 0;
+
+				$dataForFile = $this->dataForFile($file);
+
 				while(! feof($fh)){
 					$data = fread($fh, 1 * 1024 * 1024); //read 1 megs max per chunk
 					$totalRead += strlen($data);
@@ -170,52 +213,34 @@ class wordfenceScanner {
 									'ignoreC' => $fileSum,
 									'shortMsg' => "File is an old version of TimThumb which is vulnerable.",
 									'longMsg' => "This file appears to be an old version of the TimThumb script which makes your system vulnerable to attackers. Please upgrade the theme or plugin that uses this or remove it.",
-									'data' => array(
+									'data' => array_merge(array(
 										'file' => $file,
-										'canDiff' => false,
-										'canFix' => false,
-										'canDelete' => true
-									)
-									));
-								break;
-							}
-						} else if(strpos($file, 'lib/wordfenceScanner.php') === false && preg_match($this->patterns['sigPattern'], $data, $matches)){
-							if(! $this->isSafeFile($this->path . $file)){
-								$this->addResult(array(
-									'type' => 'file',
-									'severity' => 1,
-									'ignoreP' => $this->path . $file,
-									'ignoreC' => $fileSum,
-									'shortMsg' => "File appears to be malicious: " . esc_html($file),
-									'longMsg' => "This file appears to be installed by a hacker to perform malicious activity. If you know about this file you can choose to ignore it to exclude it from future scans. The text we found in this file that matches a known malicious file is: <strong style=\"color: #F00;\">\"" . esc_html($matches[1]) . "\"</strong>.",
-									'data' => array(
-										'file' => $file,
-										'canDiff' => false,
-										'canFix' => false,
-										'canDelete' => true
-									)));
-								break;
-							}
-
-						}
-						if(preg_match($this->patterns['pat2'], $data)){
-							if(! $this->isSafeFile($this->path . $file)){
-								$this->addResult(array(
-									'type' => 'file',
-									'severity' => 1,
-									'ignoreP' => $this->path . $file,
-									'ignoreC' => $fileSum,
-									'shortMsg' => "This file may contain malicious executable code: " . esc_html($this->path . $file),
-									'longMsg' => "This file is a PHP executable file and contains an " . esc_html($this->patterns['word1']) . " function and " . esc_html($this->patterns['word2']) . " decoding function on the same line. This is a common technique used by hackers to hide and execute code. If you know about this file you can choose to ignore it to exclude it from future scans.",
-									'data' => array(
-										'file' => $file,
-										'canDiff' => false,
-										'canFix' => false,
-										'canDelete' => true
-									)
+									), $dataForFile),
 								));
 								break;
 							}
+						} else if(strpos($file, 'lib/wordfenceScanner.php') === false){ // && preg_match($this->patterns['sigPattern'], $data, $matches)){
+							$regexMatched = false;
+							foreach($this->patterns['rules'] as $rule){
+								if(preg_match('/(' . $rule[2] . ')/i', $data, $matches)){
+									if(! $this->isSafeFile($this->path . $file)){
+										$this->addResult(array(
+											'type' => 'file',
+											'severity' => 1,
+											'ignoreP' => $this->path . $file,
+											'ignoreC' => $fileSum,
+											'shortMsg' => "File appears to be malicious: " . esc_html($file),
+											'longMsg' => "This file appears to be installed by a hacker to perform malicious activity. If you know about this file you can choose to ignore it to exclude it from future scans. The text we found in this file that matches a known malicious file is: <strong style=\"color: #F00;\">\"" . esc_html((strlen($matches[1]) > 200 ? substr($matches[1], 0, 200) . '...' : $matches[1])) . "\"</strong>. The infection type is: <strong>" . esc_html($rule[3]) . '</strong>',
+											'data' => array_merge(array(
+												'file' => $file,
+											), $dataForFile),
+										));
+										$regexMatched = true;
+										break;
+									}
+								}
+							}
+							if($regexMatched){ break; }
 						}
 						if(wfConfig::get('scansEnabled_highSense')){
 							$badStringFound = false;
@@ -236,13 +261,10 @@ class wordfenceScanner {
 										'ignoreC' => $fileSum,
 										'shortMsg' => "This file may contain malicious executable code: " . esc_html($this->path . $file),
 										'longMsg' => "This file is a PHP executable file and contains the word 'eval' (without quotes) and the word '" . esc_html($badStringFound) . "' (without quotes). The eval() function along with an encoding function like the one mentioned are commonly used by hackers to hide their code. If you know about this file you can choose to ignore it to exclude it from future scans.",
-										'data' => array(
+										'data' => array_merge(array(
 											'file' => $file,
-											'canDiff' => false,
-											'canFix' => false,
-											'canDelete' => true
-										)
-									));
+										), $dataForFile),
+										));
 									break;
 								}
 							}
@@ -278,6 +300,8 @@ class wordfenceScanner {
 		}
 		$this->urlHoover->cleanup();
 		foreach($hooverResults as $file => $hresults){
+			$dataForFile = $this->dataForFile($file);
+
 			foreach($hresults as $result){
 				if(preg_match('/wfBrowscapCache\.php$/', $file)){
 					continue;
@@ -291,14 +315,11 @@ class wordfenceScanner {
 							'ignoreC' => md5_file($this->path . $file),
 							'shortMsg' => "File contains suspected malware URL: " . esc_html($this->path . $file),
 							'longMsg' => "This file contains a suspected malware URL listed on Google's list of malware sites. Wordfence decodes " . esc_html($this->patterns['word3']) . " when scanning files so the URL may not be visible if you view this file. The URL is: " . esc_html($result['URL']) . " - More info available at <a href=\"http://safebrowsing.clients.google.com/safebrowsing/diagnostic?site=" . urlencode($result['URL']) . "&client=googlechrome&hl=en-US\" target=\"_blank\">Google Safe Browsing diagnostic page</a>.",
-							'data' => array(
+							'data' => array_merge(array(
 								'file' => $file,
 								'badURL' => $result['URL'],
-								'canDiff' => false,
-								'canFix' => false,
-								'canDelete' => true,
 								'gsb' => 'goog-malware-shavar'
-							)
+							), $dataForFile),
 						));
 					}
 				} else if($result['badList'] == 'googpub-phish-shavar'){
@@ -310,14 +331,11 @@ class wordfenceScanner {
 							'ignoreC' => md5_file($this->path . $file),
 							'shortMsg' => "File contains suspected phishing URL: " . esc_html($this->path . $file),
 							'longMsg' => "This file contains a URL that is a suspected phishing site that is currently listed on Google's list of known phishing sites. The URL is: " . esc_html($result['URL']),
-							'data' => array(
+							'data' => array_merge(array(
 								'file' => $file,
 								'badURL' => $result['URL'],
-								'canDiff' => false,
-								'canFix' => false,
-								'canDelete' => true,
 								'gsb' => 'googpub-phish-shavar'
-							)
+							), $dataForFile),
 						));
 					}
 				}
@@ -356,48 +374,45 @@ class wordfenceScanner {
 		}
 		return false;
 	}
-}
 
-class wordfenceDBScanner extends wordfenceScanner {
+	/**
+	 * @param string $file
+	 * @return array
+	 */
+	private function dataForFile($file) {
+		$loader = $this->scanEngine->getKnownFilesLoader();
+		$data = array();
+		if ($isKnownFile = $loader->isKnownFile($file)) {
+			if ($loader->isKnownCoreFile($file)) {
+				$data['cType'] = 'core';
 
-	// protected $patterns = '/QGV4dHJhY3QoJF9SRVFVRVNUKTs=/i';
+			} else if ($loader->isKnownPluginFile($file)) {
+				$data['cType'] = 'plugin';
+				list($itemName, $itemVersion, $cKey) = $loader->getKnownPluginData($file);
+				$data = array_merge($data, array(
+					'cName'    => $itemName,
+					'cVersion' => $itemVersion,
+					'cKey'     => $cKey
+				));
 
-	public function scan($forkObj) {
-		/** @var wpdb */
-		global $wpdb;
-		if (!$this->startTime) {
-			$this->startTime = microtime(true);
-		}
-		if (!$this->lastStatusTime) {
-			$this->lastStatusTime = microtime(true);
-		}
-		$db = new wfDB();
-
-		$blogsToScan = wfScanEngine::getBlogsToScan('options');
-		foreach ($blogsToScan as $blog) {
-			// Check the options table for known shells
-			$results = $db->querySelect("SELECT * FROM {$blog['table']} WHERE option_value REGEXP %s", trim(rtrim($this->patterns['dbSigPattern'], 'imsxeADSUXJu'), '/'));
-
-			foreach ($results as $row) {
-				preg_match($this->patterns['dbSigPattern'], $row['option_value'], $matches);
-				$this->addResult(array(
-					'type'     => 'database',
-					'severity' => 1,
-					'ignoreP'  => "{$db->prefix()}option.{$row['option_name']}",
-					'ignoreC'  => md5($row['option_value']),
-					'shortMsg' => "This option may contain malicious executable code: " . esc_html($row['option_name']),
-					'longMsg'  => "This option appears to be inserted by a hacker to perform malicious activity. If you know about this option you can choose to ignore it to exclude it from future scans. The text we found in this file that matches a known malicious file is: <strong style=\"color: #F00;\">\"" . esc_html($matches[1]). "\"</strong>.",
-					'data'     => array(
-						'option_name' => $row['option_name'],
-						'site_id'     => $blog['blog_id'],
-						'canDelete'   => true,
-					),
+			} else if ($loader->isKnownThemeFile($file)) {
+				$data['cType'] = 'theme';
+				list($itemName, $itemVersion, $cKey) = $loader->getKnownThemeData($file);
+				$data = array_merge($data, array(
+					'cName'    => $itemName,
+					'cVersion' => $itemVersion,
+					'cKey'     => $cKey
 				));
 			}
 		}
 
-		return $this->results;
+		$data['canDiff'] = $isKnownFile;
+		$data['canFix'] = $isKnownFile;
+		$data['canDelete'] = !$isKnownFile;
+
+		return $data;
 	}
 }
+
 
 ?>

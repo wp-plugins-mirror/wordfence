@@ -39,7 +39,8 @@ class wordfenceHash {
 		$this->striplen = $striplen;
 		$this->path = $path;
 		$this->only = $only;
-		
+		$this->engine = $engine;
+
 		$this->startTime = microtime(true);
 
 		if(wfConfig::get('scansEnabled_core')){
@@ -58,20 +59,14 @@ class wordfenceHash {
 
 		//Doing a delete for now. Later we can optimize this to only scan modified files.
 		//$this->db->queryWrite("update " . $this->db->prefix() . "wfFileMods set oldMD5 = newMD5");			
-		$this->db->queryWrite("delete from " . $this->db->prefix() . "wfFileMods");
-		$fetchCoreHashesStatus = wordfence::statusStart("Fetching core, theme and plugin file signatures from Wordfence");	
-		$dataArr = $engine->api->binCall('get_known_files', json_encode(array(
-				'plugins' => $plugins,
-				'themes' => $themes
-				)) );
-		if($dataArr['code'] != 200){
+		$this->db->truncate($this->db->prefix() . "wfFileMods");
+		$fetchCoreHashesStatus = wordfence::statusStart("Fetching core, theme and plugin file signatures from Wordfence");
+		try {
+			$this->knownFiles = $this->engine->getKnownFilesLoader()
+				->getKnownFiles();
+		} catch (wfScanKnownFilesException $e) {
 			wordfence::statusEndErr();
-			throw new Exception("Got error response from Wordfence servers: " . $dataArr['code']);
-		}
-		$this->knownFiles = @json_decode($dataArr['data'], true);
-		if(! is_array($this->knownFiles)){
-			wordfence::statusEndErr();
-			throw new Exception("Invalid response from Wordfence servers.");
+			throw $e;
 		}
 		wordfence::statusEnd($fetchCoreHashesStatus, false, true);
 		if($this->malwareEnabled){
