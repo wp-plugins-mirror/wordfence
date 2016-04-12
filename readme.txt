@@ -195,7 +195,7 @@ Designed for every skill level, [The WordPress Security Learning Center](https:/
 
 == Changelog ==
 
-= 6.1.2 =
+= 6.1.2 = 
 * Fix: Fixed fatal error when using a whitelisted IPv6 range and connecting with an IPv6 address.
 
 = 6.1.1 =
