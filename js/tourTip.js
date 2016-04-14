@@ -172,5 +172,17 @@ if(WordfenceAdminVars.tourClosed != '1' && WordfenceAdminVars.welcomeClosed != '
 
 	});
 }
+
+	(function($) {
+		$('.wf-dismiss-link').on('click', function() {
+			$('#wf-extended-protection-notice').css({
+				opacity: .75
+			});
+			$.get(this.href, function() {
+				$('#wf-extended-protection-notice').fadeOut(1000);
+			});
+			return false;
+		});
+	})(jQuery);
 });
 

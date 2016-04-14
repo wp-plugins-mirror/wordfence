@@ -1,6 +1,7 @@
 <?php
 $waf = wfWAF::getInstance();
 $config = $waf->getStorageEngine();
+$wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configureAutoPrepend');
 /** @var array $wafData */
 ?>
 <div class="wrap" id="paidWrap">
@@ -61,6 +62,22 @@ $config = $waf->getStorageEngine();
 				<form action="javascript:void(0)" id="waf-config-form">
 
 					<table class="wfConfigForm">
+						<tr>
+							<td>
+								<h2>Protection Level:<a href="http://docs.wordfence.com/en/WAF#Protection_Level"
+								                        target="_blank" class="wfhelp"></a></h2>
+							</td>
+							<td colspan="2">
+								<?php if (!WFWAF_AUTO_PREPEND): ?>
+									<span class="wf-notice-text">Basic WordPress Protection</span>
+									&nbsp;&nbsp;&nbsp;
+									<a style="vertical-align: middle" class="button button-primary"
+									   href="<?php echo $wafConfigURL ?>">Optimize the Wordfence Firewall</a>
+								<?php else: ?>
+									<span class="wf-success-text">Extended Protection</span>
+								<?php endif ?>
+							</td>
+						</tr>
 						<tr>
 							<td><h2>Firewall Status:<a href="http://docs.wordfence.com/en/WAF#Firewall_Status"
 							                           target="_blank" class="wfhelp"></a></h2></td>

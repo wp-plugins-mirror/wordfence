@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: wordpress, security, web application firewall, waf, performance, speed, caching, cache, caching plugin, wordpress cache, wordpress caching, wordpress security, security plugin, secure, anti-virus, malware, firewall, antivirus, virus, google safe browsing, phishing, scrapers, hacking, wordfence, securty, secrity, secure, two factor, cellphone sign-in, cellphone signin, cellphone, twofactor, security, secure, htaccess, login, log, users, login alerts, lock, chmod, maintenance, plugin, private, privacy, protection, permissions, 503, base64, injection, code, encode, script, attack, hack, hackers, block, blocked, prevent, prevention, RFI, XSS, CRLF, CSRF, SQL Injection, vulnerability, website security, WordPress security, security log, logging, HTTP log, error log, login security, personal security, infrastructure security, firewall security, front-end security, web server security, proxy security, reverse proxy security, secure website, secure login, two factor security, two factor authentication, maximum login security, heartbleed, heart bleed, heartbleed vulnerability, openssl vulnerability, nginx, litespeed, php5-fpm, woocommerce support, woocommerce caching, IPv6, IP version 6
 Requires at least: 3.9
 Tested up to: 4.5
-Stable tag: 6.1.2
+Stable tag: 6.1.3
 
 The Wordfence WordPress security plugin provides free enterprise-class WordPress security, protecting your website from hacks and malware.
 == Description ==
@@ -195,7 +195,15 @@ Designed for every skill level, [The WordPress Security Learning Center](https:/
 
 == Changelog ==
 
-= 6.1.2 = 
+= 6.1.3 =
+* Improvement: Added dismiss button to the Wordfence WAF setup admin notice.
+* Fix: Removed .htaccess and .user.ini from publicly accessible config and backup file scan.
+* Fix: Removed the disallow file mods for admins created outside of WordPress.
+* Fix: Fixed bug with 'Hide WordPress version' causing issues with reCAPTCHA.
+* Improvement: Added instructions for NGINX users to restrict access to .user.ini during Firewall configuration.
+* Fix: Fixed bug with multiple API calls to 'get_known_files'.
+
+= 6.1.2 =
 * Fix: Fixed fatal error when using a whitelisted IPv6 range and connecting with an IPv6 address.
 
 = 6.1.1 =

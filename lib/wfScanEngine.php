@@ -71,7 +71,7 @@ class wfScanEngine {
 	}
 
 	public function __sleep(){ //Same order here as above for properties that are included in serialization
-		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'dbScanner');
+		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'dbScanner', 'knownFilesLoader');
 	}
 	public function __construct(){
 		$this->startTime = time();
@@ -247,8 +247,8 @@ class wfScanEngine {
 		$status = wordfence::statusStart("Check for publicly accessible configuration files, backup files and logs");
 
 		$backupFileTests = array(
-			wfCommonBackupFileTest::createFromRootPath('.user.ini'),
-			wfCommonBackupFileTest::createFromRootPath('.htaccess'),
+//			wfCommonBackupFileTest::createFromRootPath('.user.ini'),
+//			wfCommonBackupFileTest::createFromRootPath('.htaccess'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.php.bak'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.php.swo'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.php.save'),
@@ -273,10 +273,10 @@ class wfScanEngine {
 				),
 			)),
 		);
-		$userIniFilename = ini_get('user_ini.filename');
-		if ($userIniFilename && $userIniFilename !== '.user.ini') {
-			$backupFileTests[] = wfCommonBackupFileTest::createFromRootPath($userIniFilename);
-		}
+//		$userIniFilename = ini_get('user_ini.filename');
+//		if ($userIniFilename && $userIniFilename !== '.user.ini') {
+//			$backupFileTests[] = wfCommonBackupFileTest::createFromRootPath($userIniFilename);
+//		}
 
 
 		/** @var wfCommonBackupFileTest $test */
@@ -1427,7 +1427,16 @@ class wfCommonBackupFileTest {
 	 */
 	public function isPubliclyAccessible() {
 		$this->response = wp_remote_get($this->url, $this->requestArgs);
-		return wp_remote_retrieve_response_code($this->response) === 200;
+		if ((int) floor(((int) wp_remote_retrieve_response_code($this->response) / 100)) === 2) {
+			$handle = @fopen($this->path, 'r');
+			if ($handle) {
+				$contents = fread($handle, 700);
+				fclose($handle);
+				$remoteContents = substr(wp_remote_retrieve_body($this->response), 0, 700);
+				return $contents === $remoteContents;
+			}
+		}
+		return false;
 	}
 
 	/**
