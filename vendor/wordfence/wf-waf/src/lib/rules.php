@@ -302,7 +302,7 @@ class wfWAFRuleLogicalOperator implements wfWAFRuleInterface {
 		if (!$this->isValid()) {
 			throw new wfWAFRuleLogicalOperatorException(sprintf('Invalid logical operator "%s", must be one of %s', $this->getOperator(), join(", ", $this->validOperators)));
 		}
-		return sprintf("new %s(%s)", get_class($this), var_export(trim(strtoupper($this->getOperator())), true));
+		return sprintf("new %s(%s)", get_class($this), var_export(trim(wfWAFUtils::strtoupper($this->getOperator())), true));
 	}
 
 	/**
@@ -313,14 +313,14 @@ class wfWAFRuleLogicalOperator implements wfWAFRuleInterface {
 		if (!$this->isValid()) {
 			throw new wfWAFRuleLogicalOperatorException(sprintf('Invalid logical operator "%s", must be one of %s', $this->getOperator(), join(", ", $this->validOperators)));
 		}
-		return trim(strtolower($this->getOperator()));
+		return trim(wfWAFUtils::strtolower($this->getOperator()));
 	}
 
 	public function evaluate() {
 		$currentValue = $this->getCurrentValue();
 		$comparison = $this->getComparison();
 		if (is_bool($currentValue) && $comparison instanceof wfWAFRuleInterface) {
-			switch (strtolower($this->getOperator())) {
+			switch (wfWAFUtils::strtolower($this->getOperator())) {
 				case '&&':
 				case 'and':
 					return $currentValue && $comparison->evaluate();
@@ -340,7 +340,7 @@ class wfWAFRuleLogicalOperator implements wfWAFRuleInterface {
 	 * @return bool
 	 */
 	public function isValid() {
-		return in_array(strtolower($this->getOperator()), $this->validOperators);
+		return in_array(wfWAFUtils::strtolower($this->getOperator()), $this->validOperators);
 	}
 
 	/**
@@ -477,7 +477,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		foreach ($this->getSubjects() as $subject) {
 			$subjectExport .= $subject->render() . ",\n";
 		}
-		$subjectExport = 'array(' . substr($subjectExport, 0, -2) . ')';
+		$subjectExport = 'array(' . wfWAFUtils::substr($subjectExport, 0, -2) . ')';
 
 		$expected = $this->getExpected();
 		return sprintf('new %s($this, %s, %s, %s)', get_class($this), var_export((string) $this->getAction(), true),
@@ -497,7 +497,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		foreach ($this->getSubjects() as $subject) {
 			$subjectExport .= $subject->renderRule() . ", ";
 		}
-		$subjectExport = substr($subjectExport, 0, -2);
+		$subjectExport = wfWAFUtils::substr($subjectExport, 0, -2);
 
 		$expected = $this->getExpected();
 		return sprintf('%s(%s, %s)', $this->getAction(),
@@ -506,7 +506,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 	}
 
 	public function isActionValid() {
-		return in_array(strtolower($this->getAction()), self::$allowedActions);
+		return in_array(wfWAFUtils::strtolower($this->getAction()), self::$allowedActions);
 	}
 
 	public function evaluate() {
@@ -568,7 +568,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		if (is_array($this->getExpected())) {
 			return in_array($this->getExpected(), $subject);
 		}
-		return strpos((string) $subject, (string) $this->getExpected()) !== false;
+		return wfWAFUtils::strpos((string) $subject, (string) $this->getExpected()) !== false;
 	}
 
 	public function notContains($subject) {
@@ -598,7 +598,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 			}
 			return $this->multiplier > 0;
 		}
-		$this->multiplier = substr_count($subject, $this->getExpected());
+		$this->multiplier = wfWAFUtils::substr_count($subject, $this->getExpected());
 		return $this->multiplier > 0;
 	}
 
@@ -635,11 +635,11 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 	}
 
 	public function lengthGreaterThan($subject) {
-		return strlen(is_array($subject) ? join('', $subject) : (string) $subject) > $this->getExpected();
+		return wfWAFUtils::strlen(is_array($subject) ? join('', $subject) : (string) $subject) > $this->getExpected();
 	}
 
 	public function lengthLessThan($subject) {
-		return strlen(is_array($subject) ? join('', $subject) : (string) $subject) < $this->getExpected();
+		return wfWAFUtils::strlen(is_array($subject) ? join('', $subject) : (string) $subject) < $this->getExpected();
 	}
 
 	public function currentUserIs($subject) {

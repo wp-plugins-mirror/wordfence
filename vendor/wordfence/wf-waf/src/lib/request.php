@@ -77,12 +77,12 @@ class wfWAFRequest implements wfWAFRequestInterface {
 			$request->setMethod($matches[1]);
 			$uri = $matches[2];
 			$request->setUri($uri);
-			if (($pos = strpos($uri, '?')) !== false) {
-				$queryString = substr($uri, $pos + 1);
+			if (($pos = wfWAFUtils::strpos($uri, '?')) !== false) {
+				$queryString = wfWAFUtils::substr($uri, $pos + 1);
 				parse_str($queryString, $queryStringArray);
 				$request->setQueryString($queryStringArray);
 
-				$path = substr($uri, 0, $pos);
+				$path = wfWAFUtils::substr($uri, 0, $pos);
 				$request->setPath($path);
 			} else {
 				$request->setPath($uri);
@@ -96,7 +96,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 			$headerValue = trim($headerValue);
 			$kvHeaders[$header] = $headerValue;
 
-			switch (strtolower($header)) {
+			switch (wfWAFUtils::strtolower($header)) {
 				case 'authorization':
 					if (preg_match('/basic ([A-Za-z0-9\+\/=]+)/i', $headerValue, $matches)) {
 						list($authUser, $authPass) = explode(':', base64_decode($matches[1]), 2);
@@ -114,7 +114,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 					$cookieArray = array();
 					$cookies = explode(';', $headerValue);
 					foreach ($cookies as $cookie) {
-						if (strpos($cookie, '=') !== false) {
+						if (wfWAFUtils::strpos($cookie, '=') !== false) {
 							list($cookieName, $cookieValue) = explode('=', $cookie, 2);
 							$cookieArray[trim($cookieName)] = urldecode(trim($cookieValue));
 						}
@@ -126,7 +126,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 		}
 		$request->setHeaders($kvHeaders);
 
-		if (strlen($bodyString) > 0) {
+		if (wfWAFUtils::strlen($bodyString) > 0) {
 			if (preg_match('/^multipart\/form\-data; boundary=(.*?)$/i', $request->getHeaders('Content-Type'), $boundaryMatches)) {
 				$body = '';
 				$files = array();
@@ -142,10 +142,10 @@ class wfWAFRequest implements wfWAFRequestInterface {
 					list($chunkHeaders, $chunkData) = explode("\n\n", $chunk, 2);
 					$chunkHeaders = explode("\n", $chunkHeaders);
 					$param = array(
-						'value' => substr($chunkData, 0, -1),
+						'value' => wfWAFUtils::substr($chunkData, 0, -1),
 					);
 					foreach ($chunkHeaders as $chunkHeader) {
-						if (strpos($chunkHeader, ':') !== false) {
+						if (wfWAFUtils::strpos($chunkHeader, ':') !== false) {
 							list($chunkHeaderKey, $chunkHeaderValue) = explode(':', $chunkHeader, 2);
 							$chunkHeaderKey = trim($chunkHeaderKey);
 							$chunkHeaderValue = trim($chunkHeaderValue);
@@ -175,7 +175,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 							$files[$param['name']] = array(
 								'name'    => $param['filename'],
 								'type'    => $param['type'],
-								'size'    => strlen($param['value']),
+								'size'    => wfWAFUtils::strlen($param['value']),
 								'content' => $param['value'],
 							);
 							$fileNames[$param['name']] = $param['filename'];
@@ -252,31 +252,32 @@ class wfWAFRequest implements wfWAFRequestInterface {
 			}
 			$request->setFileNames($fileNames);
 		}
-		$auth = array();
-		if (array_key_exists('PHP_AUTH_USER', $_SERVER)) {
-			$auth['user'] = wfWAFUtils::stripMagicQuotes($_SERVER['PHP_AUTH_USER']);
-		}
-		if (array_key_exists('PHP_AUTH_PW', $_SERVER)) {
-			$auth['password'] = wfWAFUtils::stripMagicQuotes($_SERVER['PHP_AUTH_PW']);
-		}
-		$request->setAuth($auth);
 
-		if (array_key_exists('REQUEST_TIME_FLOAT', $_SERVER)) {
-			$timestamp = $_SERVER['REQUEST_TIME_FLOAT'];
-		} else if (array_key_exists('REQUEST_TIME', $_SERVER)) {
-			$timestamp = $_SERVER['REQUEST_TIME'];
-		} else {
-			$timestamp = time();
-		}
-		$request->setTimestamp($timestamp);
+		if (is_array($_SERVER)) { //All of these depend on $_SERVER being non-null and an array
+			$auth = array();
+			if (array_key_exists('PHP_AUTH_USER', $_SERVER)) {
+				$auth['user'] = wfWAFUtils::stripMagicQuotes($_SERVER['PHP_AUTH_USER']);
+			}
+			if (array_key_exists('PHP_AUTH_PW', $_SERVER)) {
+				$auth['password'] = wfWAFUtils::stripMagicQuotes($_SERVER['PHP_AUTH_PW']);
+			}
+			$request->setAuth($auth);
 
-		$headers = array();
-		if (!empty($_SERVER)) {
+			if (array_key_exists('REQUEST_TIME_FLOAT', $_SERVER)) {
+				$timestamp = $_SERVER['REQUEST_TIME_FLOAT'];
+			} else if (array_key_exists('REQUEST_TIME', $_SERVER)) {
+				$timestamp = $_SERVER['REQUEST_TIME'];
+			} else {
+				$timestamp = time();
+			}
+			$request->setTimestamp($timestamp);
+
+			$headers = array();
 			foreach ($_SERVER as $key => $value) {
-				if (strpos($key, 'HTTP_') === 0) {
-					$header = substr($key, 5);
+				if (wfWAFUtils::strpos($key, 'HTTP_') === 0) {
+					$header = wfWAFUtils::substr($key, 5);
 					$header = str_replace(array(' ', '_'), array('', ' '), $header);
-					$header = ucwords(strtolower($header));
+					$header = ucwords(wfWAFUtils::strtolower($header));
 					$header = str_replace(' ', '-', $header);
 					$headers[$header] = wfWAFUtils::stripMagicQuotes($value);
 				}
@@ -287,28 +288,28 @@ class wfWAFRequest implements wfWAFRequestInterface {
 			if (array_key_exists('CONTENT_LENGTH', $_SERVER)) {
 				$headers['Content-Length'] = wfWAFUtils::stripMagicQuotes($_SERVER['CONTENT_LENGTH']);
 			}
-		}
-		$request->setHeaders($headers);
+			$request->setHeaders($headers);
 
-		$host = '';
-		if (array_key_exists('Host', $headers)) {
-			$host = $headers['Host'];
-		} else if (array_key_exists('SERVER_NAME', $_SERVER)) {
-			$host = wfWAFUtils::stripMagicQuotes($_SERVER['SERVER_NAME']);
-		}
-		$request->setHost($host);
+			$host = '';
+			if (array_key_exists('Host', $headers)) {
+				$host = $headers['Host'];
+			} else if (array_key_exists('SERVER_NAME', $_SERVER)) {
+				$host = wfWAFUtils::stripMagicQuotes($_SERVER['SERVER_NAME']);
+			}
+			$request->setHost($host);
 
-		$request->setMethod(array_key_exists('REQUEST_METHOD', $_SERVER) ? wfWAFUtils::stripMagicQuotes($_SERVER['REQUEST_METHOD']) : 'GET');
-		$request->setProtocol((array_key_exists('HTTPS', $_SERVER) && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
-		$request->setUri(array_key_exists('REQUEST_URI', $_SERVER) ? wfWAFUtils::stripMagicQuotes($_SERVER['REQUEST_URI']) : '');
+			$request->setMethod(array_key_exists('REQUEST_METHOD', $_SERVER) ? wfWAFUtils::stripMagicQuotes($_SERVER['REQUEST_METHOD']) : 'GET');
+			$request->setProtocol((array_key_exists('HTTPS', $_SERVER) && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+			$request->setUri(array_key_exists('REQUEST_URI', $_SERVER) ? wfWAFUtils::stripMagicQuotes($_SERVER['REQUEST_URI']) : '');
 
-		$uri = parse_url($request->getURI());
-		if (is_array($uri) && array_key_exists('path', $uri)) {
-			$path = $uri['path'];
-		} else {
-			$path = $request->getURI();
+			$uri = parse_url($request->getURI());
+			if (is_array($uri) && array_key_exists('path', $uri)) {
+				$path = $uri['path'];
+			} else {
+				$path = $request->getURI();
+			}
+			$request->setPath($path);
 		}
-		$request->setPath($path);
 
 		return $request;
 	}
@@ -486,9 +487,9 @@ class wfWAFRequest implements wfWAFRequestInterface {
 		}
 
 		$uri = $this->getURI();
-		$queryStringPos = strpos($uri, '?');
+		$queryStringPos = wfWAFUtils::strpos($uri, '?');
 		if ($queryStringPos !== false) {
-			$uri = substr($uri, 0, $queryStringPos);
+			$uri = wfWAFUtils::substr($uri, 0, $queryStringPos);
 		}
 		$queryString = $this->getQueryString();
 		if ($queryString) {
@@ -520,7 +521,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 
 		if (is_array($this->getHeaders())) {
 			foreach ($this->getHeaders() as $header => $value) {
-				switch (strtolower($header)) {
+				switch (wfWAFUtils::strtolower($header)) {
 					case 'cookie':
 						// TODO: Hook up highlights to cookies
 						$cookies = '';
@@ -555,7 +556,7 @@ class wfWAFRequest implements wfWAFRequestInterface {
 		$body = $this->getBody();
 		$contentType = $this->getHeaders('Content-Type');
 		if (is_array($body)) {
-			if (stripos($contentType, 'application/x-www-form-urlencoded') === 0) {
+			if (wfWAFUtils::stripos($contentType, 'application/x-www-form-urlencoded') === 0) {
 				$body = http_build_query($body);
 				if (!empty($highlights['body'])) {
 					foreach ($highlights['body'] as $matches) {
@@ -611,7 +612,7 @@ FORM;
 					}
 					$mime = array_key_exists('type', $file) ? $file['type'] : '';
 					$value = '';
-					$lenToRead = $maxRequestLen - (strlen($request) + strlen($body) + 1);
+					$lenToRead = $maxRequestLen - (wfWAFUtils::strlen($request) + wfWAFUtils::strlen($body) + 1);
 					if (array_key_exists('content', $file)) {
 						$value = $file['content'];
 					} else if ($lenToRead > 0 && file_exists($file['tmp_name'])) {
@@ -652,8 +653,8 @@ FORM;
 
 		$request .= "\n" . $body;
 
-		if (strlen($request) > $maxRequestLen) {
-			$request = substr($request, 0, $maxRequestLen);
+		if (wfWAFUtils::strlen($request) > $maxRequestLen) {
+			$request = wfWAFUtils::substr($request, 0, $maxRequestLen);
 		}
 		return $request;
 	}
@@ -682,7 +683,7 @@ FORM;
 				$value = str_replace($param, sprintf($this->highlightMatchFormat, $param), $matches[3]);
 			}
 		}
-		if (strlen($value) === 0) {
+		if (wfWAFUtils::strlen($value) === 0) {
 			$value = sprintf($this->highlightMatchFormat, $value);
 		}
 
@@ -706,7 +707,7 @@ FORM;
 		if (is_array($value)) {
 			$param = array();
 			foreach ($value as $index => $val) {
-				$param = array_merge($param, $this->reduceBodyParameter("$key[$index]", $val));
+				$param = array_merge($param, $this->reduceBodyParameter("{$key}[$index]", $val));
 			}
 			return $param;
 		}

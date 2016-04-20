@@ -13,6 +13,33 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 	include('pageTitle.php');
 	?>
 	<div class="wordfenceModeElem" id="wordfenceMode_waf"></div>
+
+	<?php
+	if (defined('WFWAF_ENABLED') && !WFWAF_ENABLED) :
+		$message = 'To allow the firewall to re-enable, please remove this line from the appropriate file.';
+		$pattern = '/define\s*\(\s*(?:\'WFWAF_ENABLED\'|"WFWAF_ENABLED")\s*,(.+?)\)/x';
+		$checkFiles = array(
+			ABSPATH . 'wp-config.php',
+			wordfence::getWAFBootstrapPath(),
+		);
+
+		foreach($checkFiles as $path) {
+			if (!file_exists($path)) {
+				continue;
+			}
+
+			if (($contents = file_get_contents($path)) !== false) {
+				if (preg_match($pattern, $contents, $matches) && (trim($matches[1]) == 'false' || trim($matches[1]) == '0')) {
+					$message = "To allow the firewall to re-enable, please remove this line from the file '" . $path . "'.";
+					break;
+				}
+			}
+		}
+
+	?>
+	<p class="wf-notice">The Wordfence Firewall is currently disabled because WFWAF_ENABLED is overridden and set to false. <?php echo $message; ?></p>
+	<?php endif ?>
+
 	<?php if (!empty($storageExceptionMessage)): ?>
 		<div style="font-weight: bold; margin: 20px 0px;;">
 			<?php echo wp_kses($storageExceptionMessage, 'post') ?>
@@ -21,7 +48,8 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 		<?php echo $wafActionContent ?>
 
 		<p class="wf-notice"><em>If you cannot complete the setup process,
-				<a target="_blank" href="https://docs.wordfence.com/en/Web_Application_Firewall_Setup">click here for help</a>.</em></p>
+				<a target="_blank" href="https://docs.wordfence.com/en/Web_Application_Firewall_Setup">click here for
+					help</a>.</em></p>
 
 	<?php else: ?>
 
@@ -37,7 +65,8 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 
 				<p>As new threats emerge, the Threat Defense Feed is updated to protect you from new attacks. The
 					Premium version of the Threat Defense Feed is updated in real-time protecting you immediately. As a
-					free user <strong>you are receiving the community version</strong> of the feed which is updated 30 days later.
+					free user <strong>you are receiving the community version</strong> of the feed which is updated 30
+					days later.
 					Upgrade now for less than $5 a month!</p>
 
 				<p class="center"><a class="button button-primary"
@@ -55,7 +84,9 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 		<?php if (WFWAF_SUBDIRECTORY_INSTALL): ?>
 			<div class="wf-notice">
 				You are currently running the Wordfence Web Application Firewall from another WordPress installation.
-				Please <a href="<?php echo network_admin_url('admin.php?page=WordfenceWAF&wafAction=configureAutoPrepend'); ?>">click here</a> to configure the Firewall to run correctly on this site.
+				Please <a
+					href="<?php echo network_admin_url('admin.php?page=WordfenceWAF&wafAction=configureAutoPrepend'); ?>">click
+					here</a> to configure the Firewall to run correctly on this site.
 			</div>
 		<?php else: ?>
 			<div class="wordfenceWrap" style="margin: 20px 20px 20px 30px;">
@@ -79,23 +110,26 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 							</td>
 						</tr>
 						<tr>
+							<?php
+							$wafStatus = (!WFWAF_ENABLED ? 'disabled' : $config->getConfig('wafStatus'));
+							?>
 							<td><h2>Firewall Status:<a href="http://docs.wordfence.com/en/WAF#Firewall_Status"
 							                           target="_blank" class="wfhelp"></a></h2></td>
 							<td colspan="2">
-								<select style="width: 300px" name="wafStatus" id="input-wafStatus">
-									<option<?php echo $config->getConfig('wafStatus') == 'enabled' ? ' selected' : '' ?>
+								<select style="width: 300px" name="wafStatus" id="input-wafStatus"<?php echo !WFWAF_ENABLED ? ' disabled' : '' ?>>
+									<option<?php echo $wafStatus == 'enabled' ? ' selected' : '' ?>
 										class="wafStatus-enabled" value="enabled">Enabled and Protecting
 									</option>
-									<option<?php echo $config->getConfig('wafStatus') == 'learning-mode' ? ' selected' : '' ?>
+									<option<?php echo $wafStatus == 'learning-mode' ? ' selected' : '' ?>
 										class="wafStatus-learning-mode" value="learning-mode">Learning Mode
 									</option>
-									<option<?php echo $config->getConfig('wafStatus') == 'disabled' ? ' selected' : '' ?>
+									<option<?php echo $wafStatus == 'disabled' ? ' selected' : '' ?>
 										class="wafStatus-disabled" value="disabled">Disabled
 									</option>
 								</select>
 								<script>
 									(function($) {
-										$('#input-wafStatus').val(<?php echo json_encode($config->getConfig('wafStatus')) ?>)
+										$('#input-wafStatus').val(<?php echo json_encode($wafStatus) ?>)
 											.on('change', function() {
 												var val = $(this).val();
 												$('.wafStatus-description').hide();
@@ -125,7 +159,7 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 						</tr>
 						<tr>
 							<td style="text-align: center">
-								<button type="submit" class="button button-primary">Save</button>
+								<button type="submit" class="button button-primary"<?php echo !WFWAF_ENABLED ? ' disabled' : '' ?>>Save</button>
 							</td>
 							<td colspan="2">
 								<div class="wafStatus-description" id="wafStatus-enabled-description">
@@ -133,10 +167,13 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 									matching known attack patterns, and is actively protecting your site from attackers.
 								</div>
 								<div class="wafStatus-description" id="wafStatus-learning-mode-description">
-									When you first install the Wordfence Web Application Firewall, it will be in learning
+									When you first install the Wordfence Web Application Firewall, it will be in
+									learning
 									mode. This allows
-									Wordfence to learn about your site so that we can understand how to protect it and how
-									to allow normal visitors through the firewall. We recommend you let Wordfence learn for
+									Wordfence to learn about your site so that we can understand how to protect it and
+									how
+									to allow normal visitors through the firewall. We recommend you let Wordfence learn
+									for
 									a week before you enable the firewall.
 								</div>
 								<div class="wafStatus-description" id="wafStatus-disabled-description">
@@ -169,7 +206,7 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 						<?php else: ?>
 							You are running Wordfence community firewall rules.
 						<?php endif ?>
-<!--						<em id="waf-rules-last-updated"></em>-->
+						<!--						<em id="waf-rules-last-updated"></em>-->
 					</p>
 
 				</form>
@@ -247,9 +284,24 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 	</table>
 </script>
 <script type="text/x-jquery-template" id="waf-whitelisted-urls-tmpl">
+	<?php ob_start() ?>
+	<form action="javascript:void(0)" class="wf-bulk-action wf-whitelist-actions">
+		<select name="wf-bulk-action">
+			<option value="">Bulk Actions</option>
+			<option value="delete">Delete</option>
+			<option value="enable">Enable</option>
+			<option value="disable">Disable</option>
+		</select>
+		<button type="submit" class="button">Apply</button>
+	</form>
+	<?php
+	$bulkActionForm = ob_get_clean();
+	echo $bulkActionForm;
+	?>
 	<table class="wf-table whitelist-table">
 		<thead>
 		<tr>
+			<th style="width: 2%;text-align: center"><input type="checkbox" class="wf-whitelist-table-bulk-action"></th>
 			<th style="width: 5%;">Enabled</th>
 			<th>URL</th>
 			<th>Param</th>
@@ -260,9 +312,35 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 			<th>Action</th>
 		</tr>
 		</thead>
+		{{if whitelistedURLParams.length > 5}}
+		<tfoot>
+		<tr>
+			<th><input type="checkbox" class="wf-whitelist-table-bulk-action"></th>
+			<th style="width: 5%;">Enabled</th>
+			<th>URL</th>
+			<th>Param</th>
+			<th>Created</th>
+			<th>Source</th>
+			<th>User</th>
+			<th>IP</th>
+			<th>Action</th>
+		</tr>
+		{{/if}}
+		</tfoot>
 		<tbody>
+		<tr class="wf-table-filters">
+			<td colspan="2"></td>
+			<td><input data-column-index="2" placeholder="Filter URL" type="text"></td>
+			<td><input data-column-index="3" placeholder="Filter Param" type="text"></td>
+			<td><input data-column-index="4" placeholder="Filter Created" type="text"></td>
+			<td><input data-column-index="5" placeholder="Filter Source" type="text"></td>
+			<td><input style="max-width:100px;" data-column-index="6" placeholder="Filter User" type="text"></td>
+			<td><input style="max-width:100px;" data-column-index="7" placeholder="Filter IP" type="text"></td>
+			<td></td>
+		</tr>
 		{{each(idx, whitelistedURLParam) whitelistedURLParams}}
 		<tr data-index="${idx}">
+			<td style="text-align: center;"><input type="checkbox" class="wf-whitelist-table-bulk-checkbox"></td>
 			<td style="text-align: center;">
 				<input name="replaceWhitelistedEnabled" type="hidden" value="${whitelistedURLParam.data.disabled}">
 				<input name="whitelistedEnabled" type="checkbox" value="1"
@@ -326,11 +404,13 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 		{{/each}}
 		{{if (whitelistedURLParams.length == 0)}}
 		<tr>
-			<td colspan="8">No whitelisted URLs currently set.</td>
+			<td colspan="9">No whitelisted URLs currently set.</td>
 		</tr>
 		{{/if}}
 		</tbody>
 	</table>
+	<?php echo $bulkActionForm ?>
+
 </script>
 
 <script type="text/javascript">
@@ -351,7 +431,10 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 					whitelistedEnabled: 1,
 					whitelistedPath: url,
 					whitelistedParam: param + '[' + paramName + ']'
-				});
+				}, function() {
+					WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+						'whitelist was saved successfully.');
+				}, false);
 			}
 		});
 
@@ -403,6 +486,144 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 				}
 			}).triggerHandler('click');
 
+			var whitelistWrapper = $('#waf-whitelisted-urls-wrapper');
+
+			var whitelistTable = null;
+			var whitelistTableRows = null;
+			var bulkActionCheckboxes = null;
+			var bulkActionTriggerCheckboxes = null;
+			var filterInputs = [];
+
+			function requeryWhitelistDOMElements() {
+				whitelistWrapper = $('#waf-whitelisted-urls-wrapper');
+				whitelistTable = whitelistWrapper.find('.whitelist-table');
+				whitelistTableRows = whitelistTable.find('> tbody > tr[data-index]');
+				bulkActionCheckboxes = whitelistTable.find('> tbody > tr[data-index] > td > input[type=checkbox].wf-whitelist-table-bulk-checkbox');
+				filterInputs = [];
+
+				whitelistWrapper.find('.wf-table-filters input').each(function() {
+					var el = $(this);
+					var index = el.attr('data-column-index');
+					filterInputs[index] = function(td) {
+						if (el.val().length == 0) {
+							return true;
+						}
+						return $(td).text().indexOf(el.val()) > -1;
+					};
+				}).on('keydown', function(evt) {
+
+					if (evt.keyCode == 13) {
+						filterWhitelistTable();
+						return false;
+					}
+				}).on('blur', function() {
+					filterWhitelistTable();
+				});
+
+				// Bulk actions
+				bulkActionTriggerCheckboxes = whitelistWrapper.find('input[type=checkbox].wf-whitelist-table-bulk-action').on('click', function() {
+					if (this.checked) {
+						whitelistCheckAllVisible();
+					} else {
+						whitelistUncheckAll();
+					}
+				});
+
+				whitelistWrapper.find('form.wf-whitelist-actions').on('submit', function() {
+					var select = $(this).find('select[name=wf-bulk-action]');
+					var bulkActionCallback = function(res) {
+						if (typeof res === 'object' && res.success) {
+							WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+								'whitelist was saved successfully.');
+							WFAD.wafData = res.data;
+							WFAD.wafConfigPageRender();
+						} else {
+							WFAD.colorbox('400px', 'Error saving Firewall configuration', 'There was an error saving the ' +
+								'Web Application Firewall whitelist.');
+						}
+					};
+					switch (select.val()) {
+						case 'delete':
+							WFAD.ajax('wordfence_whitelistBulkDelete', {
+								items: JSON.stringify(getBulkWhitelistChecked())
+							}, bulkActionCallback);
+							break;
+
+						case 'enable':
+							WFAD.ajax('wordfence_whitelistBulkEnable', {
+								items: JSON.stringify(getBulkWhitelistChecked())
+							}, bulkActionCallback);
+							break;
+
+						case 'disable':
+							WFAD.ajax('wordfence_whitelistBulkDisable', {
+								items: JSON.stringify(getBulkWhitelistChecked())
+							}, bulkActionCallback);
+							break;
+					}
+					return false;
+				});
+			}
+
+			// Whitelist table filters
+			function filterWhitelistTable() {
+				var zebraCount = 0;
+				whitelistTableRows.each(function() {
+					var tr = $(this);
+					var isMatch = true;
+					tr.find('> td').each(function(index) {
+						if (typeof filterInputs[index] === 'function') {
+							isMatch = filterInputs[index](this);
+							if (!isMatch) {
+								return false;
+							}
+						}
+					});
+					tr.removeClass('even odd');
+					if (isMatch) {
+						tr.show();
+						tr.addClass(zebraCount++ % 2 === 0 ? 'even' : 'odd');
+					} else {
+						tr.hide();
+					}
+				});
+				whitelistUncheckAll();
+			}
+
+			var keyupTimeout = null;
+
+			function getBulkWhitelistChecked() {
+				var data = [];
+				bulkActionCheckboxes.each(function() {
+					if (this.checked) {
+						var tr = $(this).closest('tr');
+						if (tr.is(':visible')) {
+							var path = tr.find('input[name=whitelistedPath]').val();
+							var paramKey = tr.find('input[name=whitelistedParam]').val();
+							var enabled = tr.find('input[name=whitelistedEnabled]').attr('checked') ? 1 : 0;
+							data.push([encodeURIComponent(path), encodeURIComponent(paramKey), enabled]);
+						}
+					}
+				});
+				return data;
+			}
+
+			function whitelistCheckAllVisible() {
+				bulkActionTriggerCheckboxes.attr('checked', true);
+				bulkActionCheckboxes.each(function() {
+					this.checked = $(this).closest('tr').is(':visible');
+				});
+			}
+
+			function whitelistUncheckAll() {
+				bulkActionTriggerCheckboxes.attr('checked', false);
+				bulkActionCheckboxes.attr('checked', false);
+			}
+
+			requeryWhitelistDOMElements();
+			$(window).on('wordfenceWAFConfigPageRender', function() {
+				requeryWhitelistDOMElements();
+			})
 		});
 
 		$(document).on('click', '.whitelist-url-edit', function() {
@@ -418,7 +639,10 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 				WFAD.wafConfigSave('deleteWhitelist', {
 					deletedWhitelistedPath: pathInput.val(),
 					deletedWhitelistedParam: paramInput.val()
-				});
+				}, function() {
+					WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+						'whitelist was saved successfully.');
+				}, false);
 			}
 		});
 		$(document).on('click', '.whitelist-url-save', function() {
@@ -439,7 +663,10 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 				newWhitelistedPath: newWhitelistedPath.val(),
 				newWhitelistedParam: newWhitelistedParam.val(),
 				newWhitelistedEnabled: newWhitelistedEnabled.val()
-			});
+			}, function() {
+				WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+					'whitelist was saved successfully.');
+			}, false);
 		});
 		$(document).on('click', '.whitelist-url-cancel', function() {
 			var tr = $(this).closest('tr');
@@ -456,7 +683,10 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 				whitelistedPath: oldWhitelistedPath.val(),
 				whitelistedParam: oldWhitelistedParam.val(),
 				whitelistedEnabled: enabled
-			});
+			}, function() {
+				WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+					'whitelist was saved successfully.');
+			}, false);
 		});
 
 		$(document).on('click', 'input[name=ruleEnabled]', function() {

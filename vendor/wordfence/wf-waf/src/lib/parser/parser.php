@@ -87,10 +87,10 @@ class wfWAFRuleParser extends wfWAFBaseParser {
 							wfWAFRuleLexer::T_NUMBER_LITERAL,
 						));
 						if ($valueToken->getType() === wfWAFRuleLexer::T_SINGLE_STRING_LITERAL) {
-							$value = substr($valueToken->getValue(), 1, -1);
+							$value = wfWAFUtils::substr($valueToken->getValue(), 1, -1);
 							$value = str_replace("\\'", "'", $value);
 						} else if ($valueToken->getType() === wfWAFRuleLexer::T_DOUBLE_STRING_LITERAL) {
-							$value = substr($valueToken->getValue(), 1, -1);
+							$value = wfWAFUtils::substr($valueToken->getValue(), 1, -1);
 							$value = str_replace('\\"', '"', $value);
 						} else {
 							$value = $valueToken->getValue();
@@ -383,11 +383,11 @@ class wfWAFRuleParser extends wfWAFBaseParser {
 		));
 		if ($expectedToken->getType() === wfWAFRuleLexer::T_SINGLE_STRING_LITERAL) {
 			// Remove quotes, strip slashes
-			$value = substr($expectedToken->getValue(), 1, -1);
+			$value = wfWAFUtils::substr($expectedToken->getValue(), 1, -1);
 			$value = str_replace("\\'", "'", $value);
 		} else if ($expectedToken->getType() === wfWAFRuleLexer::T_DOUBLE_STRING_LITERAL) {
 			// Remove quotes, strip slashes
-			$value = substr($expectedToken->getValue(), 1, -1);
+			$value = wfWAFUtils::substr($expectedToken->getValue(), 1, -1);
 			$value = str_replace('\\"', '"', $value);
 		} else if ($expectedToken->getType() === wfWAFRuleLexer::T_IDENTIFIER) {
 			// Remove quotes, strip slashes

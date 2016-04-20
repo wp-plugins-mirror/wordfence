@@ -28,10 +28,10 @@ class wfWAFWordPressRequest extends wfWAFRequest {
 
 	public function getIP() {
 		$howGet = wfWAF::getInstance()->getStorageEngine()->getConfig('howGetIPs');
-		if (is_string($howGet) && array_key_exists($howGet, $_SERVER)) {
+		if (is_string($howGet) && is_array($_SERVER) && array_key_exists($howGet, $_SERVER)) {
 			$ips[] = $_SERVER[$howGet];
 		}
-		$ips[] = $ip = array_key_exists('REMOTE_ADDR', $_SERVER) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
+		$ips[] = $ip = (is_array($_SERVER) && array_key_exists('REMOTE_ADDR', $_SERVER)) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
 		foreach ($ips as $ip) {
 			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
 				return $ip;
@@ -94,7 +94,7 @@ class wfWAFWordPress extends wfWAF {
 	public function blockAction($e, $httpCode = 403) {
 		if ($this->isInLearningMode()) {
 			register_shutdown_function(array(
-				$this, 'whitelistFailedRules',
+				$this, 'whitelistFailedRulesIfNot404',
 			));
 			$this->getStorageEngine()->logAttack($e->getFailedRules(), $e->getParamKey(), $e->getParamValue(), $e->getRequest());
 			$this->setLearningModeAttackException($e);
@@ -110,7 +110,7 @@ class wfWAFWordPress extends wfWAF {
 	public function blockXSSAction($e, $httpCode = 403) {
 		if ($this->isInLearningMode()) {
 			register_shutdown_function(array(
-				$this, 'whitelistFailedRules',
+				$this, 'whitelistFailedRulesIfNot404',
 			));
 			$this->getStorageEngine()->logAttack($e->getFailedRules(), $e->getParamKey(), $e->getParamValue(), $e->getRequest());
 			$this->setLearningModeAttackException($e);
@@ -145,6 +145,20 @@ class wfWAFWordPress extends wfWAF {
 		$this->getStorageEngine()->setConfig('cron', $cron);
 	}
 
+	/**
+	 *
+	 */
+	public function whitelistFailedRulesIfNot404() {
+		/** @var WP_Query $wp_query */
+		global $wp_query;
+		if (defined('ABSPATH') &&
+			isset($wp_query) && class_exists('WP_Query') && $wp_query instanceof WP_Query &&
+			method_exists($wp_query, 'is_404') && $wp_query->is_404() &&
+			function_exists('is_admin') && !is_admin()) {
+			return;
+		}
+		$this->whitelistFailedRules();
+	}
 
 	/**
 	 * @param $ip

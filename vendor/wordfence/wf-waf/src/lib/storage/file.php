@@ -134,7 +134,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		$this->open();
 		$this->attackDataRows = array();
 		$this->getAttackDataEngine()->scanRows(array($this, '_getAttackDataRowsSerialized'));
-		return json_encode($this->attackDataRows);
+		return wfWAFUtils::json_encode($this->attackDataRows);
 	}
 
 	/**
@@ -159,7 +159,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		$binary = fread($fileHandle, $length);
 		self::lock($fileHandle, LOCK_UN);
 		$row = wfWAFAttackDataStorageFileEngineRow::unpack($binary);
-		$data = json_decode($row->getData(), true);
+		$data = wfWAFUtils::json_decode($row->getData(), true);
 		if (is_array($data)) {
 			array_unshift($data, $row->getTimestamp());
 			$this->attackDataRows[] = $data;
@@ -270,7 +270,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 					$failedRulesString .= $rule . '|';
 				}
 			}
-			$failedRulesString = substr($failedRulesString, 0, -1);
+			$failedRulesString = wfWAFUtils::substr($failedRulesString, 0, -1);
 		}
 		$row[] = $failedRulesString;
 		$row[] = $request->getProtocol() === 'https' ? 1 : 0;
@@ -308,12 +308,12 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 	public function isIPBlocked($ip) {
 		$this->open();
 		$ipBin = wfWAFUtils::inet_pton($ip);
-		fseek($this->ipCacheFileHandle, strlen(self::LOG_FILE_HEADER), SEEK_SET);
+		fseek($this->ipCacheFileHandle, wfWAFUtils::strlen(self::LOG_FILE_HEADER), SEEK_SET);
 		self::lock($this->ipCacheFileHandle, LOCK_SH);
 		while (!feof($this->ipCacheFileHandle)) {
 			$ipStr = fread($this->ipCacheFileHandle, 20);
-			$ip2 = substr($ipStr, 0, 16);
-			if ($ipBin === $ip2 && unpack('V', substr($ipStr, 16, 4)) >= time()) {
+			$ip2 = wfWAFUtils::substr($ipStr, 0, 16);
+			if ($ipBin === $ip2 && unpack('V', wfWAFUtils::substr($ipStr, 16, 4)) >= time()) {
 				self::lock($this->ipCacheFileHandle, LOCK_UN);
 				return true;
 			}
@@ -378,13 +378,13 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 	 */
 	public function vacuum() {
 		$this->open();
-		$readPointer = strlen(self::LOG_FILE_HEADER);
-		$writePointer = strlen(self::LOG_FILE_HEADER);
+		$readPointer = wfWAFUtils::strlen(self::LOG_FILE_HEADER);
+		$writePointer = wfWAFUtils::strlen(self::LOG_FILE_HEADER);
 		fseek($this->ipCacheFileHandle, $readPointer, SEEK_SET);
 		self::lock($this->ipCacheFileHandle, LOCK_EX);
 		while (!feof($this->ipCacheFileHandle)) {
 			$ipCacheRow = fread($this->ipCacheFileHandle, 20);
-			$expires = unpack('V', substr($ipCacheRow, 16, 4));
+			$expires = unpack('V', wfWAFUtils::substr($ipCacheRow, 16, 4));
 			if ($expires >= time()) {
 				fseek($this->ipCacheFileHandle, $writePointer, SEEK_SET);
 				fwrite($this->ipCacheFileHandle, $ipCacheRow);
@@ -453,7 +453,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		$i = 0;
 		// Attempt to read contents of the config file. This could be in the middle of a write, so we account for it and
 		// wait for the operation to complete.
-		fseek($this->configFileHandle, strlen(self::LOG_FILE_HEADER), SEEK_SET);
+		fseek($this->configFileHandle, wfWAFUtils::strlen(self::LOG_FILE_HEADER), SEEK_SET);
 		$serializedData = '';
 		while (!feof($this->configFileHandle)) {
 			$serializedData .= fread($this->configFileHandle, 1024);
@@ -607,8 +607,8 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 				$row[$index] = base64_encode($row[$index]);
 			}
 		}
-		$row = json_encode($row);
-		if (is_string($row) && strlen($row) > 0) {
+		$row = wfWAFUtils::json_encode($row);
+		if (is_string($row) && wfWAFUtils::strlen($row) > 0) {
 			return $row;
 		}
 		return false;
@@ -620,7 +620,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 	 */
 	private function unserializeRow($row) {
 		if ($row) {
-			$json = json_decode($row, true);
+			$json = wfWAFUtils::json_decode($row, true);
 			if (is_array($json)) {
 				foreach ($this->rowsToB64 as $index) {
 					if (array_key_exists($index, $json)) {
@@ -680,9 +680,9 @@ class wfWAFAttackDataStorageFileEngine {
 	 * @return string
 	 */
 	public static function unpackMicrotime($binary) {
-		if (!is_string($binary) || strlen($binary) !== 8) {
+		if (!is_string($binary) || wfWAFUtils::strlen($binary) !== 8) {
 			throw new InvalidArgumentException(__METHOD__ . ' $binary expected to be string with length of 8, received '
-				. gettype($binary) . (is_string($binary) ? ' of length ' . strlen($binary) : ''));
+				. gettype($binary) . (is_string($binary) ? ' of length ' . wfWAFUtils::strlen($binary) : ''));
 		}
 		list(, $attackLogSeconds, $attackLogMicroseconds) = unpack('V*', $binary);
 		return sprintf('%d.%s', $attackLogSeconds, str_pad($attackLogMicroseconds, 6, '0', STR_PAD_LEFT));
@@ -791,7 +791,7 @@ class wfWAFAttackDataStorageFileEngine {
 	 * @return int
 	 */
 	private function seekToData() {
-		return $this->seek(strlen($this->getHeaderLength()));
+		return $this->seek(wfWAFUtils::strlen($this->getHeaderLength()));
 	}
 
 	/**
@@ -838,7 +838,7 @@ class wfWAFAttackDataStorageFileEngine {
 	 * @return int
 	 */
 	public function getHeaderLength() {
-		return strlen($this->getDefaultHeader());
+		return wfWAFUtils::strlen($this->getDefaultHeader());
 	}
 
 	/**
@@ -854,7 +854,8 @@ class wfWAFAttackDataStorageFileEngine {
 		 * 1600 offset table
 		 * 1    last length
 		 */
-		$headerLength = strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8 + 4 + (self::MAX_ROWS * 4);
+		$headerLength = wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE)
+			+ 8 + 8 + 4 + (self::MAX_ROWS * 4);
 		return wfWAFStorageFile::LOG_FILE_HEADER
 		. self::FILE_SIGNATURE
 		. str_repeat("\x00", 8 + 8 + 4)
@@ -874,16 +875,16 @@ class wfWAFAttackDataStorageFileEngine {
 		$this->header = array();
 		$this->seek(0);
 		$this->lockRead();
-		$this->header['phpHeader'] = $this->read(strlen(wfWAFStorageFile::LOG_FILE_HEADER));
-		$this->header['signature'] = $this->read(strlen(self::FILE_SIGNATURE));
+		$this->header['phpHeader'] = $this->read(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER));
+		$this->header['signature'] = $this->read(wfWAFUtils::strlen(self::FILE_SIGNATURE));
 		if ($this->header['phpHeader'] !== wfWAFStorageFile::LOG_FILE_HEADER || $this->header['signature'] !== self::FILE_SIGNATURE) {
 			$this->unlock();
 			$this->truncate();
 			$this->lockRead();
 			$this->seek(0);
 			$this->lockRead();
-			$this->header['phpHeader'] = $this->read(strlen(wfWAFStorageFile::LOG_FILE_HEADER));
-			$this->header['signature'] = $this->read(strlen(self::FILE_SIGNATURE));
+			$this->header['phpHeader'] = $this->read(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER));
+			$this->header['signature'] = $this->read(wfWAFUtils::strlen(self::FILE_SIGNATURE));
 		}
 		$this->header['oldestTimestamp'] = self::unpackMicrotime($this->read(8));
 		$this->header['newestTimestamp'] = self::unpackMicrotime($this->read(8));
@@ -901,7 +902,7 @@ class wfWAFAttackDataStorageFileEngine {
 			return $this->offsetTable;
 		}
 		$rowCount = min($this->header['rowCount'], self::MAX_ROWS);
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8 + 4);
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8 + 8 + 4);
 		$offsetTableBinary = $this->read(($rowCount + 1) * 4);
 		$this->offsetTable = array_values(unpack('V*', $offsetTableBinary));
 		return $this->offsetTable;
@@ -995,7 +996,7 @@ class wfWAFAttackDataStorageFileEngine {
 	public function addRow($row) {
 		$this->open();
 
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8);
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8 + 8);
 		$this->lockRead();
 		list(, $rowCount) = unpack('V', $this->read(4));
 		if ($rowCount >= self::MAX_ROWS) {
@@ -1006,7 +1007,7 @@ class wfWAFAttackDataStorageFileEngine {
 		$this->header = array();
 		$this->offsetTable = array();
 
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8 + 4 + ($rowCount * 4));
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8 + 8 + 4 + ($rowCount * 4));
 		list(, $nextRowOffset) = unpack('V', $this->read(4));
 
 		$rowString = $row->pack();
@@ -1014,26 +1015,26 @@ class wfWAFAttackDataStorageFileEngine {
 		$this->lockWrite();
 
 		// Update offset table
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8 + 4 + (($rowCount + 1) * 4));
-		$this->write(pack('V', $nextRowOffset + strlen($rowString)));
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8 + 8 + 4 + (($rowCount + 1) * 4));
+		$this->write(pack('V', $nextRowOffset + wfWAFUtils::strlen($rowString)));
 
 		// Update rowCount
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8 + 8);
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8 + 8);
 		$this->write(pack('V', $rowCount + 1));
 
 		// Write data
 		$this->seek($nextRowOffset);
-		$packedTimestamp = substr($rowString, 0, 8);
+		$packedTimestamp = wfWAFUtils::substr($rowString, 0, 8);
 		$this->write($rowString);
 
 		// Update oldest timestamp
 		if ($rowCount === 0) {
-			$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE));
+			$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE));
 			$this->write($packedTimestamp);
 		}
 
 		// Update newest timestamp
-		$this->seek(strlen(wfWAFStorageFile::LOG_FILE_HEADER) + strlen(self::FILE_SIGNATURE) + 8);
+		$this->seek(wfWAFUtils::strlen(wfWAFStorageFile::LOG_FILE_HEADER) + wfWAFUtils::strlen(self::FILE_SIGNATURE) + 8);
 		$this->write($packedTimestamp);
 
 		$this->unlock();
@@ -1185,8 +1186,8 @@ class wfWAFAttackDataStorageFileEngineRow {
 	 * @return wfWAFAttackDataStorageFileEngineRow
 	 */
 	public static function unpack($binary) {
-		$attackLogTime = wfWAFAttackDataStorageFileEngine::unpackMicrotime(substr($binary, 0, 8));
-		$data = wfWAFAttackDataStorageFileEngine::decompress(substr($binary, 8));
+		$attackLogTime = wfWAFAttackDataStorageFileEngine::unpackMicrotime(wfWAFUtils::substr($binary, 0, 8));
+		$data = wfWAFAttackDataStorageFileEngine::decompress(wfWAFUtils::substr($binary, 8));
 		return new self($attackLogTime, $data);
 	}
 

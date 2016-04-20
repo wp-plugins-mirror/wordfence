@@ -3,7 +3,7 @@
 /** @var wfWAF $waf */
 /** @var wfWAFView $this */
 
-$method = strtolower($waf->getRequest()->getMethod());
+$method = wfWAFUtils::strtolower($waf->getRequest()->getMethod());
 $urlParamsToWhitelist = array();
 foreach ($waf->getFailedRules() as $paramKey => $categories) {
 	foreach ($categories as $category => $failedRules) {
@@ -45,7 +45,7 @@ foreach ($waf->getFailedRules() as $paramKey => $categories) {
 	<form id="whitelist-form" action="<?php echo htmlentities($waf->getRequest()->getPath(), ENT_QUOTES, 'utf-8') ?>"
 	      method="post">
 		<input type="hidden" name="wfwaf-false-positive-params"
-		       value="<?php echo htmlentities(json_encode($urlParamsToWhitelist), ENT_QUOTES, 'utf-8') ?>">
+		       value="<?php echo htmlentities(wfWAFUtils::json_encode($urlParamsToWhitelist), ENT_QUOTES, 'utf-8') ?>">
 		<input type="hidden" name="wfwaf-false-positive-nonce"
 		       value="<?php echo htmlentities($waf->getAuthCookieValue('nonce', ''), ENT_QUOTES, 'utf-8') ?>">
 

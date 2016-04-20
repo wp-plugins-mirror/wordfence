@@ -685,7 +685,7 @@ class wfConfig {
 		// because we would have to concatenate $val twice into the query which could also exceed max packet for the mysql server
 		$serialized = serialize($val);
 		$tempFilename = 'wordfence_tmpfile_' . $key . '.php';
-		if((strlen($serialized) * 1.1) > self::getDB()->getMaxAllowedPacketBytes()){ //If it's greater than max_allowed_packet + 10% for escaping and SQL
+		if((strlen($serialized) * 2) + 50 > self::getDB()->getMaxAllowedPacketBytes()){ //If it's greater than max_allowed_packet + 20% for escaping and SQL
 			if($canUseDisk){
 				$dir = self::getTempDir();
 				$potentialDirs = self::getPotentialTempDirs();
@@ -719,10 +719,12 @@ class wfConfig {
 				self::deleteOldTempFile($tempDir . $tempFilename);
 			}
 			$exists = self::getDB()->querySingle("select name from " . self::table() . " where name='%s'", $key);
+			$serializedHex = bin2hex($serialized);
+
 			if($exists){
-				self::getDB()->queryWrite("update " . self::table() . " set val=%s where name=%s", $serialized, $key);
+				self::getDB()->queryWrite(sprintf("update " . self::table() . " set val=X'%s' where name=%%s", $serializedHex), $key);
 			} else {
-				self::getDB()->queryWrite("insert IGNORE into " . self::table() . " (name, val) values (%s, %s)", $key, $serialized);
+				self::getDB()->queryWrite(sprintf("insert ignore into " . self::table() . " (name, val) values (%%s, X'%s')", $serializedHex), $key);
 			}
 		}
 		self::getDB()->flush();

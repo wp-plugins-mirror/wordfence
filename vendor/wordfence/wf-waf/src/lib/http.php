@@ -292,11 +292,11 @@ class wfWAFHTTPTransportCurl extends wfWAFHTTPTransport {
 			if (is_array($queryString)) {
 				$queryString = http_build_query($queryString);
 			}
-			$url .= (strpos($url, '?') !== false ? '&' : '?') . $queryString;
+			$url .= (wfWAFUtils::strpos($url, '?') !== false ? '&' : '?') . $queryString;
 		}
 
 		$ch = curl_init($url);
-		switch (strtolower($request->getMethod())) {
+		switch (wfWAFUtils::strtolower($request->getMethod())) {
 			case 'post':
 				curl_setopt($ch, CURLOPT_POST, 1);
 				break;
@@ -328,8 +328,8 @@ class wfWAFHTTPTransportCurl extends wfWAFHTTPTransport {
 		$curlResponse = curl_exec($ch);
 		if ($curlResponse !== false) {
 			$headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-			$header = substr($curlResponse, 0, $headerSize);
-			$body = substr($curlResponse, $headerSize);
+			$header = wfWAFUtils::substr($curlResponse, 0, $headerSize);
+			$body = wfWAFUtils::substr($curlResponse, $headerSize);
 
 			$response = new wfWAFHTTPResponse();
 			$response->setBody($body);
@@ -356,7 +356,7 @@ class wfWAFHTTPTransportStreams extends wfWAFHTTPTransport {
 			if (is_array($queryString)) {
 				$queryString = http_build_query($queryString);
 			}
-			$url .= (strpos($url, '?') !== false ? '&' : '?') . $queryString;
+			$url .= (wfWAFUtils::strpos($url, '?') !== false ? '&' : '?') . $queryString;
 		}
 
 		$urlParsed = parse_url($request->getUrl());
@@ -375,7 +375,7 @@ class wfWAFHTTPTransportStreams extends wfWAFHTTPTransport {
 		if ($_headers = $request->getHeaders()) {
 			if (is_array($_headers)) {
 				foreach ($_headers as $header => $value) {
-					if (trim(strtolower($header)) === 'user-agent') {
+					if (trim(wfWAFUtils::strtolower($header)) === 'user-agent') {
 						$hasUA = true;
 					}
 					$headers .= $header . ': ' . $value . "\r\n";
@@ -393,14 +393,14 @@ class wfWAFHTTPTransportStreams extends wfWAFHTTPTransport {
 			'follow_location' => 1,
 			'max_redirects'   => 5,
 		);
-		if (strlen($request->getBody()) > 0) {
+		if (wfWAFUtils::strlen($request->getBody()) > 0) {
 			$httpOptions['content'] = $request->getBody();
-			$headers .= 'Content-Length: ' . strlen($httpOptions['content']) . "\r\n";
+			$headers .= 'Content-Length: ' . wfWAFUtils::strlen($httpOptions['content']) . "\r\n";
 		}
 		$httpOptions['header'] = $headers;
 
 		$options = array(
-			strtolower($urlParsed['scheme']) => $httpOptions,
+			wfWAFUtils::strtolower($urlParsed['scheme']) => $httpOptions,
 		);
 
 		$context = stream_context_create($options);

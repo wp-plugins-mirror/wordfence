@@ -65,7 +65,12 @@
 				});
 
 				$('#doSendEmail').click(function() {
-					WFAD.ajax('wordfence_sendDiagnostic', {email: $('#_email').val()}, function(res) {
+					var ticket = $('#_ticketnumber').val();
+					if (ticket === null || typeof ticket === "undefined" || ticket.length == 0) {
+						self.colorbox('400px', "Error", "Please include your support ticket number or forum username.");
+						return;
+					}
+					WFAD.ajax('wordfence_sendDiagnostic', {email: $('#_email').val(), ticket: ticket}, function(res) {
 						if (res.result) {
 							self.colorbox('400px', "Email Diagnostic Report", "Diagnostic report has been sent successfully.");
 						} else {
@@ -699,10 +704,10 @@
 				var self = this;
 				var ips = [];
 				jQuery('.wfReverseLookup').each(function(idx, elem) {
-					var txt = jQuery(elem).text();
+					var txt = jQuery(elem).text().trim();
 					if (/^\d+\.\d+\.\d+\.\d+$/.test(txt) && (!jQuery(elem).data('wfReverseDone'))) {
 						jQuery(elem).data('wfReverseDone', true);
-						ips.push(jQuery(elem).text());
+						ips.push(txt);
 					}
 				});
 				if (ips.length < 1) {
@@ -722,7 +727,7 @@
 					function(res) {
 						if (res.ok) {
 							jQuery('.wfReverseLookup').each(function(idx, elem) {
-								var txt = jQuery(elem).text();
+								var txt = jQuery(elem).text().trim();
 								for (var ip in res.ips) {
 									if (txt == ip) {
 										if (res.ips[ip]) {
@@ -2401,7 +2406,8 @@
 				whitelistedURLParams: []
 			},
 
-			wafConfigSave: function(action, data, onSuccess) {
+			wafConfigSave: function(action, data, onSuccess, showColorBox) {
+				showColorBox = showColorBox === undefined ? true : !!showColorBox;
 				var self = this;
 				if (typeof(data) == 'string') {
 					if (data.length > 0) {
@@ -2420,8 +2426,10 @@
 
 				this.ajax('wordfence_saveWAFConfig', data, function(res) {
 					if (typeof res === 'object' && res.success) {
-						self.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
-							'configuration was saved successfully.');
+						if (showColorBox) {
+							self.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+								'configuration was saved successfully.');
+						}
 						self.wafData = res.data;
 						self.wafConfigPageRender();
 						if (typeof onSuccess === 'function') {
@@ -2466,6 +2474,7 @@
 					var date = new Date(this.wafData['rulesLastUpdated'] * 1000);
 					this.renderWAFRulesLastUpdated(date);
 				}
+				$(window).trigger('wordfenceWAFConfigPageRender');
 			},
 
 			renderWAFRulesLastUpdated: function(date) {

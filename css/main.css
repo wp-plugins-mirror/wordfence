@@ -535,6 +535,8 @@ table.wf-table td {
 }
 table.wf-table thead th,
 table.wf-table thead td,
+table.wf-table tfoot th,
+table.wf-table tfoot td,
 table.wf-table tbody.thead th,
 table.wf-table tbody.thead td {
 	background-color: #222;
@@ -543,12 +545,13 @@ table.wf-table tbody.thead td {
 	border-color: #474747;
 	text-align: left;
 }
-table.wf-table tbody tr td {
-	background-color: #fff;
-}
 table.wf-table tbody tr.even td,
 table.wf-table tbody tr:nth-child(2n) td {
 	background-color: #eee;
+}
+table.wf-table tbody tr td,
+table.wf-table tbody tr.odd td {
+	background-color: #fff;
 }
 table.wf-table tbody tr:hover > td {
 	background-color: #fffbd8;
@@ -684,6 +687,9 @@ table.whitelist-table .edit-mode input.whitelist-edit {
 #wf-lt-listings a {
 	cursor: pointer;
 	text-decoration: underline;
+}
+#wf-lt-listings a.button {
+	text-decoration: none;
 }
 .wfActionBlocked {
 	background-color: #fff6f6;
@@ -977,7 +983,7 @@ table.whitelist-table .edit-mode input.whitelist-edit {
 	border-color: #e5ae35;
 }
 /*.wafStatus-disabled,*/
-.wafStatus-disabled.select2-container--default .select2-selection--single {
+.wafStatus-disabled.select2-container--default .select2-selection--single, .wafStatus-disabled.select2-container--default.select2-container--disabled .select2-selection--single, .wafStatus-learning-mode.select2-container--default.select2-container--disabled .select2-selection--single, .wafStatus-enabled.select2-container--default.select2-container--disabled .select2-selection--single {
 	background-color: #ff6d69;
 	border-color: #dd422c;
 }
@@ -1011,4 +1017,18 @@ pre.wf-pre {
 	background: #ffffff;
 	border: 1px solid #999999;
 	overflow: auto;
+}
+
+
+/*
+	Whitelist table
+*/
+.wf-bulk-action {
+	margin: 12px 0;
+}
+tr.wf-table-filters {
+
+}
+tr.wf-table-filters input {
+	max-width: 140px;
 }

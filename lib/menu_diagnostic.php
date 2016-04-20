@@ -293,8 +293,14 @@ $w = new wfConfig();
 			<table class="wfConfigForm">
 				<tr>
 					<th>Email address:</th>
-					<td><input type="email" id="_email" value="samples@wordfence.com"/></td>
-					<td colspan="2"><input class="button" type="button" id="doSendEmail" value="Send"/></td>
+					<td><input type="email" id="_email" value="wftest@wordfence.com"/></td>
+				</tr>
+				<tr>
+					<th>Ticket Number/Forum Username:</th>
+					<td><input type="text" id="_ticketnumber" required/></td>
+				</tr>
+				<tr>
+					<td colspan="2" style="text-align: right;"><input class="button" type="button" id="doSendEmail" value="Send"/></td>
 				</tr>
 			</table>
 		</div>

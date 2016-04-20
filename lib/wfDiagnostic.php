@@ -64,6 +64,7 @@ class wfDiagnostic
 		),
 		'PHP' => array(
 			'phpVersion' => 'PHP version >= PHP 5.2.4<br><em> (<a href="https://wordpress.org/about/requirements/" target="_blank">Minimum version required by WordPress</a>)</em>',
+			'processOwner' => 'Process Owner',
 			'hasOpenSSL' => 'Checking for OpenSSL support',
 			'hasCurl'    => 'Checking for cURL support',
 		),
@@ -153,6 +154,56 @@ class wfDiagnostic
 		return array(
 			'test' => version_compare(phpversion(), $this->minVersion['PHP'], '>='),
 			'message'  => phpversion(),
+		);
+	}
+
+	public function processOwner() {
+		$disabledFunctions = explode(',', ini_get('disable_functions'));
+
+		if (is_callable('posix_geteuid')) {
+			if (!is_callable('posix_getpwuid') || in_array('posix_getpwuid', $disabledFunctions)) {
+				return array(
+					'test' => false,
+					'message' => 'Unavailable',
+				);
+			}
+
+			$processOwner = posix_getpwuid(posix_geteuid());
+			if ($processOwner !== null)
+			{
+				return array(
+					'test' => true,
+					'message' => $processOwner['name'],
+				);
+			}
+		}
+
+		$usernameOrUserEnv = getenv('USERNAME') ? getenv('USERNAME') : getenv('USER');
+		if (!empty($usernameOrUserEnv)) { //Check some environmental variable possibilities
+			return array(
+				'test' => true,
+				'message' => $usernameOrUserEnv,
+			);
+		}
+
+		$currentUser = get_current_user();
+		if (!empty($currentUser)) { //php.net comments indicate on Windows this returns the process owner rather than the file owner
+			return array(
+				'test' => true,
+				'message' => $currentUser,
+			);
+		}
+
+		if (!empty($_SERVER['LOGON_USER'])) { //Last resort for IIS since POSIX functions are unavailable, Source: https://msdn.microsoft.com/en-us/library/ms524602(v=vs.90).aspx
+			return array(
+				'test' => true,
+				'message' => $_SERVER['LOGON_USER'],
+			);
+		}
+
+		return array(
+			'test' => false,
+			'message' => 'Unknown',
 		);
 	}
 

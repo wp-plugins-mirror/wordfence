@@ -648,6 +648,7 @@
 
 		var legend = $('#wf-live-traffic-legend');
 		var adminBar = $('#wpadminbar');
+		var liveTrafficListings = $('#wf-lt-listings');
 
 		var hasScrolled = false;
 		var loadingListings = false;
@@ -657,6 +658,17 @@
 				legend.addClass('sticky');
 			} else {
 				legend.removeClass('sticky');
+			}
+
+			var firstRow = liveTrafficListings.children().first();
+			if (firstRow.offset().top + firstRow.height() < win.scrollTop() + adminBar.outerHeight() + 20) {
+				if (WFAD.mode != 'liveTraffic_paused') {
+					WFAD.mode = 'liveTraffic_paused';
+				}
+			} else {
+				if (WFAD.mode != 'liveTraffic') {
+					WFAD.mode = 'liveTraffic';
+				}
 			}
 
 			// console.log(win.scrollTop() + window.innerHeight, liveTrafficWrapper.outerHeight() + liveTrafficWrapper.offset().top);
@@ -669,6 +681,7 @@
 				hasScrolled = false;
 				WFAD.wfLiveTraffic.loadNextListings(function() {
 					loadingListings = false;
+					WFAD.reverseLookupIPs();
 				});
 			} else if (currentScrollBottom < scrollThreshold) {
 				hasScrolled = true;

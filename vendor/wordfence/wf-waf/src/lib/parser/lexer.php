@@ -84,7 +84,7 @@ class wfWAFRuleLexer implements wfWAFLexerInterface {
 				return false;
 			}
 			if (($match = $this->scanner->scan(self::MATCH_IDENTIFIER)) !== null)
-				switch (strtolower($match)) {
+				switch (wfWAFUtils::strtolower($match)) {
 					case 'if':
 						return $this->createToken(self::T_RULE_START, $match);
 					case 'and':
@@ -172,14 +172,14 @@ class wfWAFLexerToken {
 	 * @return string
 	 */
 	public function getLowerCaseValue() {
-		return strtolower($this->getValue());
+		return wfWAFUtils::strtolower($this->getValue());
 	}
 
 	/**
 	 * @return string
 	 */
 	public function getUpperCaseValue() {
-		return strtoupper($this->getValue());
+		return wfWAFUtils::strtoupper($this->getValue());
 	}
 
 	/**
@@ -442,8 +442,8 @@ class wfWAFStringScanner {
 	public function scan($regex) {
 		$remaining = $this->getRemainingString();
 		if ($this->regexMatch($regex, $remaining, $matches)) {
-			$matchLen = strlen($matches[0]);
-			if ($matchLen > 0 && strpos($remaining, $matches[0]) === 0) {
+			$matchLen = wfWAFUtils::strlen($matches[0]);
+			if ($matchLen > 0 && wfWAFUtils::strpos($remaining, $matches[0]) === 0) {
 				return $this->setState($matches, $this->getPointer() + $matchLen, $this->getPointer());
 			}
 		}
@@ -455,7 +455,7 @@ class wfWAFStringScanner {
 	 * @return int|null
 	 */
 	public function skip($regex) {
-		return $this->scan($regex) ? strlen($this->getMatch()) : null;
+		return $this->scan($regex) ? wfWAFUtils::strlen($this->getMatch()) : null;
 	}
 
 	/**
@@ -472,8 +472,8 @@ class wfWAFStringScanner {
 	public function check($regex) {
 		$remaining = $this->getRemainingString();
 		if ($this->regexMatch($regex, $remaining, $matches)) {
-			$matchLen = strlen($matches[0]);
-			if ($matchLen > 0 && strpos($remaining, $matches[0]) === 0) {
+			$matchLen = wfWAFUtils::strlen($matches[0]);
+			if ($matchLen > 0 && wfWAFUtils::strpos($remaining, $matches[0]) === 0) {
 				return $this->setState($matches);
 			}
 		}
@@ -504,7 +504,7 @@ class wfWAFStringScanner {
 	 * @return string
 	 */
 	public function getRemainingString() {
-		return substr($this->getString(), $this->getPointer());
+		return wfWAFUtils::substr($this->getString(), $this->getPointer());
 	}
 
 	/**
@@ -522,9 +522,9 @@ class wfWAFStringScanner {
 	 */
 	public function getLine() {
 		if ($this->getPointer() + 1 > $this->getLength()) {
-			return substr_count($this->getString(), "\n") + 1;
+			return wfWAFUtils::substr_count($this->getString(), "\n") + 1;
 		}
-		return substr_count($this->getString(), "\n", 0, $this->getPointer() + 1) + 1;
+		return wfWAFUtils::substr_count($this->getString(), "\n", 0, $this->getPointer() + 1) + 1;
 	}
 
 	/**
@@ -533,7 +533,7 @@ class wfWAFStringScanner {
 	 * @return int
 	 */
 	public function getColumn() {
-		return $this->getPointer() - ((int) strrpos(substr($this->getString(), 0, $this->getPointer() + 1), "\n")) + 1;
+		return $this->getPointer() - ((int) wfWAFUtils::strrpos(wfWAFUtils::substr($this->getString(), 0, $this->getPointer() + 1), "\n")) + 1;
 	}
 
 	/**
@@ -577,7 +577,7 @@ class wfWAFStringScanner {
 		if (!is_string($string)) {
 			throw new InvalidArgumentException(sprintf('String expected, got [%s]', gettype($string)));
 		}
-		$this->setLength(strlen($string));
+		$this->setLength(wfWAFUtils::strlen($string));
 		$this->string = $string;
 		$this->reset();
 	}

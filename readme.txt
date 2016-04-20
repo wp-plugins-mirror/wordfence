@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: wordpress, security, web application firewall, waf, performance, speed, caching, cache, caching plugin, wordpress cache, wordpress caching, wordpress security, security plugin, secure, anti-virus, malware, firewall, antivirus, virus, google safe browsing, phishing, scrapers, hacking, wordfence, securty, secrity, secure, two factor, cellphone sign-in, cellphone signin, cellphone, twofactor, security, secure, htaccess, login, log, users, login alerts, lock, chmod, maintenance, plugin, private, privacy, protection, permissions, 503, base64, injection, code, encode, script, attack, hack, hackers, block, blocked, prevent, prevention, RFI, XSS, CRLF, CSRF, SQL Injection, vulnerability, website security, WordPress security, security log, logging, HTTP log, error log, login security, personal security, infrastructure security, firewall security, front-end security, web server security, proxy security, reverse proxy security, secure website, secure login, two factor security, two factor authentication, maximum login security, heartbleed, heart bleed, heartbleed vulnerability, openssl vulnerability, nginx, litespeed, php5-fpm, woocommerce support, woocommerce caching, IPv6, IP version 6
 Requires at least: 3.9
 Tested up to: 4.5
-Stable tag: 6.1.3
+Stable tag: 6.1.4
 
 The Wordfence WordPress security plugin provides free enterprise-class WordPress security, protecting your website from hacks and malware.
 == Description ==
@@ -194,6 +194,23 @@ Designed for every skill level, [The WordPress Security Learning Center](https:/
 5. If you're technically minded, this is the under-the-hood view of Wordfence Security options where you can fine-tune your security settings.
 
 == Changelog ==
+
+= 6.1.4 =
+Fix: Fixed potential bug with 'stored data not found after a fork. Got type: boolean'.
+Improvement: Added bulk actions and filters to WAF whitelist table.
+Improvement: Added a check while in learning mode to verify the response is not 404 before whitelising.
+Fix: Added index to attackLogTime. wfHits trimmed on runInstall now.
+Fix: Fixed attack data sync for hosts that cannot use wp-cron.
+Improvement: Use wftest@wordfence.com as the Diagnostics page default email address.
+Improvement: When WFWAF_ENABLED is set to false to disable the firewall, show this on the Firewall page.
+Fix: Prevent warnings when $_SERVER is empty.
+Fix: Bug fix for illegal string offset.
+Fix: Hooked up multibyte string functions to binary safe equivalents.
+Fix: Hooked up reverse IP lookup in Live Traffic.
+Fix: Add the user the web server (or PHP) is currently running as to Diagnostics page.
+Improvement: Pause Live Traffic after scrolling past the first entry.
+Improvement: Move "Permanently block all temporarily blocked IP addresses" button to top of blocked IP list.
+Fix: Added JSON fallback for PHP installations that don't have JSON enabled.
 
 = 6.1.3 =
 * Improvement: Added dismiss button to the Wordfence WAF setup admin notice.
