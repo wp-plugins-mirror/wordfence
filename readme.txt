@@ -195,7 +195,7 @@ Designed for every skill level, [The WordPress Security Learning Center](https:/
 
 == Changelog ==
 
-= 6.1.4 =
+= 6.1.4 = 
 * Fix: Fixed potential bug with 'stored data not found after a fork. Got type: boolean'.
 * Improvement: Added bulk actions and filters to WAF whitelist table.
 * Improvement: Added a check while in learning mode to verify the response is not 404 before whitelising.
