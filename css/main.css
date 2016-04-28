@@ -518,7 +518,7 @@ h3.wfConfigHeading {
 .wfOnOffSwitch-checkbox:checked + .wfOnOffSwitch-label .wfOnOffSwitch-switch {
     right: 0 !important ;
 }
-#wordfenceConfigWarning {
+#wordfenceConfigWarning, #wordfenceAdminEmailWarning {
 	clear: left;
 	margin-top: 5px;
 }

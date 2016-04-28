@@ -8,7 +8,8 @@ class wfUtils {
 	private static $lastDisplayErrors = false;
 	public static function patternToRegex($pattern, $mod = 'i', $sep = '/') {
 		$pattern = preg_quote(trim($pattern), $sep);
-		return $sep . str_replace("\\*", '.*', $pattern) . $sep . $mod;
+		$pattern = str_replace(' ', '\s', $pattern);
+		return $sep . '^' . str_replace('\*', '.*', $pattern) . '$' . $sep . $mod;
 	}
 	public static function makeTimeAgo($secs, $noSeconds = false) {
 		if($secs < 1){
@@ -274,8 +275,8 @@ class wfUtils {
 		}
 
 		// IPv4 mapped IPv6
-		if (preg_match('/^((?:0{1,4}(?::|)){0,5})(::)?ffff:((?:\d{1,3}(?:\.|$)){4})$/i', $ip, $matches)) {
-			$octets = explode('.', $matches[3]);
+		if (preg_match('/^(?:\:(?:\:0{1,4}){0,4}\:|(?:0{1,4}\:){5})ffff\:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i', $ip, $matches)) {
+			$octets = explode('.', $matches[1]);
 			return "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff" . chr($octets[0]) . chr($octets[1]) . chr($octets[2]) . chr($octets[3]);
 		}
 
@@ -512,6 +513,10 @@ class wfUtils {
 						$j = preg_replace('/:\d+$/', '', $j); //Strip off port
 					}
 					if (self::isValidIP($j)) {
+						if (self::isIPv6MappedIPv4($j)) {
+							$j = self::inet_ntop(self::inet_pton($j));
+						}
+
 						if (self::isPrivateAddress($j)) {
 							$privates[] = array($j, $var);
 						} else {
@@ -530,6 +535,10 @@ class wfUtils {
 							$j = preg_replace('/:\d+$/', '', $j); //Strip off port
 						}
 						if(self::isValidIP($j)){
+							if (self::isIPv6MappedIPv4($j)) {
+								$j = self::inet_ntop(self::inet_pton($j));
+							}
+
 							if(self::isPrivateAddress($j)){
 								$privates[] = array($j, $var);
 							} else {
@@ -547,6 +556,10 @@ class wfUtils {
 				$item = preg_replace('/:\d+$/', '', $item); //Strip off port
 			}
 			if(self::isValidIP($item)){
+				if (self::isIPv6MappedIPv4($item)) {
+					$item = self::inet_ntop(self::inet_pton($item));
+				}
+
 				if(self::isPrivateAddress($item)){
 					$privates[] = array($item, $var);
 				} else {
@@ -560,6 +573,15 @@ class wfUtils {
 			return false;
 		}
 	}
+
+	/**
+	 * @param string $ip
+	 * @return bool
+	 */
+	public static function isIPv6MappedIPv4($ip) {
+		return preg_match('/^(?:\:(?:\:0{1,4}){0,4}\:|(?:0{1,4}\:){5})ffff\:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/i', $ip) > 0;
+	}
+
 	public static function extractHostname($str){
 		if(preg_match('/https?:\/\/([a-zA-Z0-9\.\-]+)(?:\/|$)/i', $str, $matches)){
 			return strtolower($matches[1]);

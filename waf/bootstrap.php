@@ -224,7 +224,15 @@ try {
 
 	if (!file_exists(wfWAF::getInstance()->getCompiledRulesFile()) || !filesize(wfWAF::getInstance()->getCompiledRulesFile())) {
 		try {
-			wfWAF::getInstance()->updateRuleSet(file_get_contents(WFWAF_PATH . 'baseRules.rules'), false);
+			if (is_writable(wfWAF::getInstance()->getCompiledRulesFile()) &&
+				wfWAF::getInstance()->getStorageEngine()->getConfig('apiKey') !== null &&
+				wfWAF::getInstance()->getStorageEngine()->getConfig('createInitialRulesDelay') < time()
+			) {
+				$event = new wfWAFCronFetchRulesEvent(time() - 60);
+				$event->setWaf(wfWAF::getInstance());
+				$event->fire();
+				wfWAF::getInstance()->getStorageEngine()->setConfig('createInitialRulesDelay', time() + (5 * 60));
+			}
 		} catch (wfWAFBuildRulesException $e) {
 			// Log this somewhere
 			error_log($e->getMessage());

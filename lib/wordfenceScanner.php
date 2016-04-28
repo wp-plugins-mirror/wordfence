@@ -3,6 +3,24 @@ require_once('wordfenceConstants.php');
 require_once('wordfenceClass.php');
 require_once('wordfenceURLHoover.php');
 class wordfenceScanner {
+	/*
+	 * Mask to return all patterns in the exclusion list.
+	 * @var int
+	 */
+	const EXCLUSION_PATTERNS_ALL = PHP_INT_MAX;
+	/*
+	 * Mask for patterns that the user has added.
+	 */
+	const EXCLUSION_PATTERNS_USER = 0x1;
+	/*
+	 * Mask for patterns that should be excluded from the known files scan.
+	 */
+	const EXCLUSION_PATTERNS_KNOWN_FILES = 0x2;
+	/*
+	 * Mask for patterns that should be excluded from the malware scan.
+	 */
+	const EXCLUSION_PATTERNS_MALWARE = 0x4;
+
 	//serialized:
 	protected $path = '';
 	protected $results = array(); 
@@ -14,7 +32,10 @@ class wordfenceScanner {
 	protected $lastStatusTime = false;
 	protected $patterns = "";
 	protected $api = false;
-	protected static $excludePattern = NULL;
+	protected static $excludePatterns = array();
+	protected static $builtinExclusions = array(
+											array('pattern' => 'wp-includes/version.php', 'include' => self::EXCLUSION_PATTERNS_KNOWN_FILES), //Excluded from the known files scan because non-en_US installations will have extra content that fails the check, still in malware scan
+											);
 	/** @var wfScanEngine */
 	protected $scanEngine;
 
@@ -87,29 +108,46 @@ class wordfenceScanner {
 	}
 
 	/**
-	 *	Return regular expression to exclude files or false if 
-	 *	there is no pattern
+	 * Return regular expression to exclude files or false if
+	 * there is no pattern
 	 *
-	 *	@return string|boolean
+	 * @param $whichPatterns int Bitmask indicating which patterns to include.
+	 * @return string|boolean
 	 */
-	public static function getExcludeFilePattern() {
-		if (self::$excludePattern !== NULL) {
-			return self::$excludePattern;
+	public static function getExcludeFilePattern($whichPatterns = self::EXCLUSION_PATTERNS_USER) {
+		if (isset(self::$excludePatterns[$whichPatterns])) {
+			return self::$excludePatterns[$whichPatterns];
 		}
-		if(wfConfig::get('scan_exclude', false)){
-			$exParts = explode("\n", wfUtils::cleanupOneEntryPerLine(wfConfig::get('scan_exclude')));
+		
+		$exParts = array();
+		if (($whichPatterns & self::EXCLUSION_PATTERNS_USER) > 0)
+		{
+			if (wfConfig::get('scan_exclude', false))
+			{
+				$exParts = explode("\n", wfUtils::cleanupOneEntryPerLine(wfConfig::get('scan_exclude')));
+			}
+		}
+
+		foreach (self::$builtinExclusions as $pattern) {
+			if (($pattern['include'] & $whichPatterns) > 0) {
+				$exParts[] = $pattern['pattern'];
+			}
+		}
+
+		if (!empty($exParts)) {
 			foreach($exParts as &$exPart){
 				$exPart = preg_quote(trim($exPart), '/');
 				$exPart = preg_replace('/\\\\\*/', '.*', $exPart);
 			}
 
-			self::$excludePattern = '/^(?:' . implode('|', array_filter($exParts)) . ')$/i';
-			self::$excludePattern = '/(?:' . implode('|', array_filter($exParts)) . ')$/i';
-		} else {
-			self::$excludePattern = false;
+			//self::$excludePattern = '/^(?:' . implode('|', array_filter($exParts)) . ')$/i';
+			self::$excludePatterns[$whichPatterns] = '/(?:' . implode('|', array_filter($exParts)) . ')$/i';
+		}
+		else {
+			self::$excludePatterns[$whichPatterns]= false;
 		}
 
-		return self::$excludePattern;
+		return self::$excludePatterns[$whichPatterns];
 	}
 
 	/**
@@ -127,7 +165,7 @@ class wordfenceScanner {
 		}
 		$db = new wfDB();
 		$lastCount = 'whatever';
-		$excludePattern = self::getExcludeFilePattern();
+		$excludePattern = self::getExcludeFilePattern(self::EXCLUSION_PATTERNS_USER & self::EXCLUSION_PATTERNS_MALWARE);
 		while(true){
 			$thisCount = $db->querySingle("select count(*) from " . $db->prefix() . "wfFileMods where oldMD5 != newMD5 and knownFile=0");
 			if($thisCount == $lastCount){

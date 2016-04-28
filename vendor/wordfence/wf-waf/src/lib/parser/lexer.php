@@ -303,6 +303,18 @@ class wfWAFBaseParser {
 
 	/**
 	 * @param wfWAFLexerToken $token
+	 * @param mixed $type
+	 * @return bool
+	 */
+	protected function isTokenOfType($token, $type) {
+		if (is_array($type)) {
+			return $token && in_array($token->getType(), $type);
+		}
+		return $token && $token->getType() === $type;
+	}
+
+	/**
+	 * @param wfWAFLexerToken $token
 	 * @param int $type
 	 * @param string $message
 	 * @throws wfWAFParserSyntaxError

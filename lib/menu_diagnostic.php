@@ -89,6 +89,96 @@ $w = new wfConfig();
 
 			<tbody class="thead">
 			<tr>
+				<th colspan="<?php echo $cols ?>">WordPress</th>
+			</tr>
+			</tbody>
+			<tbody>
+			<?php
+			require(ABSPATH . 'wp-includes/version.php');
+			$postRevisions = (defined('WP_POST_REVISIONS') ? WP_POST_REVISIONS : true);
+			$wordPressValues = array(
+				'WordPress Version' => array('description' => '', 'value' => $wp_version),
+				'WP_DEBUG' => array('description' => 'WordPress debug mode', 'value' => (defined('WP_DEBUG') && WP_DEBUG ? 'On' : 'Off')),
+				'WP_DEBUG_LOG' => array('description' => 'WordPress error logging override', 'value' => defined('WP_DEBUG_LOG') ? (WP_DEBUG_LOG ? 'Enabled' : 'Disabled') : '(not set)'),
+				'WP_DEBUG_DISPLAY' => array('description' => 'WordPress error display override', 'value' => defined('WP_DEBUG_DISPLAY') ? (WP_DEBUG_LOG ? 'Enabled' : 'Disabled') : '(not set)'),
+				'SCRIPT_DEBUG' => array('description' => 'WordPress script debug mode', 'value' => (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? 'On' : 'Off')),
+				'SAVEQUERIES' => array('description' => 'WordPress query debug mode', 'value' => (defined('SAVEQUERIES') && SAVEQUERIES ? 'On' : 'Off')),
+				'DB_CHARSET' => 'Database character set',
+				'DB_COLLATE' => 'Database collation',
+				'WP_SITEURL' => 'Explicitly set site URL',
+				'WP_HOME' => 'Explicitly set blog URL',
+				'WP_CONTENT_DIR' => array('description' => '"wp-content" folder is in default location', 'value' => (realpath(WP_CONTENT_DIR) === realpath(ABSPATH . 'wp-content') ? 'Yes' : 'No')),
+				'WP_CONTENT_URL' => 'URL to the "wp-content" folder',
+				'WP_PLUGIN_DIR' => array('description' => '"plugins" folder is in default location', 'value' => (realpath(WP_PLUGIN_DIR) === realpath(ABSPATH . 'wp-content/plugins') ? 'Yes' : 'No')),
+				'WP_LANG_DIR' => array('description' => '"languages" folder is in default location', 'value' => (realpath(WP_LANG_DIR) === realpath(ABSPATH . 'wp-content/languages') ? 'Yes' : 'No')),
+				'WPLANG' => 'Language choice',
+				'UPLOADS' => 'Custom upload folder location',
+				'TEMPLATEPATH' => array('description' => 'Theme template folder override', 'value' => (defined('TEMPLATEPATH') && realpath(get_template_directory()) !== realpath(TEMPLATEPATH) ? 'Overridden' : '(not set)')),
+				'STYLESHEETPATH' => array('description' => 'Theme stylesheet folder override', 'value' => (defined('STYLESHEETPATH') && realpath(get_stylesheet_directory()) !== realpath(STYLESHEETPATH) ? 'Overridden' : '(not set)')),
+				'AUTOSAVE_INTERVAL' => 'Post editing automatic saving interval',
+				'WP_POST_REVISIONS' => array('description' => 'Post revisions saved by WordPress', 'value' => is_numeric($postRevisions) ? $postRevisions : ($postRevisions ? 'Unlimited' : 'None')),
+				'COOKIE_DOMAIN' => 'WordPress cookie domain',
+				'COOKIEPATH' => 'WordPress cookie path',
+				'SITECOOKIEPATH' => 'WordPress site cookie path',
+				'ADMIN_COOKIE_PATH' => 'WordPress admin cookie path',
+				'PLUGINS_COOKIE_PATH' => 'WordPress plugins cookie path',
+				'WP_ALLOW_MULTISITE' => array('description' => 'Multisite/network ability enabled', 'value' => (defined('WP_ALLOW_MULTISITE') && WP_ALLOW_MULTISITE ? 'Yes' : 'No')),
+				'NOBLOGREDIRECT' => 'URL redirected to if the visitor tries to access a nonexistent blog',
+				'CONCATENATE_SCRIPTS' => array('description' => 'Concatenate JavaScript files', 'value' => (defined('CONCATENATE_SCRIPTS') && CONCATENATE_SCRIPTS ? 'Yes' : 'No')),
+				'WP_MEMORY_LIMIT' => 'WordPress memory limit',
+				'WP_MAX_MEMORY_LIMIT' => 'Administrative memory limit',
+				'WP_CACHE' => array('description' => 'Built-in caching', 'value' => (defined('WP_CACHE') && WP_CACHE ? 'Enabled' : 'Disabled')),
+				'CUSTOM_USER_TABLE' => array('description' => 'Custom "users" table', 'value' => (defined('CUSTOM_USER_TABLE') ? 'Set' : '(not set)')),
+				'CUSTOM_USER_META_TABLE' => array('description' => 'Custom "usermeta" table', 'value' => (defined('CUSTOM_USER_META_TABLE') ? 'Set' : '(not set)')),
+				'FS_CHMOD_DIR' => array('description' => 'Overridden permissions for a new folder', 'value' => defined('FS_CHMOD_DIR') ? decoct(FS_CHMOD_DIR) : '(not set)'),
+				'FS_CHMOD_FILE' => array('description' => 'Overridden permissions for a new file', 'value' => defined('FS_CHMOD_FILE') ? decoct(FS_CHMOD_FILE) : '(not set)'),
+				'ALTERNATE_WP_CRON' => array('description' => 'Alternate WP cron', 'value' => (defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON ? 'Enabled' : 'Disabled')),
+				'DISABLE_WP_CRON' => array('description' => 'WP cron status', 'value' => (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON ? 'Disabled' : 'Enabled')),
+				'WP_CRON_LOCK_TIMEOUT' => 'Cron running frequency lock',
+				'EMPTY_TRASH_DAYS' => array('description' => 'Interval the trash is automatically emptied at in days', 'value' => (EMPTY_TRASH_DAYS > 0 ? EMPTY_TRASH_DAYS : 'Never')),
+				'WP_ALLOW_REPAIR' => array('description' => 'Automatic database repair', 'value' => (defined('WP_ALLOW_REPAIR') && WP_ALLOW_REPAIR ? 'Enabled' : 'Disabled')),
+				'DO_NOT_UPGRADE_GLOBAL_TABLES' => array('description' => 'Do not upgrade global tables', 'value' => (defined('DO_NOT_UPGRADE_GLOBAL_TABLES') && DO_NOT_UPGRADE_GLOBAL_TABLES ? 'Yes' : 'No')),
+				'DISALLOW_FILE_EDIT' => array('description' => 'Disallow plugin/theme editing', 'value' => (defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT ? 'Yes' : 'No')),
+				'DISALLOW_FILE_MOD' => array('description' => 'Disallow plugin/theme update and installation', 'value' => (defined('DISALLOW_FILE_MOD') && DISALLOW_FILE_MOD ? 'Yes' : 'No')),
+				'IMAGE_EDIT_OVERWRITE' => array('description' => 'Overwrite image edits when restoring the original', 'value' => (defined('IMAGE_EDIT_OVERWRITE') && IMAGE_EDIT_OVERWRITE ? 'Yes' : 'No')),
+				'FORCE_SSL_ADMIN' => array('description' => 'Force SSL for administrative logins', 'value' => (defined('FORCE_SSL_ADMIN') && FORCE_SSL_ADMIN ? 'Yes' : 'No')),
+				'WP_HTTP_BLOCK_EXTERNAL' => array('description' => 'Block external URL requests', 'value' => (defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL ? 'Yes' : 'No')),
+				'WP_ACCESSIBLE_HOSTS' => 'Whitelisted hosts',
+				'WP_AUTO_UPDATE_CORE' => array('description' => 'Automatic WP Core updates', 'value' => defined('WP_AUTO_UPDATE_CORE') ? (is_bool(WP_AUTO_UPDATE_CORE) ? (WP_AUTO_UPDATE_CORE ? 'Everything' : 'None') : WP_AUTO_UPDATE_CORE) : 'Default'),
+			);
+
+			foreach ($wordPressValues as $settingName => $settingData):
+				$escapedName = esc_html($settingName);
+				$escapedDescription = '';
+				$escapedValue = '(not set)';
+				if (is_array($settingData)) {
+					$escapedDescription = esc_html($settingData['description']);
+					if (isset($settingData['value'])) {
+						$escapedValue = esc_html($settingData['value']);
+					}
+				}
+				else {
+					$escapedDescription = esc_html($settingData);
+					if (defined($settingName)) {
+						$escapedValue = esc_html(constant($settingName));
+					}
+				}
+			?>
+				<tr>
+					<td><strong><?php echo $escapedName ?></strong></td>
+					<td><?php echo $escapedDescription ?></td>
+					<td><?php echo $escapedValue ?></td>
+				</tr>
+			<?php endforeach ?>
+			</tbody>
+			<tbody class="empty-row">
+			<tr>
+				<td colspan="<?php echo $cols ?>"></td>
+			</tr>
+			</tbody>
+
+			<tbody class="thead">
+			<tr>
 				<th colspan="<?php echo $cols ?>">WordPress Plugins</th>
 			</tr>
 			</tbody>

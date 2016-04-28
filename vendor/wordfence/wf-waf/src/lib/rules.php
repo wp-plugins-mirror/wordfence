@@ -25,6 +25,7 @@ class wfWAFRule implements wfWAFRuleInterface {
 	private $category;
 	private $score;
 	private $description;
+	private $whitelist;
 	private $action;
 	private $comparisonGroup;
 	/**
@@ -39,12 +40,32 @@ class wfWAFRule implements wfWAFRuleInterface {
 	 * @param string $category
 	 * @param int $score
 	 * @param string $description
+	 * @param int $whitelist
 	 * @param string $action
 	 * @param wfWAFRuleComparisonGroup $comparisonGroup
 	 * @return wfWAFRule
 	 */
-	public static function create($waf, $ruleID, $type, $category, $score, $description, $action, $comparisonGroup) {
-		return new self($waf, $ruleID, $type, $category, $score, $description, $action, $comparisonGroup);
+	public static function create() {
+		$waf = func_get_arg(0);
+		$ruleID = func_get_arg(1);
+		$type = func_get_arg(2);
+		$category = func_get_arg(3);
+		$score = func_get_arg(4);
+		$description = func_get_arg(5);
+		$whitelist = 1;
+		$action = '';
+		$comparisonGroup = null;
+		//Compatibility with old compiled rules
+		if (func_num_args() == 8) { //Pre-whitelist flag
+			$action = func_get_arg(6);
+			$comparisonGroup = func_get_arg(7);
+		}
+		else if (func_num_args() == 9) { //Whitelist flag
+			$whitelist = func_get_arg(6);
+			$action = func_get_arg(7);
+			$comparisonGroup = func_get_arg(8);
+		}
+		return new self($waf, $ruleID, $type, $category, $score, $description, $whitelist, $action, $comparisonGroup);
 	}
 
 	/**
@@ -62,16 +83,18 @@ class wfWAFRule implements wfWAFRuleInterface {
 	 * @param string $category
 	 * @param int $score
 	 * @param string $description
+	 * @param int $whitelist
 	 * @param string $action
 	 * @param wfWAFRuleComparisonGroup $comparisonGroup
 	 */
-	public function __construct($waf, $ruleID, $type, $category, $score, $description, $action, $comparisonGroup) {
+	public function __construct($waf, $ruleID, $type, $category, $score, $description, $whitelist, $action, $comparisonGroup) {
 		$this->setWAF($waf);
 		$this->setRuleID($ruleID);
 		$this->setType($type);
 		$this->setCategory($category);
 		$this->setScore($score);
 		$this->setDescription($description);
+		$this->setWhitelist($whitelist);
 		$this->setAction($action);
 		$this->setComparisonGroup($comparisonGroup);
 	}
@@ -80,12 +103,13 @@ class wfWAFRule implements wfWAFRuleInterface {
 	 * @return string
 	 */
 	public function render() {
-		return sprintf('%s::create($this, %d, %s, %s, %s, %s, %s, %s)', get_class($this),
+		return sprintf('%s::create($this, %d, %s, %s, %s, %s, %d, %s, %s)', get_class($this),
 			$this->getRuleID(),
 			var_export($this->getType(), true),
 			var_export($this->getCategory(), true),
 			var_export($this->getScore(), true),
 			var_export($this->getDescription(), true),
+			var_export($this->getWhitelist(), true),
 			var_export($this->getAction(), true),
 			$this->getComparisonGroup()->render()
 		);
@@ -106,7 +130,8 @@ RULE
 				$this->getRuleID() ? 'id=' . (int) $this->getRuleID() : '',
 				$this->getCategory() ? 'category=' . self::exportString($this->getCategory()) : '',
 				$this->getScore() > 0 ? 'score=' . (int) $this->getScore() : '',
-				$this->getCategory() ? 'description=' . self::exportString($this->getDescription()) : '',
+				$this->getDescription() ? 'description=' . self::exportString($this->getDescription()) : '',
+				$this->getWhitelist() == 0 ? 'whitelist=0' : '',
 			)))
 		);
 	}
@@ -140,6 +165,7 @@ RULE
 			'category'    => $this->getCategory(),
 			'score'       => $this->getScore(),
 			'description' => $this->getDescription(),
+			'whitelist'   => $this->getWhitelist(),
 			'action'      => $this->getAction(),
 		);
 	}
@@ -212,6 +238,20 @@ RULE
 	 */
 	public function setDescription($description) {
 		$this->description = $description;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getWhitelist() {
+		return $this->whitelist;
+	}
+
+	/**
+	 * @param string $whitelist
+	 */
+	public function setWhitelist($whitelist) {
+		$this->whitelist = $whitelist;
 	}
 
 	/**
@@ -415,6 +455,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		'lengthlessthan',
 		'currentuseris',
 		'currentuserisnot',
+		'md5equals',
 	);
 
 	/**
@@ -651,6 +692,10 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 
 	public function currentUserIsNot($subject) {
 		return !$this->currentUserIs($subject);
+	}
+
+	public function md5Equals($subject) {
+		return md5((string) $subject) === $this->getExpected();
 	}
 
 	/**

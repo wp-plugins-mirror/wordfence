@@ -885,11 +885,10 @@ $w = new wfConfig();
 					           value="<?php $w->f( 'bannedURLs' ); ?>" size="40"/></td>
 				</tr>
 				<tr>
-					<th colspan="2" style="color: #999;">Separate multiple URL's with commas. If you see an attacker
-						repeatedly probing your site for a known vulnerability you can use this to immediately block
-						them.<br/>
-						All URL's must start with a '/' without quotes and must be relative. e.g. /badURLone/,
-						/bannedPage.html, /dont-access/this/URL/
+					<th colspan="2" style="color: #999;">Separate multiple URL's with commas. Asterisks are wildcards,
+						but use with care. If you see an attacker repeatedly probing your site for a known vulnerability
+						you can use this to immediately block them. All URL's must start with a '/' without quotes and
+						must be relative. e.g. /badURLone/, /bannedPage.html, /dont-access/this/URL/, /starts/with-*
 						<br/><br/></th>
 				</tr>
 

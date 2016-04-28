@@ -50,6 +50,7 @@ class wfWAFRuleParser extends wfWAFBaseParser {
 					$action->getCategory(),
 					$action->getScore(),
 					$action->getDescription(),
+					$action->getWhitelist(),
 					$action->getAction(),
 					$comparisonGroup
 				);
@@ -312,20 +313,36 @@ class wfWAFRuleParser extends wfWAFBaseParser {
 		$subject = array(
 			$globalToken->getValue() . '.' . $globalToken2->getValue(),
 		);
-		while (true) {
-			$dotToken = $this->expectNextToken();
-			if ($dotToken->getType() !== wfWAFRuleLexer::T_DOT) {
-				$this->index--;
-				break;
-			}
-			$paramToken = $this->expectNextToken();
-			$this->expectTokenTypeEquals($paramToken, wfWAFRuleLexer::T_IDENTIFIER);
-			$subject[] = $paramToken->getValue();
+		$savePoint = $this->index;
+		while (($property = $this->parsePropertyAccessor()) !== false) {
+			$subject[] = $property;
+			$savePoint = $this->index;
 		}
+		$this->index = $savePoint;
 		if (count($subject) === 1) {
 			list($subject) = $subject;
 		}
 		return $subject;
+	}
+
+	/**
+	 * @return bool|mixed|string
+	 * @throws wfWAFParserSyntaxError
+	 */
+	private function parsePropertyAccessor() {
+		$savePoint = $this->index;
+		$nextToken = $this->nextToken();
+		if ($this->isTokenOfType($nextToken, wfWAFRuleLexer::T_DOT)) {
+			$property = $this->expectNextToken();
+			$this->expectTokenTypeEquals($property, wfWAFRuleLexer::T_IDENTIFIER);
+			return $property->getValue();
+		} else if ($this->isTokenOfType($nextToken, wfWAFRuleLexer::T_OPEN_BRACKET)) {
+			$property = $this->expectLiteral();
+			$this->expectTokenTypeEquals($this->expectNextToken(), wfWAFRuleLexer::T_CLOSE_BRACKET);
+			return $property;
+		}
+		$this->index = $savePoint;
+		return false;
 	}
 
 	/**
@@ -413,6 +430,17 @@ class wfWAFRuleParser extends wfWAFBaseParser {
 
 	/**
 	 * @param wfWAFLexerToken $token
+	 * @param string|array $value
+	 * @return bool
+	 */
+	private function isIdentifierWithValue($token, $value) {
+		return $token && $token->getType() === wfWAFRuleLexer::T_IDENTIFIER &&
+		(is_array($value) ? in_array($token->getLowerCaseValue(), array_map('strtolower', $value)) :
+			$token->getLowerCaseValue() === strtolower($value));
+	}
+
+	/**
+	 * @param wfWAFLexerToken $token
 	 * @return bool
 	 */
 	protected function isCommentToken($token) {
@@ -441,6 +469,7 @@ class wfWAFRuleParserAction {
 	private $category;
 	private $score;
 	private $description;
+	private $whitelist = 1;
 	private $action;
 
 	/**
@@ -532,6 +561,20 @@ class wfWAFRuleParserAction {
 	/**
 	 * @return mixed
 	 */
+	public function getWhitelist() {
+		return $this->whitelist;
+	}
+
+	/**
+	 * @param mixed $whitelist
+	 */
+	public function setWhitelist($whitelist) {
+		$this->whitelist = $whitelist;
+	}
+
+	/**
+	 * @return mixed
+	 */
 	public function getAction() {
 		return $this->action;
 	}
@@ -588,7 +631,9 @@ class wfWAFRuleParserURLParam {
 	 * @return string
 	 */
 	public function renderRule($action) {
-		return sprintf('%s(url=%s, param=%s%s)', $action, wfWAFRule::exportString($this->getUrl()), $this->renderParam($this->getParam()),
+		return sprintf('%s(url=%s, param=%s%s)', $action,
+			wfWAFRule::exportString($this->getUrl()),
+			$this->renderParam($this->getParam()),
 			$this->getRules() ? ', rules=[' . join(', ', array_map('intval', $this->getRules())) . ']' : '');
 	}
 
@@ -597,7 +642,21 @@ class wfWAFRuleParserURLParam {
 	 * @return mixed
 	 */
 	private function renderParam($param) {
-		return str_replace(array('[', ']'), array('.', ''), $param);
+		if (preg_match('/([a-zA-Z_][\\w_]*?\\.[a-zA-Z_][\\w_]*)(.*)/', $param, $matches)) {
+			list(, $global, $params) = $matches;
+			if (strlen($params) > 0) {
+				if (preg_match_all('/\\[([^\\]]*?)\\]/', $params, $matches)) {
+					$rendered = $global;
+					foreach ($matches[1] as $prop) {
+						$single = "'" . str_replace(array("'", '\\'), array("\\'", "\\\\"), $prop) . "'";
+						$double = '"' . str_replace(array('"', '\\'), array('\\"', "\\\\"), $prop) . '"';
+						$rendered .= sprintf('[%s]', strlen($single) <= strlen($double) ? $single : $double);
+					}
+					return $rendered;
+				}
+			}
+		}
+		return $param;
 	}
 
 	/**

@@ -763,18 +763,20 @@ HTML
 					 * @var wfWAFRuleComparisonFailure $failedComparison
 					 */
 					$rule = $failedRule['rule'];
-					$failedComparison = $failedRule['failedComparison'];
+					if ($rule->getWhitelist()) {
+						$failedComparison = $failedRule['failedComparison'];
 
-					$data = array(
-						'timestamp'   => time(),
-						'description' => 'Whitelisted while in Learning Mode.',
-						'ip'          => $this->getRequest()->getIP(),
-					);
-					if (function_exists('get_current_user_id')) {
-						$data['userID'] = get_current_user_id();
+						$data = array(
+							'timestamp' => time(),
+							'description' => 'Whitelisted while in Learning Mode.',
+							'ip' => $this->getRequest()->getIP(),
+						);
+						if (function_exists('get_current_user_id')) {
+							$data['userID'] = get_current_user_id();
+						}
+						$this->whitelistRuleForParam($this->getRequest()->getPath(), $failedComparison->getParamKey(),
+							$rule->getRuleID(), $data);
 					}
-					$this->whitelistRuleForParam($this->getRequest()->getPath(), $failedComparison->getParamKey(),
-						$rule->getRuleID(), $data);
 				}
 			}
 		}

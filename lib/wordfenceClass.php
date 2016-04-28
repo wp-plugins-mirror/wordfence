@@ -1100,7 +1100,7 @@ SQL
 			if(wfConfig::get('bannedURLs', false)){
 				$URLs = explode(',', wfConfig::get('bannedURLs'));
 				foreach($URLs as $URL){
-					if($_SERVER['REQUEST_URI'] == trim($URL)){
+					if(preg_match(wfUtils::patternToRegex($URL, ''), $_SERVER['REQUEST_URI'])){
 						$wfLog->blockIP($IP, "Accessed a banned URL.");
 						$wfLog->do503(3600, "Accessed a banned URL.");
 						//exits
@@ -1770,6 +1770,15 @@ SQL
 			wfConfig::set('autoUpdate', '1');
 		} else {
 			wfConfig::set('autoUpdate', '0');
+		}
+		return array('ok' => 1);
+	}
+	public static function ajax_adminEmailChoice_callback() {
+		$choice = $_POST['choice'];
+		wfConfig::set('adminEmailChoice', '1');
+		if ($choice == 'mine') {
+			$email = wp_get_current_user()->user_email;
+			wfConfig::set('alertEmails', $email);
 		}
 		return array('ok' => 1);
 	}
@@ -3469,7 +3478,7 @@ HTML;
 			'activityLogUpdate', 'ticker', 'loadIssues', 'updateIssueStatus', 'deleteIssue', 'updateAllIssues',
 			'reverseLookup', 'unlockOutIP', 'loadBlockRanges', 'unblockRange', 'blockIPUARange', 'whois', 'unblockIP',
 			'blockIP', 'permBlockIP', 'loadStaticPanel', 'saveConfig', 'downloadHtaccess', 'checkFalconHtaccess',
-			'updateConfig', 'saveCacheConfig', 'removeFromCache', 'autoUpdateChoice', 'saveCacheOptions', 'clearPageCache',
+			'updateConfig', 'saveCacheConfig', 'removeFromCache', 'autoUpdateChoice', 'adminEmailChoice', 'saveCacheOptions', 'clearPageCache',
 			'getCacheStats', 'clearAllBlocked', 'killScan', 'saveCountryBlocking', 'saveScanSchedule', 'tourClosed',
 			'welcomeClosed', 'startTourAgain', 'downgradeLicense', 'addTwoFactor', 'twoFacActivate', 'twoFacDel',
 			'loadTwoFactor', 'loadAvgSitePerf', 'sendTestEmail', 'addCacheExclusion', 'removeCacheExclusion',
@@ -3573,7 +3582,11 @@ HTML;
 		echo '<div id="wordfenceConfigWarning" class="fade error"><p><strong>Wordfence could not get an API key from the Wordfence scanning servers when it activated.</strong> You can try to fix this by going to the Wordfence "options" page and hitting "Save Changes". This will cause Wordfence to retry fetching an API key for you. If you keep seeing this error it usually means your WordPress server can\'t connect to our scanning servers. You can try asking your WordPress host to allow your WordPress server to connect to noc1.wordfence.com.</p></div>';
 	}
 	public static function adminEmailWarning(){
-		echo '<div id="wordfenceConfigWarning" class="fade error"><p><strong>You have not set an administrator email address to receive alerts for Wordfence.</strong> Please <a href="' . self::getMyOptionsURL() . '">click here to go to the Wordfence Options Page</a> and set an email address where you will receive security alerts from this site.</p></div>';
+		$url = network_admin_url('admin.php?page=WordfenceSecOpt&wafAction=useMineForAdminEmailAlerts');
+		$dismissURL = network_admin_url('admin.php?page=WordfenceSecOpt&wafAction=dismissAdminEmailNotice&nonce=' .
+			rawurlencode(wp_create_nonce('wfDismissAdminEmailWarning')));
+		echo '<div id="wordfenceAdminEmailWarning" class="fade error"><p><strong>You have not set an administrator email address to receive alerts for Wordfence.</strong> Please <a href="' . self::getMyOptionsURL() . '">click here to go to the Wordfence Options Page</a> and set an email address where you will receive security alerts from this site.</p><p><a class="button button-small" href="#" onclick="wordfenceExt.adminEmailChoice(\'mine\'); return false;"">Use My Email Address</a>
+		<a class="button button-small wf-dismiss-link" href="#" onclick="wordfenceExt.adminEmailChoice(\'no\'); return false;">Dismiss</a></p></div>';
 	}
 	public static function autoUpdateNotice(){
 		echo '<div id="wordfenceAutoUpdateChoice" class="fade error"><p><strong>Do you want Wordfence to stay up-to-date automatically?</strong>&nbsp;&nbsp;&nbsp;<a href="#" onclick="wordfenceExt.autoUpdateChoice(\'yes\'); return false;">Yes, enable auto-update.</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#" onclick="wordfenceExt.autoUpdateChoice(\'no\'); return false;">No thanks.</a></p></div>';
@@ -3608,7 +3621,7 @@ HTML;
 			}
 		}
 		if(! $warningAdded){
-			if(wfConfig::get('tourClosed') == '1' && (! wfConfig::get('alertEmails')) ){
+			if(wfConfig::get('tourClosed') == '1' && (!wfConfig::get('alertEmails') && (!wfConfig::get('adminEmailChoice')))){
 				$warningAdded = true;
 				if(wfUtils::isAdminPageMU()){
 					add_action('network_admin_notices', 'wordfence::adminEmailWarning');
@@ -3864,7 +3877,7 @@ document.location.href=$adminURL;
 							($serverInfo->isCGI() || $serverInfo->isFastCGI())),
 						array("litespeed", 'LiteSpeed', $serverInfo->isLiteSpeed()),
 						array("nginx", 'NGINX', $serverInfo->isNGINX()),
-						// array("iis", 'Windows (IIS)', $serverInfo->isIIS()),
+						array("iis", 'Windows (IIS)', $serverInfo->isIIS()),
 					);
 					$wafActionContent = '<p>To be as secure as possible, the Wordfence Web Application Firewall is designed
 to run via a PHP ini setting called <code>auto_prepend_file</code> in order to ensure it runs before any potentially
@@ -4467,7 +4480,10 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 				(isset($_POST['author']) && is_numeric(preg_replace('/[^0-9]/', '', $_POST['author'])))
 			)
 		) {
-			$query_vars['author'] = -1;
+			status_header(404);
+			nocache_headers();
+			include(get_404_template());
+			exit;
 		}
 		return $query_vars;
 	}
@@ -5110,7 +5126,7 @@ LIMIT %d", $lastSendTime, $limit));
 		if (WFWAF_AUTO_PREPEND && !WFWAF_SUBDIRECTORY_INSTALL) {
 			echo '<div class="updated is-dismissible"><p>The installation was successful! Your site is protected to the fullest extent!</p></div>';
 		} else {
-			echo '<div class="notice notice-error"><p>The changes have not yet taken effect. If you are using LiteSpeed
+			echo '<div class="notice notice-error"><p>The changes have not yet taken effect. If you are using LiteSpeed or IIS
 as your web server or CGI/FastCGI interface, you may need to wait a few minutes for the changes to take effect since the
 configuration files are sometimes cached. You also may need to select a different server configuration in order to
 complete this step, but wait for a few minutes before trying. You can try refreshing this page. </p></div>';
@@ -5206,6 +5222,7 @@ class wfWAFAutoPrependHelper {
 				case 'apache-suphp':
 				case 'nginx':
 				case 'litespeed':
+				case 'iis':
 					if (file_exists($userIniPath)) {
 						$backups[] = $userIniPath;
 					}
@@ -5357,6 +5374,7 @@ $userIniHtaccessDirectives
 				case 'nginx':
 				case 'apache-suphp':
 				case 'litespeed':
+				case 'iis':
 					$autoPrependIni = sprintf("; Wordfence WAF
 auto_prepend_file = '%s'
 ; END Wordfence WAF
