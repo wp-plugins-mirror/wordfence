@@ -348,15 +348,15 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 			</td>
 			<td>
 				<input name="replaceWhitelistedPath" type="hidden" value="${whitelistedURLParam.path}">
-				<span class="whitelist-display">${WFAD.base64_decode(whitelistedURLParam.path)}</span>
+				<span class="whitelist-display">${WFAD.htmlEscape(WFAD.base64_decode(whitelistedURLParam.path))}</span>
 				<input name="whitelistedPath" class="whitelist-edit whitelist-path" type="text"
-				       value="${WFAD.base64_decode(whitelistedURLParam.path)}">
+				       value="${WFAD.htmlEscape(WFAD.base64_decode(whitelistedURLParam.path))}">
 			</td>
 			<td>
 				<input name="replaceWhitelistedParam" type="hidden" value="${whitelistedURLParam.paramKey}">
-				<span class="whitelist-display">${WFAD.base64_decode(whitelistedURLParam.paramKey)}</span>
+				<span class="whitelist-display">${WFAD.htmlEscape(WFAD.base64_decode(whitelistedURLParam.paramKey))}</span>
 				<input name="whitelistedParam" class="whitelist-edit whitelist-param-key"
-				       type="text" value="${WFAD.base64_decode(whitelistedURLParam.paramKey)}">
+				       type="text" value="${WFAD.htmlEscape(WFAD.base64_decode(whitelistedURLParam.paramKey))}">
 			</td>
 			<td>
 				{{if (whitelistedURLParam.data.timestamp)}}
@@ -598,10 +598,13 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 					if (this.checked) {
 						var tr = $(this).closest('tr');
 						if (tr.is(':visible')) {
-							var path = tr.find('input[name=whitelistedPath]').val();
-							var paramKey = tr.find('input[name=whitelistedParam]').val();
-							var enabled = tr.find('input[name=whitelistedEnabled]').attr('checked') ? 1 : 0;
-							data.push([encodeURIComponent(path), encodeURIComponent(paramKey), enabled]);
+							var index = tr.attr('data-index');
+							if (index in WFAD.wafData.whitelistedURLParams) {
+								var path = WFAD.wafData.whitelistedURLParams[index].path;
+								var paramKey = WFAD.wafData.whitelistedURLParams[index].paramKey;
+								var enabled = tr.find('input[name=whitelistedEnabled]').attr('checked') ? 1 : 0;
+								data.push([path, paramKey, enabled]);
+							}
 						}
 					}
 				});
@@ -633,16 +636,19 @@ $wafConfigURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=configu
 		$(document).on('click', '.whitelist-url-delete', function() {
 			if (confirm('Are you sure you\'d like to delete this URL?')) {
 				var tr = $(this).closest('tr');
+				var index = tr.attr('data-index');
 
-				var pathInput = tr.find('input.whitelist-path');
-				var paramInput = tr.find('input.whitelist-param-key');
-				WFAD.wafConfigSave('deleteWhitelist', {
-					deletedWhitelistedPath: pathInput.val(),
-					deletedWhitelistedParam: paramInput.val()
-				}, function() {
-					WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
-						'whitelist was saved successfully.');
-				}, false);
+				if (index in WFAD.wafData.whitelistedURLParams) {
+					var path = WFAD.wafData.whitelistedURLParams[index].path;
+					var param = WFAD.wafData.whitelistedURLParams[index].paramKey;
+					WFAD.wafConfigSave('deleteWhitelist', {
+						deletedWhitelistedPath: path,
+						deletedWhitelistedParam: param
+					}, function() {
+						WFAD.colorbox('400px', 'Firewall Configuration', 'The Wordfence Web Application Firewall ' +
+							'whitelist was saved successfully.');
+					}, false);
+				}
 			}
 		});
 		$(document).on('click', '.whitelist-url-save', function() {

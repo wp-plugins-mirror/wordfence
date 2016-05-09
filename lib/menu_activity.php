@@ -31,14 +31,11 @@
 		</table>
 	</div>
 	<div class="wordfenceWrap">
-
 		<?php if (!wfConfig::liveTrafficEnabled()): ?>
-			<div style="color: #F00;">
-				Live Traffic is disabled.
-				<?php if (wfConfig::get('cacheType') == 'falcon') { ?>This is done to improve performance because you have Wordfence Falcon Engine enabled.<?php } ?>
-			</div>
-		<?php else: ?>
-			<div id="wf-live-traffic" class="wfTabsContainer">
+			<div id="wordfenceLiveActivityDisabled"><p><strong>Live activity is disabled.</strong> <?php if (wfConfig::get('cacheType') == 'falcon') { ?>This is done to improve performance because you have Wordfence Falcon Engine enabled.<?php } ?> Login and firewall activity will still appear below.</p></div>
+		<?php endif ?>
+		
+		<div id="wf-live-traffic" class="wfTabsContainer">
 
 				<div id="wf-live-traffic-legend">
 					<ul>
@@ -393,7 +390,6 @@
 					No events to report yet.
 				</div>
 			</div>
-		<?php endif ?>
 	</div>
 </div>
 

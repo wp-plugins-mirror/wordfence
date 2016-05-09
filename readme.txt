@@ -2,8 +2,8 @@
 Contributors: mmaunder 
 Tags: wordpress, security, web application firewall, waf, performance, speed, caching, cache, caching plugin, wordpress cache, wordpress caching, wordpress security, security plugin, secure, anti-virus, malware, firewall, antivirus, virus, google safe browsing, phishing, scrapers, hacking, wordfence, securty, secrity, secure, two factor, cellphone sign-in, cellphone signin, cellphone, twofactor, security, secure, htaccess, login, log, users, login alerts, lock, chmod, maintenance, plugin, private, privacy, protection, permissions, 503, base64, injection, code, encode, script, attack, hack, hackers, block, blocked, prevent, prevention, RFI, XSS, CRLF, CSRF, SQL Injection, vulnerability, website security, WordPress security, security log, logging, HTTP log, error log, login security, personal security, infrastructure security, firewall security, front-end security, web server security, proxy security, reverse proxy security, secure website, secure login, two factor security, two factor authentication, maximum login security, heartbleed, heart bleed, heartbleed vulnerability, openssl vulnerability, nginx, litespeed, php5-fpm, woocommerce support, woocommerce caching, IPv6, IP version 6
 Requires at least: 3.9
-Tested up to: 4.5.1
-Stable tag: 6.1.5
+Tested up to: 4.5.2
+Stable tag: 6.1.6
 
 The Wordfence WordPress security plugin provides free enterprise-class WordPress security, protecting your website from hacks and malware.
 == Description ==
@@ -194,6 +194,16 @@ Designed for every skill level, [The WordPress Security Learning Center](https:/
 5. If you're technically minded, this is the under-the-hood view of Wordfence Security options where you can fine-tune your security settings.
 
 == Changelog ==
+
+= 6.1.6 =
+* Fix: Fixed bug with 2FA not properly handling email address login.
+* Fix: Show logins/logouts when Live Traffic is disabled.
+* Fix: Fixed bug with PCRE versions < 7.0 (repeated subpattern is too long).
+* Fix: Now able to delete whitelisted URL/params containing ampersands and non-UTF8 characters.
+* Improvement: Reduced 2FA activation code to expire after 30 days.
+* Improvement: Live Traffic now only shows verified Googlebot under Google Crawler filter for new visits.
+* Improvement: Adjusted permissions on Firewall log/config files to be 0640.
+* Fix: Fixed false positive from Maldet in the wfConfig table during the scan.
 
 = 6.1.5 =
 * Fix: WordPress language files no longer flagged as changed.

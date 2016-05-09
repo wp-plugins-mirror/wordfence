@@ -2707,15 +2707,15 @@ class wfWAFSQLiLexer implements wfWAFLexerInterface {
 				new wfWAFLexerTokenMatcher(self::BINARY_NUMBER_LITERAL, '/^(?:0b[01]+|[bB]\'[01]+\')/', true),
 				new wfWAFLexerTokenMatcher(self::HEX_NUMBER_LITERAL, '/^(?:0x[0-9a-fA-F]+|[xX]\'[0-9a-fA-F]+\')/', true),
 				new wfWAFLexerTokenMatcher(self::INTEGER_LITERAL, '/^[0-9]+/', true),
-				new wfWAFLexerTokenMatcher(self::VARIABLE, '/^(?:@(?:`([^`\\\\]{0,256}(?:\\\\.[^`\\\\]{0,256}){0,256})`|
-"(?:[^#"\\\\]{0,256}(?:\\\\.[^#"\\\\]{0,256}){0,256})"|
-\'(?:[^\'\\\\]{0,256}(?:\\\\.[^\'\\\\]{0,256}){0,256})\'|
+				new wfWAFLexerTokenMatcher(self::VARIABLE, '/^(?:@(?:`(?:[^`]*(?:``[^`]*)*)`|
+"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|
+\'([^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\'|
 [a-zA-Z_\\$\\.]+|
 @[a-zA-Z_\\$][a-zA-Z_\\$0-9]{0,256}){0,1})
 /Asx'),
-				new wfWAFLexerTokenMatcher(self::QUOTED_IDENTIFIER, '/^`(?:[^`\\\\]{0,256}(?:\\\\.[^`\\\\]{0,256}){0,256})`/As'),
-				new wfWAFLexerTokenMatcher(self::DOUBLE_STRING_LITERAL, '/^(?:[nN]|_[0-9a-zA-Z\\$_]{0,256})?"(?:[^#"\\\\]{0,256}(?:\\\\.[^#"\\\\]{0,256}){0,256})"/As'),
-				new wfWAFLexerTokenMatcher(self::SINGLE_STRING_LITERAL, '/^(?:[nN]|_[0-9a-zA-Z\\$_]{0,256})?\'(?:[^\'\\\\]{0,256}(?:\\\\.[^\'\\\\]{0,256}){0,256})\'/As'),
+				new wfWAFLexerTokenMatcher(self::QUOTED_IDENTIFIER, '/^`(?:[^`]*(?:``[^`]*)*)`/As'),
+				new wfWAFLexerTokenMatcher(self::DOUBLE_STRING_LITERAL, '/^(?:[nN]|_[0-9a-zA-Z\\$_]{0,256})?"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"/As'),
+				new wfWAFLexerTokenMatcher(self::SINGLE_STRING_LITERAL, '/^(?:[nN]|_[0-9a-zA-Z\\$_]{0,256})?\'([^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\'/As'),
 				// U+0080 .. U+FFFF
 				new wfWAFLexerTokenMatcher(self::UNQUOTED_IDENTIFIER, '/^[0-9a-zA-Z\\$_\\x{0080}-\\x{FFFF}]{1,256}/u'),
 				new wfWAFLexerTokenMatcher(self::MYSQL_PORTABLE_COMMENT_START, '/^\\/\\*\\![0-9]{0,5}/s'),

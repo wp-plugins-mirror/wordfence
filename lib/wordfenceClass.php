@@ -1163,7 +1163,10 @@ SQL
 						foreach($twoFactorUsers as &$t){
 							if($t[0] == $userDat->ID && $t[3] == 'activated'){
 								if($_POST['wordfence_authFactor'] == $t[2] && $t[4] > time()){
-									//Do nothing and allow user to sign in. Their passwd has already been modified to be the passwd without the code.
+									// Set this 2FA code to expire in 30 seconds (for other plugins hooking into the auth process)
+									$t[4] = time() + 30;
+									wfConfig::set_ser('twoFactorUsers', $twoFactorUsers);
+
 								} else if($_POST['wordfence_authFactor'] == $t[2]){
 									$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
 									try {
@@ -1350,6 +1353,9 @@ SQL
 		}
 		if(! $username){ return; }
 		$userDat = get_user_by('login', $username);
+		if (!$userDat) {
+			$userDat = get_user_by('email', $username);
+		}
 		$_POST['wordfence_userDat'] = $userDat;
 		if(preg_match(self::$passwordCodePattern, $passwd, $matches)){
 			$_POST['wordfence_authFactor'] = $matches[1];
@@ -1363,6 +1369,9 @@ SQL
 		}
 		if(! $username){ return; }
 		$userDat = get_user_by('login', $username);
+		if (!$userDat) {
+			$userDat = get_user_by('email', $username);
+		}
 		$_POST['wordfence_userDat'] = $userDat;
 		if(preg_match(self::$passwordCodePattern, $passwd, $matches)){
 			$_POST['wordfence_authFactor'] = $matches[1];
@@ -1485,8 +1494,11 @@ SQL
 			if($twoFactorUsers[$i][0] == $userID){
 				if($twoFactorUsers[$i][2] == $code){
 					$twoFactorUsers[$i][3] = 'activated';
+					// Set the expiration earlier to invalidate this code
+					$twoFactorUsers[$i][4] = 0;
 					$found = true;
 					$user = $twoFactorUsers[$i];
+
 					break;
 				} else {
 					return array('errorMsg' => "That is not the correct code. Please look for an SMS containing an activation code on the phone with number: " . wp_kses($twoFactorUsers[$i][1], array()) );
@@ -1517,7 +1529,7 @@ SQL
 				$i--;
 			}
 		}
-		$twoFactorUsers[] = array($ID, $phone, $code, 'notActivated', time() + (86400 * 100)); //expiry of code is 100 days in future
+		$twoFactorUsers[] = array($ID, $phone, $code, 'notActivated', time() + (86400 * 30)); //expiry of code is 30 days in future
 		wfConfig::set_ser('twoFactorUsers', $twoFactorUsers);
 	}
 	public static function ajax_loadTwoFactor_callback(){
@@ -4575,7 +4587,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 						$deletedWhitelistedPath = stripslashes($_POST['deletedWhitelistedPath']);
 						$deletedWhitelistedParam = stripslashes($_POST['deletedWhitelistedParam']);
 						$savedWhitelistedURLParams = (array) wfWAF::getInstance()->getStorageEngine()->getConfig('whitelistedURLParams');
-						$key = base64_encode($deletedWhitelistedPath) . '|' . base64_encode($deletedWhitelistedParam);
+						$key = $deletedWhitelistedPath . '|' . $deletedWhitelistedParam;
 						unset($savedWhitelistedURLParams[$key]);
 						wfWAF::getInstance()->getStorageEngine()->setConfig('whitelistedURLParams', $savedWhitelistedURLParams);
 					}
@@ -4738,7 +4750,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 				}
 				foreach ($items as $key) {
 					list($path, $paramKey, ) = $key;
-					$whitelistKey = base64_encode(rawurldecode($path)) . '|' . base64_encode(rawurldecode($paramKey));
+					$whitelistKey = $path . '|' . $paramKey;
 					if (array_key_exists($whitelistKey, $whitelist)) {
 						unset($whitelist[$whitelistKey]);
 					}
@@ -4787,7 +4799,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 		}
 		foreach ($items as $key) {
 			list($path, $paramKey, ) = $key;
-			$whitelistKey = base64_encode(rawurldecode($path)) . '|' . base64_encode(rawurldecode($paramKey));
+			$whitelistKey = $path . '|' . $paramKey;
 			if (array_key_exists($whitelistKey, $whitelist) && is_array($whitelist[$whitelistKey])) {
 				foreach ($whitelist[$whitelistKey] as $ruleID => $data) {
 					$whitelist[$whitelistKey][$ruleID]['disabled'] = !$enabled;

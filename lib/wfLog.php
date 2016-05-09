@@ -542,7 +542,13 @@ class wfLog {
 	 * @return bool|int
 	 */
 	public function logHit(){
-		if (!wfConfig::liveTrafficEnabled() || !$this->logHitOK()) {
+		$liveTrafficEnabled = wfConfig::liveTrafficEnabled();
+		$action = $this->currentRequest->action;
+		$logHitOK = $this->logHitOK();
+		if (!$logHitOK) {
+			return false;
+		}
+		if (!$liveTrafficEnabled && !$action) {
 			return false;
 		}
 		if ($this->currentRequest !== null) {
@@ -1036,6 +1042,8 @@ class wfLog {
 		if (!$this->currentRequest->actionDescription) {
 			$this->currentRequest->actionDescription = "blocked: " . $reason;
 		}
+		
+		$this->logHit();
 
 		wfConfig::inc('total503s');
 		wfUtils::doNotCache();
@@ -1061,7 +1069,7 @@ class wfLog {
 			} else if($nb == 'neverBlockUA' || $nb == 'neverBlockVerified'){
 				if(wfCrawl::isGoogleCrawler()){ //Check the UA using regex
 					if($nb == 'neverBlockVerified'){
-						if(wfCrawl::isVerifiedGoogleCrawler($this->googlePattern, wfUtils::getIP())){ //UA check passed, now verify using PTR if configured to
+						if(wfCrawl::isVerifiedGoogleCrawler(wfUtils::getIP())){ //UA check passed, now verify using PTR if configured to
 							self::$gbSafeCache[$cacheKey] = false; //This is a verified Google crawler, so no we can't block it
 						} else {
 							self::$gbSafeCache[$cacheKey] = true; //This is a crawler claiming to be Google but it did not verify
@@ -1661,11 +1669,29 @@ class wfLiveTrafficQuery {
 		$sql = $this->buildQuery();
 		$results = $wpdb->get_results($sql, ARRAY_A);
 		$this->getWFLog()->processGetHitsResults('', $results);
-
-		foreach ($results as &$row) {
+		
+		$verifyCrawlers = false;
+		if ($this->filters !== null && count($this->filters->getFilters()) > 0) {
+			$filters = $this->filters->getFilters();
+			foreach ($filters as $f) {
+				if (strtolower($f->getParam()) == "isgoogle") {
+					$verifyCrawlers = true;
+					break;
+				}
+			}
+		}
+		
+		foreach ($results as $key => &$row) {
+			if ($row['isGoogle'] && $verifyCrawlers) {
+				if (!wfCrawl::isVerifiedGoogleCrawler($row['IP'], $row['UA'])) {
+					unset($results[$key]); //foreach copies $results and iterates on the copy, so it is safe to mutate $results within the loop
+					continue;
+				}
+			}
+			
 			$row['actionData'] = (array) json_decode($row['actionData'], true);
 		}
-		return $results;
+		return array_values($results);
 	}
 
 	/**

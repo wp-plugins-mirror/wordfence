@@ -22,6 +22,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		fflush($tmpHandle);
 		self::lock($tmpHandle, LOCK_UN);
 		fclose($tmpHandle);
+		chmod($tmpFile, 0640);
 
 		// Attempt to verify file has finished writing (sometimes the disk will lie for better benchmarks)
 		$tmpContents = file_get_contents($tmpFile);
