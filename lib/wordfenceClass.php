@@ -3929,7 +3929,7 @@ directives to put in your nginx.conf to fix this.
 ";
 					}
 
-
+					$adminURL = esc_url($adminURL);
 					$wafActionContent .= "
 <form action='$adminURL' method='post'>
 <input type='hidden' name='wfnonce' value='$wfnonce'>
