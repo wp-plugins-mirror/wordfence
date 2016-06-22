@@ -724,12 +724,16 @@ SQL
 		return $URL;
 	}
 	public static function enqueueAJAXWatcher() {
-		$waf = wfWAF::getInstance();
-		$config = $waf->getStorageEngine();
-		$wafStatus = (!WFWAF_ENABLED ? 'disabled' : $config->getConfig('wafStatus'));
-		if (wfUtils::isAdmin() && $wafStatus != 'disabled') {
-			wp_enqueue_style('wordfenceAJAXcss', wfUtils::getBaseURL() . 'css/wordfenceBox.css', '', WORDFENCE_VERSION);
-			wp_enqueue_script('wordfenceAJAXjs', wfUtils::getBaseURL() . 'js/admin.ajaxWatcher.js', array('jquery'), WORDFENCE_VERSION);
+		try {
+			$waf = wfWAF::getInstance();
+			$config = $waf->getStorageEngine();
+			$wafStatus = (!WFWAF_ENABLED ? 'disabled' : $config->getConfig('wafStatus'));
+			if (wfUtils::isAdmin() && $wafStatus != 'disabled') {
+				wp_enqueue_style('wordfenceAJAXcss', wfUtils::getBaseURL() . 'css/wordfenceBox.css', '', WORDFENCE_VERSION);
+				wp_enqueue_script('wordfenceAJAXjs', wfUtils::getBaseURL() . 'js/admin.ajaxWatcher.js', array('jquery'), WORDFENCE_VERSION);
+			}
+		} catch (wfWAFStorageFileException $e) {
+			error_log($e->getMessage());
 		}
 	}
 	public static function ajax_testAjax_callback(){
