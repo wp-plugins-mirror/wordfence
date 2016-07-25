@@ -25,6 +25,7 @@ class wordfenceHash {
 	private $path = false;
 	private $only = false;
 	private $totalForks = 0;
+	private $alertedOnUnknownWordPressVersion = false;
 
 	/**
 	 * @param string $striplen
@@ -105,7 +106,7 @@ class wordfenceHash {
 		if($this->malwareEnabled){ $this->status['malware'] = wordfence::statusStart("Scanning for known malware files"); } else { wordfence::statusDisabled("Skipping malware scan"); }
 	}
 	public function __sleep(){
-		return array('striplen', 'totalFiles', 'totalDirs', 'totalData', 'linesOfPHP', 'linesOfJCH', 'stoppedOnFile', 'coreEnabled', 'pluginsEnabled', 'themesEnabled', 'malwareEnabled', 'knownFiles', 'malwareData', 'haveIssues', 'status', 'possibleMalware', 'path', 'only', 'totalForks');
+		return array('striplen', 'totalFiles', 'totalDirs', 'totalData', 'linesOfPHP', 'linesOfJCH', 'stoppedOnFile', 'coreEnabled', 'pluginsEnabled', 'themesEnabled', 'malwareEnabled', 'knownFiles', 'malwareData', 'haveIssues', 'status', 'possibleMalware', 'path', 'only', 'totalForks', 'alertedOnUnknownWordPressVersion');
 	}
 	public function __wakeup(){
 		$this->db = new wfDB();
@@ -238,6 +239,21 @@ class wordfenceHash {
 
 			if ($allowKnownFileScan)
 			{
+				if (!$this->alertedOnUnknownWordPressVersion && empty($this->knownFiles['core'])) {
+					require(ABSPATH . 'wp-includes/version.php'); //defines $wp_version
+					$this->alertedOnUnknownWordPressVersion = true;
+					$this->haveIssues['core'] = true;
+					$this->engine->addIssue(
+						'coreUnknown',
+						2,
+						'coreUnknown' . $wp_version,
+						'coreUnknown' . $wp_version,
+						'Unknown WordPress core version: ' . $wp_version,
+						"The core files scan will not be run because this version of WordPress is not currently indexed by Wordfence. This may be due to using a prerelease version or because the servers are still indexing a new release. If you are using an official WordPress release, this issue will automatically dismiss once the version is indexed and another scan is run.",
+						array()
+					);
+				}
+				
 				if (isset($this->knownFiles['core'][$file]))
 				{
 					if (strtoupper($this->knownFiles['core'][$file]) == $shac)
@@ -347,6 +363,29 @@ class wordfenceHash {
 							}
 						}
 
+					}
+				}
+				else if (!$this->alertedOnUnknownWordPressVersion) { //Check for unknown files in system directories
+					$restrictedWordPressFolders = array(ABSPATH . 'wp-admin/', ABSPATH . 'wp-includes/');
+					foreach ($restrictedWordPressFolders as $path) {
+						if (strpos($realFile, $path) === 0) {
+							$this->haveIssues['core'] = true;
+							$this->engine->addIssue(
+								'file',
+								2, 
+								'coreUnknown' . $file . $md5,
+								'coreUnknown' . $file,
+								'Unknown file in WordPress core: ' . $file,
+								"This file is in a WordPress core location but is not distributed with this version of WordPress. This is usually due to it being left over from a previous WordPress update, but it may also have been added by another plugin or a malicious file added by an attacker.",
+								array(
+									'file' => $file,
+									'cType' => 'core',
+									'canDiff' => false,
+									'canFix' => false,
+									'canDelete' => true
+								)
+							);
+						}
 					}
 				}
 			}
