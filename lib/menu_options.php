@@ -465,6 +465,13 @@ $w = new wfConfig();
 					           name="scansEnabled_plugins" value="1" <?php $w->cb( 'scansEnabled_plugins' ); ?>/></td>
 				</tr>
 				<tr>
+					<th>Scan wp-admin and wp-includes for files not bundled with WordPress<a
+							href="http://docs.wordfence.com/en/Wordfence_options#Scan_wordpress_core_for_unknown_files"
+							target="_blank" class="wfhelp"></a></th>
+					<td><input type="checkbox" id="scansEnabled_coreUnknown" class="wfConfigElem"
+					           name="scansEnabled_coreUnknown" value="1" <?php $w->cb( 'scansEnabled_coreUnknown' ); ?>/></td>
+				</tr>
+				<tr>
 					<th>Scan for signatures of known malicious files<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_signatures_of_known_malicious_files"
 							target="_blank" class="wfhelp"></a></th>

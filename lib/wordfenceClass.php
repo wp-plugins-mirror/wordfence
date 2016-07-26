@@ -722,7 +722,7 @@ SQL
 		return $URL;
 	}
 	public static function enqueueAJAXWatcher() {
-		$wafDisabled = !WFWAF_ENABLED || wfWAFConfig::isDisabled();
+		$wafDisabled = !WFWAF_ENABLED || (class_exists('wfWAFConfig') && wfWAFConfig::isDisabled());
 		if (wfUtils::isAdmin() && !$wafDisabled) {
 			wp_enqueue_style('wordfenceAJAXcss', wfUtils::getBaseURL() . 'css/wordfenceBox.css', '', WORDFENCE_VERSION);
 			wp_enqueue_script('wordfenceAJAXjs', wfUtils::getBaseURL() . 'js/admin.ajaxWatcher.js', array('jquery'), WORDFENCE_VERSION);
@@ -2717,7 +2717,9 @@ SQL
 		foreach (self::$diagnosticParams as $param) {
 			wfConfig::set($param, array_key_exists($param, $_POST) ? '1' : '0');
 		}
-		wfWAFConfig::set('betaThreatDefenseFeed', wfConfig::get('betaThreatDefenseFeed'));
+		if (class_exists('wfWAFConfig')) {
+			wfWAFConfig::set('betaThreatDefenseFeed', wfConfig::get('betaThreatDefenseFeed'));
+		}
 		return array('ok' => 1, 'reload' => false, 'paidKeyMsg' => '');
 	}
 
