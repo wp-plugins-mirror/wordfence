@@ -850,23 +850,22 @@ $w = new wfConfig();
 					<td><textarea name="whitelisted" id="whitelisted" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('whitelisted'))); ?></textarea></td>
 				</tr>
 				<tr>
-					<th colspan="2" style="color: #999;">Whitelisted IP's must be separated by commas or placed on separate lines. You can specify
+					<th colspan="2" style="color: #999;">Whitelisted IPs must be separated by commas or placed on separate lines. You can specify
 						ranges using the following format: 123.23.34.[1-50]<br/>Wordfence automatically whitelists <a
 							href="http://en.wikipedia.org/wiki/Private_network" target="_blank">private networks</a>
 						because these are not routable on the public Internet.<br/><br/></th>
 				</tr>
 
 				<tr>
-					<th>Immediately block IP's that access these URLs:<a
+					<th>Immediately block IPs that access these URLs:<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Immediately_block_IP.27s_that_access_these_URLs"
 							target="_blank" class="wfhelp"></a></th>
-					<td><input type="text" name="bannedURLs" id="bannedURLs"
-					           value="<?php $w->f( 'bannedURLs' ); ?>" size="40"/></td>
+					<td><textarea type="text" name="bannedURLs" id="bannedURLs" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('bannedURLs'))); ?></textarea></td>
 				</tr>
 				<tr>
-					<th colspan="2" style="color: #999;">Separate multiple URL's with commas. Asterisks are wildcards,
+					<th colspan="2" style="color: #999;">Separate multiple URLs with commas or place them on separate lines. Asterisks are wildcards,
 						but use with care. If you see an attacker repeatedly probing your site for a known vulnerability
-						you can use this to immediately block them. All URL's must start with a '/' without quotes and
+						you can use this to immediately block them. All URLs must start with a '/' without quotes and
 						must be relative. e.g. /badURLone/, /bannedPage.html, /dont-access/this/URL/, /starts/with-*
 						<br/><br/></th>
 				</tr>

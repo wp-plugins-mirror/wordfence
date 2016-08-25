@@ -1508,9 +1508,16 @@ class wfAdminUserMonitor {
 	public function getCurrentAdmins() {
 		require_once ABSPATH . WPINC . '/user.php';
 		if (is_multisite()) {
-			$sites = wp_get_sites(array(
-				'network_id' => null,
-			));
+			if (function_exists("get_sites")) {
+				$sites = get_sites(array(
+					'network_id' => null,
+				));
+			}
+			else {
+				$sites = wp_get_sites(array(
+					'network_id' => null,
+				));
+			}
 		} else {
 			$sites = array(array(
 				'blog_id' => get_current_blog_id(),
@@ -1520,8 +1527,9 @@ class wfAdminUserMonitor {
 		// not very efficient, but the WordPress API doesn't provide a good way to do this.
 		$admins = array();
 		foreach ($sites as $siteRow) {
+			$siteRowArray = (array) $siteRow;
 			$user_query = new WP_User_Query(array(
-				'blog_id' => $siteRow['blog_id'],
+				'blog_id' => $siteRowArray['blog_id'],
 				'role'    => 'administrator',
 			));
 			$users = $user_query->get_results();

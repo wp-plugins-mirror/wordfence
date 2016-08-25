@@ -298,9 +298,12 @@ h6 a:visited { color: purple !important; }
 				<?php if ($updates_needed['plugins']): ?>
 					<h4 style="font-size: 16px; vertical-align: baseline; clear: both; color: #666666 !important; margin: 20px 0 4px; padding: 0; border: 0;">Plugins</h4>
 					<ul style="font-size: 100%; vertical-align: baseline; list-style-type: none; margin: 0; padding: 0; border: 0;">
-						<?php foreach ($updates_needed['plugins'] as $plugin): ?>
+						<?php
+						foreach ($updates_needed['plugins'] as $plugin):
+							$newVersion = ($plugin['newVersion'] == 'Unknown' ? $plugin['newVersion'] : "v{$plugin['newVersion']}");
+						?>
 							<li style="font-size: 100%; vertical-align: baseline; margin: 0; padding: 0; border: 0;">
-								A new version of the plugin "<?php echo esc_html("{$plugin['Name']} (v{$plugin['newVersion']})") ?>" is available.
+								A new version of the plugin "<?php echo esc_html("{$plugin['Name']} ({$newVersion})") ?>" is available.
 							</li>
 						<?php endforeach ?>
 					</ul>
@@ -308,9 +311,12 @@ h6 a:visited { color: purple !important; }
 				<?php if ($updates_needed['themes']): ?>
 					<h4 style="font-size: 16px; vertical-align: baseline; clear: both; color: #666666 !important; margin: 20px 0 4px; padding: 0; border: 0;">Themes</h4>
 					<ul style="font-size: 100%; vertical-align: baseline; list-style-type: none; margin: 0; padding: 0; border: 0;">
-						<?php foreach ($updates_needed['themes'] as $theme): ?>
+						<?php
+						foreach ($updates_needed['themes'] as $theme):
+							$newVersion = ($theme['newVersion'] == 'Unknown' ? $theme['newVersion'] : "v{$theme['newVersion']}");
+						?>
 							<li style="font-size: 100%; vertical-align: baseline; margin: 0; padding: 0; border: 0;">
-								A new version of the theme "<?php echo esc_html("{$theme['name']} (v{$theme['newVersion']})") ?>" is available.
+								A new version of the theme "<?php echo esc_html("{$theme['name']} ({$newVersion})") ?>" is available.
 							</li>
 						<?php endforeach ?>
 					</ul>
