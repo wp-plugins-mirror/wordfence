@@ -158,7 +158,9 @@ class wfScanEngine {
 		$this->i->emailNewIssues();
 	}
 	public function submitMetrics() {
-		$this->api->call('record_scan_metrics', array(), array('metrics' => $this->metrics));
+		if (wfConfig::get('other_WFNet', true)) {
+			$this->api->call('record_scan_metrics', array(), array('metrics' => $this->metrics));
+		}
 	}
 	private function doScan(){
 		while(sizeof($this->jobList) > 0){

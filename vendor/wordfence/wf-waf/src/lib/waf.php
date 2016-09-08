@@ -323,6 +323,12 @@ auEa+7b+FGTKs7dUo2BNGR7OVifK4GZ8w/ajS0TelhrSRi3BBQCGXLzUO/UURUAh
 				$this->getStorageEngine()->setConfig('cron', $cron);
 			}
 			
+			if (version_compare($currentVersion, '1.0.2') === -1) {
+				$event = new wfWAFCronFetchRulesEvent(time() - 2);
+				$event->setWaf($this);
+				$event->fire();
+			}
+			
 			$this->getStorageEngine()->setConfig('version', WFWAF_VERSION);
 		}
 	}
@@ -415,6 +421,57 @@ auEa+7b+FGTKs7dUo2BNGR7OVifK4GZ8w/ajS0TelhrSRi3BBQCGXLzUO/UURUAh
 			return $matches[1] >= 1 && $matches[1] <= 32;
 		}
 		return false;
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getMalwareSignatures() {
+		try {
+			$encoded = $this->getStorageEngine()->getConfig('filePatterns');
+			if (empty($encoded)) {
+				return array();
+			}
+			
+			$authKey = $this->getStorageEngine()->getConfig('authKey');
+			$encoded = base64_decode($encoded);
+			$paddedKey = substr(str_repeat($authKey, ceil(strlen($encoded) / strlen($authKey))), 0, strlen($encoded));
+			$json = $encoded ^ $paddedKey;
+			$signatures = json_decode($json, true);
+			if (!is_array($signatures)) {
+				return array();
+			}
+			return $signatures;
+		}
+		catch (Exception $e) {
+			//Ignore
+		}
+		return array();
+	}
+	
+	/**
+	 * @param array $signatures
+	 * @param bool $updateLastUpdatedTimestamp
+	 */
+	public function setMalwareSignatures($signatures, $updateLastUpdatedTimestamp = true) {
+		try {
+			if (!is_array($signatures)) {
+				$signatures = array();
+			}
+			
+			$authKey = $this->getStorageEngine()->getConfig('authKey');
+			$json = json_encode($signatures);
+			$paddedKey = substr(str_repeat($authKey, ceil(strlen($json) / strlen($authKey))), 0, strlen($json));
+			$payload = $json ^ $paddedKey;
+			$this->getStorageEngine()->setConfig('filePatterns', base64_encode($payload));
+			
+			if ($updateLastUpdatedTimestamp) {
+				$this->getStorageEngine()->setConfig('signaturesLastUpdated', is_int($updateLastUpdatedTimestamp) ? $updateLastUpdatedTimestamp : time());
+			}
+		}
+		catch (Exception $e) {
+			//Ignore
+		}
 	}
 
 	/**
@@ -879,6 +936,12 @@ HTML
 		if ($this->getStorageEngine()->getConfig('attackDataKey', false) === false) {
 			$this->getStorageEngine()->setConfig('attackDataKey', mt_rand(0, 0xfff));
 		}
+		
+		if (!$this->getStorageEngine()->getConfig('other_WFNet', true)) {
+			$this->getStorageEngine()->truncateAttackData();
+			$this->getStorageEngine()->unsetConfig('attackDataNextInterval');
+			return;
+		}
 
 		$request = new wfWAFHTTP();
 		try {
@@ -1307,6 +1370,42 @@ class wfWAFCronFetchRulesEvent extends wfWAFCronEvent {
 						}
 					}
 
+				}
+			}
+			
+			$this->response = wfWAFHTTP::get(WFWAF_API_URL_SEC . "?" . http_build_query(array(
+					'action'   => 'get_malware_signatures',
+					'k'        => $waf->getStorageEngine()->getConfig('apiKey'),
+					's'        => $waf->getStorageEngine()->getConfig('siteURL') ? $waf->getStorageEngine()->getConfig('siteURL') : $guessSiteURL,
+					'h'        => $waf->getStorageEngine()->getConfig('homeURL') ? $waf->getStorageEngine()->getConfig('homeURL') : $guessSiteURL,
+					'openssl'  => $waf->hasOpenSSL() ? 1 : 0,
+					'betaFeed' => (int) $waf->getStorageEngine()->getConfig('betaThreatDefenseFeed'),
+				), null, '&'));
+			if ($this->response) {
+				$jsonData = wfWAFUtils::json_decode($this->response->getBody(), true);
+				if (is_array($jsonData)) {
+					if ($waf->hasOpenSSL() &&
+						isset($jsonData['data']['signature']) &&
+						isset($jsonData['data']['signatures']) &&
+						$waf->verifySignedRequest(base64_decode($jsonData['data']['signature']), $jsonData['data']['signatures'])
+					) {
+						$waf->setMalwareSignatures(json_decode(base64_decode($jsonData['data']['signatures'])),
+							isset($jsonData['data']['timestamp']) ? $jsonData['data']['timestamp'] : true);
+						if (array_key_exists('premiumCount', $jsonData['data'])) {
+							$waf->getStorageEngine()->setConfig('signaturePremiumCount', $jsonData['data']['premiumCount']);
+						}
+						
+					} else if (!$waf->hasOpenSSL() &&
+						isset($jsonData['data']['hash']) &&
+						isset($jsonData['data']['signatures']) &&
+						$waf->verifyHashedRequest($jsonData['data']['hash'], $jsonData['data']['signatures'])
+					) {
+						$waf->setMalwareSignatures(json_decode(base64_decode($jsonData['data']['signatures'])),
+							isset($jsonData['data']['timestamp']) ? $jsonData['data']['timestamp'] : true);
+						if (array_key_exists('premiumCount', $jsonData['data'])) {
+							$waf->getStorageEngine()->setConfig('signaturePremiumCount', $jsonData['data']['premiumCount']);
+						}
+					}
 				}
 			}
 		} catch (wfWAFHTTPTransportException $e) {

@@ -81,6 +81,7 @@ class wfConfig {
 			'ssl_verify' => array('value' => true, 'autoload' => self::AUTOLOAD),
 			'ajaxWatcherDisabled_front' => array('value' => false, 'autoload' => self::AUTOLOAD),
 			'ajaxWatcherDisabled_admin' => array('value' => false, 'autoload' => self::AUTOLOAD),
+			'wafAlertOnAttacks' => array('value' => true, 'autoload' => self::AUTOLOAD),
 		),
 		"otherParams" => array(
 			"scan_include_extra" => "",
@@ -106,9 +107,12 @@ class wfConfig {
 			'maxScanHits' => "DISABLED",
 			'maxScanHits_action' => "throttle",
 			'blockedTime' => "300",
-			'email_summary_interval' => 'biweekly',
+			'email_summary_interval' => 'weekly',
 			'email_summary_excluded_directories' => 'wp-content/cache,wp-content/wfcache,wp-content/plugins/wordfence/tmp',
-			'allowed404s' => "/favicon.ico\n/apple-touch-icon*.png\n/*@2x.png",
+			'allowed404s' => "/favicon.ico\n/apple-touch-icon*.png\n/*@2x.png\n/browserconfig.xml",
+			'wafAlertWhitelist' => '',
+			'wafAlertInterval' => 600,
+			'wafAlertThreshold' => 100,
 		)
 	);
 	public static $serializedOptions = array('lastAdminLogin', 'scanSched', 'emailedIssuesList', 'wf_summaryItems', 'adminUserList', 'twoFactorUsers', 'alertFreqTrack', 'wfStatusStartMsgs');
@@ -264,7 +268,7 @@ class wfConfig {
 			return;
 		}
 
-		if (($key == 'apiKey' || $key == 'isPaid') && wfWAF::getInstance() && !WFWAF_SUBDIRECTORY_INSTALL) {
+		if (($key == 'apiKey' || $key == 'isPaid' || $key == 'other_WFNet') && wfWAF::getInstance() && !WFWAF_SUBDIRECTORY_INSTALL) {
 			try {
 				wfWAF::getInstance()->getStorageEngine()->setConfig($key, $val);
 			} catch (wfWAFStorageFileException $e) {

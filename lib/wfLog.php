@@ -203,7 +203,7 @@ class wfLog {
 			if ($type == '404') {
 				$allowed404s = wfConfig::get('allowed404s');
 				if (is_string($allowed404s)) {
-					$allowed404s = array_filter(explode("\n", $allowed404s));
+					$allowed404s = array_filter(preg_split("/[\r\n]+/", $allowed404s));
 					$allowed404sPattern = '';
 					foreach ($allowed404s as $allowed404) {
 						$allowed404sPattern .= preg_replace('/\\\\\*/', '.*?', preg_quote($allowed404, '/')) . '|';

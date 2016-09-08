@@ -170,44 +170,49 @@ class wordfence {
 	}
 	public static function dailyCron(){
 		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
-		$keyData = $api->call('ping_api_key');
-		if(isset($keyData['_isPaidKey']) && $keyData['_isPaidKey']){
-			$keyExpDays = $keyData['_keyExpDays'];
-			$keyIsExpired = $keyData['_expired'];
-			if (!empty($keyData['_autoRenew'])) {
-				if ($keyExpDays > 12) {
-					wfConfig::set('keyAutoRenew10Sent', '');
-				} else if ($keyExpDays <= 12 && $keyExpDays > 0 && !wfConfig::get('keyAutoRenew10Sent')) {
-					wfConfig::set('keyAutoRenew10Sent', 1);
-					$email = "Your Premium Wordfence API Key is set to auto-renew in 10 days.";
-					self::alert($email, "$email To update your API key settings please visit http://www.wordfence.com/zz9/dashboard", false);
-				}
-			} else {
-				if($keyExpDays > 15){
-					wfConfig::set('keyExp15Sent', '');
-					wfConfig::set('keyExp7Sent', '');
-					wfConfig::set('keyExp2Sent', '');
-					wfConfig::set('keyExp1Sent', '');
-					wfConfig::set('keyExpFinalSent', '');
-				} else if($keyExpDays <= 15 && $keyExpDays > 0){
-					if($keyExpDays <= 15 && $keyExpDays >= 11 && (! wfConfig::get('keyExp15Sent'))){
-						wfConfig::set('keyExp15Sent', 1);
-						self::keyAlert("Your Premium Wordfence API Key expires in less than 2 weeks.");
-					} else if($keyExpDays <= 7 && $keyExpDays >= 4 && (! wfConfig::get('keyExp7Sent'))){
-						wfConfig::set('keyExp7Sent', 1);
-						self::keyAlert("Your Premium Wordfence API Key expires in less than a week.");
-					} else if($keyExpDays == 2 && (! wfConfig::get('keyExp2Sent'))){
-						wfConfig::set('keyExp2Sent', 1);
-						self::keyAlert("Your Premium Wordfence API Key expires in 2 days.");
-					} else if($keyExpDays == 1 && (! wfConfig::get('keyExp1Sent'))){
-						wfConfig::set('keyExp1Sent', 1);
-						self::keyAlert("Your Premium Wordfence API Key expires in 1 day.");
+		try {
+			$keyData = $api->call('ping_api_key');
+			if(isset($keyData['_isPaidKey']) && $keyData['_isPaidKey']){
+				$keyExpDays = $keyData['_keyExpDays'];
+				$keyIsExpired = $keyData['_expired'];
+				if (!empty($keyData['_autoRenew'])) {
+					if ($keyExpDays > 12) {
+						wfConfig::set('keyAutoRenew10Sent', '');
+					} else if ($keyExpDays <= 12 && $keyExpDays > 0 && !wfConfig::get('keyAutoRenew10Sent')) {
+						wfConfig::set('keyAutoRenew10Sent', 1);
+						$email = "Your Premium Wordfence API Key is set to auto-renew in 10 days.";
+						self::alert($email, "$email To update your API key settings please visit http://www.wordfence.com/zz9/dashboard", false);
 					}
-				} else if($keyIsExpired && (! wfConfig::get('keyExpFinalSent')) ){
-					wfConfig::set('keyExpFinalSent', 1);
-					self::keyAlert("Your Wordfence Premium API Key has Expired!");
+				} else {
+					if($keyExpDays > 15){
+						wfConfig::set('keyExp15Sent', '');
+						wfConfig::set('keyExp7Sent', '');
+						wfConfig::set('keyExp2Sent', '');
+						wfConfig::set('keyExp1Sent', '');
+						wfConfig::set('keyExpFinalSent', '');
+					} else if($keyExpDays <= 15 && $keyExpDays > 0){
+						if($keyExpDays <= 15 && $keyExpDays >= 11 && (! wfConfig::get('keyExp15Sent'))){
+							wfConfig::set('keyExp15Sent', 1);
+							self::keyAlert("Your Premium Wordfence API Key expires in less than 2 weeks.");
+						} else if($keyExpDays <= 7 && $keyExpDays >= 4 && (! wfConfig::get('keyExp7Sent'))){
+							wfConfig::set('keyExp7Sent', 1);
+							self::keyAlert("Your Premium Wordfence API Key expires in less than a week.");
+						} else if($keyExpDays == 2 && (! wfConfig::get('keyExp2Sent'))){
+							wfConfig::set('keyExp2Sent', 1);
+							self::keyAlert("Your Premium Wordfence API Key expires in 2 days.");
+						} else if($keyExpDays == 1 && (! wfConfig::get('keyExp1Sent'))){
+							wfConfig::set('keyExp1Sent', 1);
+							self::keyAlert("Your Premium Wordfence API Key expires in 1 day.");
+						}
+					} else if($keyIsExpired && (! wfConfig::get('keyExpFinalSent')) ){
+						wfConfig::set('keyExpFinalSent', 1);
+						self::keyAlert("Your Wordfence Premium API Key has Expired!");
+					}
 				}
 			}
+		}
+		catch(Exception $e){
+			wordfence::status(4, 'error', "Could not verify Wordfence API Key: " . $e->getMessage());
 		}
 
 		$wfdb = new wfDB();
@@ -517,6 +522,23 @@ SQL
 
 		if (!$hasAttackLogTimeIndex) {
 			$wpdb->query("ALTER TABLE $hitsTable ADD INDEX `attackLogTime` (`attackLogTime`)");
+		}
+		
+		//6.1.16
+		$allowed404s = wfConfig::get('allowed404s', '');
+		if (!wfConfig::get('allowed404s6116Migration', false)) {
+			if (!preg_match('/(?:^|\b)browserconfig\.xml(?:\b|$)/i', $allowed404s)) {
+				if (strlen($allowed404s) > 0) {
+					$allowed404s .= "\n";
+				}
+				$allowed404s .= "/browserconfig.xml";
+				wfConfig::set('allowed404s', $allowed404s);
+			}
+			
+			wfConfig::set('allowed404s6116Migration', 1);
+		}
+		if (wfConfig::get('email_summary_interval') == 'biweekly') {
+			wfConfig::set('email_summary_interval', 'weekly');
 		}
 
 		//Must be the final line
@@ -1038,6 +1060,7 @@ SQL
 					'homeURL'        => home_url(),
 					'whitelistedIPs' => (string) wfConfig::get('whitelisted'),
 					'howGetIPs'      => (string) wfConfig::get('howGetIPs'),
+					'other_WFNet'    => wfConfig::get('other_WFNet', true), 
 				);
 				foreach ($configDefaults as $key => $value) {
 					$waf->getStorageEngine()->setConfig($key, $value);
@@ -5262,8 +5285,8 @@ HTML
 			wp_enqueue_style('wordfence-activity-report-widget', wfUtils::getBaseURL() . 'css/activity-report-widget.css', '', WORDFENCE_VERSION);
 			$report_date_range = 'week';
 			switch (wfConfig::get('email_summary_interval')) {
-				case 'biweekly':
-					$report_date_range = '2 weeks';
+				case 'daily':
+					$report_date_range = 'day';
 					break;
 
 				case 'monthly':
@@ -5887,7 +5910,94 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 		if ($waf->getStorageEngine()->getConfig('attackDataKey', false) === false) {
 			$waf->getStorageEngine()->setConfig('attackDataKey', mt_rand(0, 0xfff));
 		}
+		
+		//Send alert email if needed
+		if (wfConfig::get('wafAlertOnAttacks')) {
+			$alertInterval = wfConfig::get('wafAlertInterval', 0);
+			$cutoffTime = max(time() - $alertInterval, wfConfig::get('wafAlertLastSendTime'));
+			$wafAlertWhitelist = wfConfig::get('wafAlertWhitelist', '');
+			$wafAlertWhitelist = preg_split("/[,\r\n]+/", $wafAlertWhitelist);
+			foreach ($wafAlertWhitelist as $index => &$entry) {
+				$entry = trim($entry);
+				if (!preg_match('/^(?:\d{1,3}(?:\.|$)){4}/', $entry) && !preg_match('/^((?:[\da-f]{1,4}(?::|)){0,8})(::)?((?:[\da-f]{1,4}(?::|)){0,8})$/i', $entry)) {
+					unset($wafAlertWhitelist[$index]);
+					continue;
+				}
+				
+				$packed = @wfUtils::inet_pton($entry);
+				if ($packed === false) {
+					unset($wafAlertWhitelist[$index]);
+					continue;
+				}
+				$entry = bin2hex($packed);
+			}
+			$wafAlertWhitelist = array_filter($wafAlertWhitelist);
+			$attackData = $wpdb->get_results($wpdb->prepare("SELECT SQL_CALC_FOUND_ROWS * FROM {$wpdb->base_prefix}wfHits
+	WHERE action = 'blocked:waf' " .
+	(count($wafAlertWhitelist) ? "AND HEX(IP) NOT IN (" . implode(", ", array_fill(0, count($wafAlertWhitelist), '%s')) . ")" : "") 
+	. "AND attackLogTime > %.6f
+	ORDER BY attackLogTime DESC
+	LIMIT 10", array_merge($wafAlertWhitelist, array($cutoffTime))));
+			$attackCount = $wpdb->get_var('SELECT FOUND_ROWS()');
+			if ($attackCount >= wfConfig::get('wafAlertThreshold')) {
+				$durationMessage = wfUtils::makeDuration($alertInterval);
+				$message = <<<ALERTMSG
+The Wordfence Web Application Firewall has blocked {$attackCount} attacks over the last {$durationMessage}. Below is a sample of these recent attacks:
 
+
+ALERTMSG;
+				$attackTable = array();
+				$dateMax = $ipMax = $countryMax = 0;
+				foreach ($attackData as $row) {
+					$row->longDescription = "Blocked for " . $row->actionDescription;
+					
+					$actionData = json_decode($row->actionData, true);
+					if (!is_array($actionData) || !isset($actionData['paramKey']) || !isset($actionData['paramValue'])) {
+						continue;
+					}
+					
+					$paramKey = base64_decode($actionData['paramKey']);
+					$paramValue = base64_decode($actionData['paramValue']);
+					if (strlen($paramValue) > 100) {
+						$paramValue = substr($paramValue, 0, 100) . chr(2026);
+					}
+					
+					if (preg_match('/([a-z0-9_]+\.[a-z0-9_]+)(?:\[(.+?)\](.*))?/i', $paramKey, $matches)) {
+						switch ($matches[1]) {
+							case 'request.queryString':
+								$row->longDescription = "Blocked for " . $row->actionDescription . ' in query string: ' . $matches[2] . '=' . $paramValue;
+								break;
+							case 'request.body':
+								$row->longDescription = "Blocked for " . $row->actionDescription . ' in POST body: ' . $matches[2] . '=' . $paramValue;
+								break;
+							case 'request.cookie':
+								$row->longDescription = "Blocked for " . $row->actionDescription . ' in cookie: ' . $matches[2] . '=' . $paramValue;
+								break;
+							case 'request.fileNames':
+								$row->longDescription = "Blocked for a " . $row->actionDescription . ' in file: ' . $matches[2] . '=' . $paramValue;
+								break;
+						}
+					}
+					
+					$date = date_i18n('F j, Y g:ia', floor($row->attackLogTime)); $dateMax = max(strlen($date), $dateMax);
+					$ip = wfUtils::inet_ntop($row->IP); $ipMax = max(strlen($ip), $ipMax);
+					$country = wfUtils::countryCode2Name(wfUtils::IP2Country($ip)); $country = (empty($country) ? 'Unknown' : $country); $countryMax = max(strlen($country), $countryMax); 
+					$attackTable[] = array('date' => $date, 'IP' => $ip, 'country' => $country, 'message' => $row->longDescription);
+				}
+				
+				foreach ($attackTable as $row) {
+					$date = str_pad($row['date'], $dateMax + 2);
+					$ip = str_pad($row['IP'] . " ({$row['country']})", $ipMax + $countryMax + 8);
+					$attackMessage = $row['message'];
+					$message .= $date . $ip . $attackMessage . "\n";
+				}
+
+				self::alert('Increased Attack Rate', $message, false);
+				wfConfig::set('wafAlertLastSendTime', time());
+			}
+		}
+
+		//Send attack data
 		$limit = 500;
 		$lastSendTime = wfConfig::get('lastAttackDataSendTime');
 		$attackData = $wpdb->get_results($wpdb->prepare("SELECT SQL_CALC_FOUND_ROWS * FROM {$wpdb->base_prefix}wfHits
@@ -5896,7 +6006,7 @@ AND attackLogTime > %.6f
 LIMIT %d", $lastSendTime, $limit));
 		$totalRows = $wpdb->get_var('SELECT FOUND_ROWS()');
 
-		if ($attackData) {
+		if ($attackData && wfConfig::get('other_WFNet', true)) {
 			$response = wp_remote_get(sprintf(WFWAF_API_URL_SEC . "waf-rules/%d.txt", $waf->getStorageEngine()->getConfig('attackDataKey')));
 
 			if (!is_wp_error($response)) {
@@ -5970,6 +6080,9 @@ LIMIT %d", $lastSendTime, $limit));
 			} else {
 				self::scheduleSendAttackData(time() + 7200);
 			}
+		}
+		else if (!wfConfig::get('other_WFNet', true)) {
+			wfConfig::set('lastAttackDataSendTime', time());
 		}
 
 		self::trimWfHits();

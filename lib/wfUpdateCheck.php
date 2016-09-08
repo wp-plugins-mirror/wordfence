@@ -92,12 +92,17 @@ class wfUpdateCheck {
 
 				//Check the vulnerability database
 				if (isset($valsArray['slug']) && isset($valsArray['new_version'])) {
-					$result = $this->api->call('plugin_vulnerability_check', array(), array(
-						'slug' => $valsArray['slug'],
-						'fromVersion' => $data['Version'],
-						'toVersion' => $valsArray['new_version'],
-					));
-					$data['vulnerabilityPatched'] = isset($result['vulnerable']) && $result['vulnerable'];
+					try {
+						$result = $this->api->call('plugin_vulnerability_check', array(), array(
+							'slug' => $valsArray['slug'],
+							'fromVersion' => $data['Version'],
+							'toVersion' => $valsArray['new_version'],
+						));
+						$data['vulnerabilityPatched'] = isset($result['vulnerable']) && $result['vulnerable'];
+					}
+					catch(Exception $e){
+						$data['vulnerabilityPatched'] = false;
+					}
 				}
 				else {
 					$data['vulnerabilityPatched'] = false;

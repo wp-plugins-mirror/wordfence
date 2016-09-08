@@ -300,6 +300,11 @@ $w = new wfConfig();
 					           name="alertOn_nonAdminLogin" value="1" <?php $w->cb( 'alertOn_nonAdminLogin' ); ?>/></td>
 				</tr>
 				<tr>
+					<th>Alert me when there's a large increase in attacks detected on my site</th>
+					<td><input type="checkbox" id="wafAlertOnAttacks" class="wfConfigElem"
+							   name="wafAlertOnAttacks" value="1" <?php $w->cb( 'wafAlertOnAttacks' ); ?>/></td>
+				</tr>
+				<tr>
 					<th>Maximum email alerts to send per hour</th>
 					<td>&nbsp;<input type="text" id="alert_maxHourly" name="alert_maxHourly"
 					                 value="<?php $w->f( 'alert_maxHourly' ); ?>" size="4"/>0 or empty means unlimited
@@ -324,8 +329,8 @@ $w = new wfConfig();
 					<th>Email summary frequency:</th>
 					<td>
 						<select id="email_summary_interval" class="wfConfigElem" name="email_summary_interval">
+							<option value="daily"<?php $w->sel( 'email_summary_interval', 'daily' ); ?>>Once a day</option>
 							<option value="weekly"<?php $w->sel( 'email_summary_interval', 'weekly' ); ?>>Once a week</option>
-							<option value="biweekly"<?php $w->sel( 'email_summary_interval', 'biweekly' ); ?>>Once every 2 weeks</option>
 							<option value="monthly"<?php $w->sel( 'email_summary_interval', 'monthly' ); ?>>Once a month</option>
 						</select>
 					</td>
@@ -824,7 +829,7 @@ $w = new wfConfig();
 					</td>
 				</tr>
 				<tr>
-					<th>Immediately block the IP of users who try to sign in as these usernames<a
+					<th style="vertical-align: top;">Immediately block the IP of users who try to sign in as these usernames<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Immediately_block_the_IP_of_users_who_try_to_sign_in_as_these_usernames"
 							target="_blank" class="wfhelp"></a></th>
 					<td>
@@ -844,7 +849,7 @@ $w = new wfConfig();
 				</tr>
 
 				<tr>
-					<th>Whitelisted IP addresses that bypass all rules:<a
+					<th style="vertical-align: top;">Whitelisted IP addresses that bypass all rules:<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Whitelisted_IP_addresses_that_bypass_all_rules"
 							target="_blank" class="wfhelp"></a></th>
 					<td><textarea name="whitelisted" id="whitelisted" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('whitelisted'))); ?></textarea></td>
@@ -857,7 +862,7 @@ $w = new wfConfig();
 				</tr>
 
 				<tr>
-					<th>Immediately block IPs that access these URLs:<a
+					<th style="vertical-align: top;">Immediately block IPs that access these URLs:<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Immediately_block_IP.27s_that_access_these_URLs"
 							target="_blank" class="wfhelp"></a></th>
 					<td><textarea type="text" name="bannedURLs" id="bannedURLs" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('bannedURLs'))); ?></textarea></td>
@@ -878,6 +883,22 @@ $w = new wfConfig();
 					<th colspan="2" style="color: #999;">These URL patterns will be excluded from
 						the throttling rules used to limit crawlers.
 						<br/><br/></th>
+				</tr>
+				
+				<tr>
+					<th style="vertical-align: top;">Whitelisted IP addresses for Wordfence Web Application Firewall alerting:</th>
+					<td><textarea name="wafAlertWhitelist" id="wafAlertWhitelist" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('wafAlertWhitelist'))); ?></textarea></td>
+				</tr>
+				<tr>
+					<th colspan="2" style="color: #999;">Whitelisted IPs must be separated by commas or placed on separate lines. These addresses will be ignored from any alerts about increased attacks and can be used to ignore things like standalone website security scanners.<br/><br/></th>
+				</tr>
+				<tr class="hidden">
+					<th style="vertical-align: top;">Minimum number of blocked attacks before sending an alert</th>
+					<td><input type="text" name="wafAlertThreshold" id=""wafAlertThreshold" value="<?php $w->f( 'wafAlertThreshold' ); ?>"></td>
+				</tr>
+				<tr class="hidden">
+					<th style="vertical-align: top;">Number of seconds to count the attacks over</th>
+					<td><input type="text" name="wafAlertInterval" id=""wafAlertInterval" value="<?php $w->f( 'wafAlertInterval' ); ?>"></td>
 				</tr>
 
 				<tr>
