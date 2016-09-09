@@ -703,7 +703,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		$request = $this->getWAF()->getRequest();
 		$files = $request->getFiles();
 		$patterns = $this->getWAF()->getMalwareSignatures();
-		if (!is_array($patterns)) {
+		if (!is_array($patterns) || !is_array($files)) {
 			return false;
 		}
 		

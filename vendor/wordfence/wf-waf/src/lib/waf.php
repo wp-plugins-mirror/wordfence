@@ -437,7 +437,7 @@ auEa+7b+FGTKs7dUo2BNGR7OVifK4GZ8w/ajS0TelhrSRi3BBQCGXLzUO/UURUAh
 			$encoded = base64_decode($encoded);
 			$paddedKey = substr(str_repeat($authKey, ceil(strlen($encoded) / strlen($authKey))), 0, strlen($encoded));
 			$json = $encoded ^ $paddedKey;
-			$signatures = json_decode($json, true);
+			$signatures = wfWAFUtils::json_decode($json, true);
 			if (!is_array($signatures)) {
 				return array();
 			}
@@ -460,7 +460,7 @@ auEa+7b+FGTKs7dUo2BNGR7OVifK4GZ8w/ajS0TelhrSRi3BBQCGXLzUO/UURUAh
 			}
 			
 			$authKey = $this->getStorageEngine()->getConfig('authKey');
-			$json = json_encode($signatures);
+			$json = wfWAFUtils::json_encode($signatures);
 			$paddedKey = substr(str_repeat($authKey, ceil(strlen($json) / strlen($authKey))), 0, strlen($json));
 			$payload = $json ^ $paddedKey;
 			$this->getStorageEngine()->setConfig('filePatterns', base64_encode($payload));
@@ -1389,7 +1389,7 @@ class wfWAFCronFetchRulesEvent extends wfWAFCronEvent {
 						isset($jsonData['data']['signatures']) &&
 						$waf->verifySignedRequest(base64_decode($jsonData['data']['signature']), $jsonData['data']['signatures'])
 					) {
-						$waf->setMalwareSignatures(json_decode(base64_decode($jsonData['data']['signatures'])),
+						$waf->setMalwareSignatures(wfWAFUtils::json_decode(base64_decode($jsonData['data']['signatures'])),
 							isset($jsonData['data']['timestamp']) ? $jsonData['data']['timestamp'] : true);
 						if (array_key_exists('premiumCount', $jsonData['data'])) {
 							$waf->getStorageEngine()->setConfig('signaturePremiumCount', $jsonData['data']['premiumCount']);
@@ -1400,7 +1400,7 @@ class wfWAFCronFetchRulesEvent extends wfWAFCronEvent {
 						isset($jsonData['data']['signatures']) &&
 						$waf->verifyHashedRequest($jsonData['data']['hash'], $jsonData['data']['signatures'])
 					) {
-						$waf->setMalwareSignatures(json_decode(base64_decode($jsonData['data']['signatures'])),
+						$waf->setMalwareSignatures(wfWAFUtils::json_decode(base64_decode($jsonData['data']['signatures'])),
 							isset($jsonData['data']['timestamp']) ? $jsonData['data']['timestamp'] : true);
 						if (array_key_exists('premiumCount', $jsonData['data'])) {
 							$waf->getStorageEngine()->setConfig('signaturePremiumCount', $jsonData['data']['premiumCount']);
