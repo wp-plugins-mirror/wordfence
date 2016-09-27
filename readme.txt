@@ -3,9 +3,9 @@ Contributors: mmaunder
 Tags: security, secure, security plugin, wordpress security, login security, firewall, malware, antivirus, web application firewall, block hackers, country blocking, block hackers
 Requires at least: 3.9
 Tested up to: 4.6.1
-Stable tag: 6.1.17
+Stable tag: 6.2.0
 
-Secure your website with the Wordfence security plugin for WordPress.  Wordfence provides free enterprise-class WordPress security, protecting your website from hacks and malware.
+Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scanner, blocking, live traffic, login security & more.
 
 == Description ==
 = THE MOST DOWNLOADED WORDPRESS SECURITY PLUGIN =
@@ -51,9 +51,6 @@ Wordfence Security is now Multi-Site compatible and includes Cellphone Sign-in w
 * Scans for many known backdoors that create security holes including C99, R57, RootShell, Crystal Shell, Matamu, Cybershell, W4cking, Sniper, Predator, Jackal, Phantasma, GFS, Dive, Dx and many many more.
 * Continuously scans for malware and phishing URL's including all URL's on the Google Safe Browsing List in all your comments, posts and files that are security threats.
 * Scans for heuristics of backdoors, trojans,  suspicious code and other security issues.
-
-= WordPress Firewall =
-* Includes a firewall to block common security threats like fake Googlebots, malicious scans from hackers and botnets.
 
 = Monitoring Features =
 * See all your traffic in real-time, including robots, humans, 404 errors, logins and logouts and who is consuming most of your content. Enhances your situational awareness of which security threats your site is facing.
@@ -199,6 +196,20 @@ Secure your website with Wordfence.
 5. If you're technically minded, this is the under-the-hood view of Wordfence Security options where you can fine-tune your security settings.
 
 == Changelog ==
+
+= 6.2.0 =
+* Improvement: Massive performance boost in file system scan.
+* Improvement: Added low resource usage scan option for shared hosts.
+* Improvement: Aggregated login attempts when checking the Wordfence Security Network for brute force attackers to reduce total requests.
+* Improvement: Now displaying scan time in a more readable format rather than total seconds.
+* Improvement: Added PHP7 compatible .htaccess directives to disable code execution within uploads directory.
+* Fix: Added throttling to sync the WAF attack data.
+* Fix: Removed unnecessary single quote in copy containing "IP's".
+* Fix: Fixed rare, edge case where cron key does not match the key in the database.
+* Fix: Fixed bug with regex matching carriage returns in the .htaccess based IP block list.
+* Fix: Fixed scans failing in subdirectory sites when updating malware signatures.
+* Fix: Fixed infinite loop in scan caused by symlinks.
+* Fix: Remove extra slash from "File restored OK" message in scan results.
 
 = 6.1.17 =
 * Fix: Replaced calls to json_decode with our own implentation for hosts without the JSON extension enabled.

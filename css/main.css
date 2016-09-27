@@ -124,6 +124,9 @@ div.wordfenceScanButton input.button-wf-grey {
 	min-height: 200px;
 	-webkit-font-smoothing: antialiased;
 }
+.wfTabsContainer.wfScanIssuesTabs {
+	max-width: 800px;
+}
 #wfTabs::after {
 	content: ".";
 	display: block;
@@ -1049,6 +1052,10 @@ tr.wf-table-filters input {
 	max-width: 140px;
 }
 
+#waf-rules-wrapper {
+	max-width: 900px;
+}
+
 #wordfenceLiveActivityDisabled {
 	background: #fff;
 	border-left: 4px solid #ffb900;
@@ -1076,4 +1083,45 @@ tr.wf-table-filters input {
 
 #wfTwoFactorDownload .dashicons {
 	line-height: 26px;
+}
+
+#wfConfigForm {
+	max-width: 1035px; 
+}
+
+.wordfenceRightRail {
+	position: absolute;
+	margin-left: 840px;
+	width: 269px; 
+}
+
+.wordfenceRightRail img {
+	width: 100%;
+}
+
+.wordfenceRightRailLiveTraffic, .wordfenceRightRailOptions, .wordfenceRightRailDiagnostics {
+	margin-left: 1055px;
+}
+
+.wordfenceRightRailBlockedIPs, .wordfenceRightRailWAF, .wordfenceRightRailCountryBlocking, .wordfenceRightRailScanSchedule {
+	margin-left: 950px; 
+}
+
+.wordfenceRightRail ul {
+	list-style-type: none;
+	margin: 0;
+}
+
+.wordfenceRightRail .center {
+	text-align: center;
+}
+.wordfenceRightRail .button-primary {
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: bold;
+	background-color: #00709E;
+}
+
+.wordfenceWrap.wordfence-community {
+	min-height: 760px;
 }

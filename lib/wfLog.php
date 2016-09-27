@@ -989,6 +989,7 @@ class wfLog {
 			$now = $this->getDB()->querySingle("select unix_timestamp()");
 			$secsToGo = ($rec['blockedTime'] + wfConfig::get('blockedTime')) - $now;
 			if(wfConfig::get('other_WFNet') && self::isAuthRequest()){ //It's an auth request and this IP has been blocked
+				$this->getCurrentRequest()->action = 'blocked:wfsnrepeat';
 				wordfence::wfsnReportBlockedAttempt($IP, 'login');
 			}
 			$this->do503($secsToGo, $rec['reason']); 
@@ -1098,7 +1099,7 @@ class wfLog {
 	
 	public function do503($secsToGo, $reason){
 		$this->initLogRequest();
-		$this->currentRequest->statusCode = 403;
+		$this->currentRequest->statusCode = 503;
 		if (!$this->currentRequest->action) {
 			$this->currentRequest->action = 'blocked:wordfence';
 		}

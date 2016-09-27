@@ -126,7 +126,7 @@ h6 a:visited { color: purple !important; }
 				</p>
 
 				<h2 style="font-size: 20px; vertical-align: baseline; clear: both; color: #222 !important; margin: 20px 0 4px; padding: 0; border: 0;">
-					Top 10 IP's Blocked
+					Top 10 IPs Blocked
 				</h2>
 
 				<?php wfHelperString::cycle(); ?>

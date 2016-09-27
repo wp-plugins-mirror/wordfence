@@ -31,6 +31,7 @@ class wfConfig {
 			"liveTraf_ignorePublishers" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			//"perfLoggingEnabled" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scheduledScansEnabled" => array('value' => true, 'autoload' => self::AUTOLOAD),
+			"lowResourceScansEnabled" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_public" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_heartbleed" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_core" => array('value' => true, 'autoload' => self::AUTOLOAD),
@@ -657,11 +658,15 @@ class wfConfig {
 <IfModule mod_php5.c>
 php_flag engine 0
 </IfModule>
+<IfModule mod_php7.c>
+php_flag engine 0
+</IfModule>
 
 AddHandler cgi-script .php .phtml .php3 .pl .py .jsp .asp .htm .shtml .sh .cgi
 Options -ExecCGI
 # END Wordfence code execution protection
 ';
+	private static $_disable_scripts_regex = '/# BEGIN Wordfence code execution protection.+?# END Wordfence code execution protection/s';
 	
 	private static function _uploadsHtaccessFilePath() {
 		$upload_dir = wp_upload_dir();
@@ -689,7 +694,24 @@ Options -ExecCGI
 		if (@file_put_contents($uploads_htaccess_file_path, ($uploads_htaccess_has_content ? "\n\n" : "") . self::$_disable_scripts_htaccess, FILE_APPEND | LOCK_EX) === false) {
 			throw new wfConfigException("Unable to save the .htaccess file needed to disable script execution in the uploads directory.  Please check your permissions on that directory.");
 		}
+		self::set('disableCodeExecutionUploadsPHP7Migrated', true);
 		return true;
+	}
+	
+	public static function migrateCodeExecutionForUploadsPHP7() {
+		if (self::get('disableCodeExecutionUploads')) {
+			if (!self::get('disableCodeExecutionUploadsPHP7Migrated')) {
+				$uploads_htaccess_file_path = self::_uploadsHtaccessFilePath();
+				if (file_exists($uploads_htaccess_file_path)) {
+					$htaccess_contents = file_get_contents($uploads_htaccess_file_path);
+					if (preg_match(self::$_disable_scripts_regex, $htaccess_contents)) {
+						$htaccess_contents = preg_replace(self::$_disable_scripts_regex, self::$_disable_scripts_htaccess, $htaccess_contents); 
+						@file_put_contents($uploads_htaccess_file_path, $htaccess_contents);
+						self::set('disableCodeExecutionUploadsPHP7Migrated', true);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -704,8 +726,8 @@ Options -ExecCGI
 			$htaccess_contents = file_get_contents($uploads_htaccess_file_path);
 
 			// Check that it is in the file
-			if (strpos($htaccess_contents, self::$_disable_scripts_htaccess) !== false) {
-				$htaccess_contents = str_replace(self::$_disable_scripts_htaccess, '', $htaccess_contents);
+			if (preg_match(self::$_disable_scripts_regex, $htaccess_contents)) {
+				$htaccess_contents = preg_replace(self::$_disable_scripts_regex, '', $htaccess_contents);
 
 				$error_message = "Unable to remove code execution protections applied to the .htaccess file in the uploads directory.  Please check your permissions on that file.";
 				if (strlen(trim($htaccess_contents)) === 0) {

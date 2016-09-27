@@ -30,7 +30,11 @@
 			</tr>
 		</table>
 	</div>
-	<div class="wordfenceWrap">
+	<div class="wordfenceWrap<?php if (!wfConfig::get('isPaid')) { echo " wordfence-community"; }?>">
+		<?php
+		$rightRail = new wfView('marketing/rightrail', array('additionalClasses' => 'wordfenceRightRailLiveTraffic'));
+		echo $rightRail;
+		?>
 		<?php if (!wfConfig::liveTrafficEnabled()): ?>
 			<div id="wordfenceLiveActivityDisabled"><p><strong>Live activity is disabled.</strong> <?php if (wfConfig::get('cacheType') == 'falcon') { ?>This is done to improve performance because you have Wordfence Falcon Engine enabled.<?php } ?> Login and firewall activity will still appear below.</p></div>
 		<?php endif ?>
@@ -273,7 +277,7 @@
 										<span data-bind="if: statusCode() == 200 && !action()">
 											visited
 										</span>
-										<span data-bind="if: statusCode() == 403">
+										<span data-bind="if: statusCode() == 403 || statusCode() == 503">
 											was <span data-bind="text: firewallAction" style="color: #F00;"></span> at
 										</span>
 

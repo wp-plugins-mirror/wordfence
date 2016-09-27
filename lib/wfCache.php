@@ -449,7 +449,7 @@ class wfCache {
 			fclose($fh);
 			return "Could not read from $htaccessPath";
 		}
-		$contents = preg_replace('/#WFCACHECODE.*WFCACHECODE[r\s\n\t]*/s', '', $contents);
+		$contents = preg_replace('/#WFCACHECODE.*WFCACHECODE[\r\s\n\t]*/s', '', $contents);
 		if($action == 'add'){
 			$code = self::getHtaccessCode();
 			$contents = $code . "\n" . $contents;
@@ -606,7 +606,7 @@ EOT;
 				return "Could not read from $htaccessPath";
 			}
 
-			$contents = preg_replace('/#WFIPBLOCKS.*WFIPBLOCKS[r\s\n\t]*/s', '', $contents);
+			$contents = preg_replace('/#WFIPBLOCKS.*WFIPBLOCKS[\r\s\n\t]*/s', '', $contents);
 
 			ftruncate($fh, 0);
 			fflush($fh);
@@ -702,7 +702,7 @@ EOT;
 			fclose($fh);
 			return "Could not read from $htaccessPath";
 		}
-		$contents = preg_replace('/#WFIPBLOCKS.*WFIPBLOCKS[r\s\n\t]*/s', '', $contents);
+		$contents = preg_replace('/#WFIPBLOCKS.*WFIPBLOCKS[\r\s\n\t]*/s', '', $contents);
 		$contents = $blockCode . $contents;
 		ftruncate($fh, 0);
 		fflush($fh);
