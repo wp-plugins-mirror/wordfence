@@ -5,7 +5,7 @@ Requires at least: 3.9
 Tested up to: 4.6.1
 Stable tag: 6.2.0
 
-Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scanner, blocking, live traffic, login security & more.
+Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
 == Description ==
 = THE MOST DOWNLOADED WORDPRESS SECURITY PLUGIN =
