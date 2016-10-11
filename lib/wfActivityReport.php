@@ -256,13 +256,14 @@ SQL
 		}
 
 		$results = $this->db->get_results($this->db->prepare(<<<SQL
-SELECT *,
-sum(fail) as fail_count,
-max(userID) as is_valid_user
-FROM {$this->db->base_prefix}wfLogins
-WHERE fail = 1
-AND ctime > $interval
-GROUP BY username
+SELECT wfl.*,
+sum(wfl.fail) as fail_count,
+!ISNULL(wpu.ID) as is_valid_user
+FROM {$this->db->base_prefix}wfLogins wfl
+LEFT JOIN {$this->db->base_prefix}users wpu ON wfl.username = wpu.user_login OR wfl.username = wpu.user_email
+WHERE wfl.fail = 1
+AND wfl.ctime > $interval
+GROUP BY wfl.username
 ORDER BY fail_count DESC
 LIMIT %d
 SQL
