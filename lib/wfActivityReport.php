@@ -255,12 +255,10 @@ SQL
 				break;
 		}
 
-		$results = $this->db->get_results($this->db->prepare(<<<SQL
+		$failedLogins = $this->db->get_results($this->db->prepare(<<<SQL
 SELECT wfl.*,
-sum(wfl.fail) as fail_count,
-!ISNULL(wpu.ID) as is_valid_user
+sum(wfl.fail) as fail_count
 FROM {$this->db->base_prefix}wfLogins wfl
-LEFT JOIN {$this->db->base_prefix}users wpu ON wfl.username = wpu.user_login OR wfl.username = wpu.user_email
 WHERE wfl.fail = 1
 AND wfl.ctime > $interval
 GROUP BY wfl.username
@@ -268,7 +266,16 @@ ORDER BY fail_count DESC
 LIMIT %d
 SQL
 			, $limit));
-		return $results;
+		
+		foreach ($failedLogins as &$login) {
+			$exists = $this->db->get_var($this->db->prepare(<<<SQL
+SELECT !ISNULL(ID) FROM {$this->db->base_prefix}users WHERE user_login = '%s' OR user_email = '%s'
+SQL
+			, $login->username, $login->username));
+			$login->is_valid_user = $exists;
+		}
+		
+		return $failedLogins;
 	}
 
 	/**
