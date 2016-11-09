@@ -1704,7 +1704,7 @@ SQL
 
 		}
 		if($secEnabled){
-			if(is_wp_error($authUser) && ($authUser->get_error_code() == 'invalid_username') || ($authUser->get_error_code() == 'invalid_email')){
+			if(is_wp_error($authUser) && ($authUser->get_error_code() == 'invalid_username' || $authUser->get_error_code() == 'invalid_email')){
 				if($blacklist = wfConfig::get('loginSec_userBlacklist')){
 					$users = explode("\n", wfUtils::cleanupOneEntryPerLine($blacklist));
 					foreach($users as $user){
