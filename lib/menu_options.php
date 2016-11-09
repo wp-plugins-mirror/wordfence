@@ -633,6 +633,15 @@ $w = new wfConfig();
 					</td>
 				</tr>
 				<tr>
+					<th>Time limit that a scan can run in seconds.<a
+							href="http://docs.wordfence.com/en/Wordfence_options#Time_limit_that_a_scan_can_run_in_seconds"
+							target="_blank" class="wfhelp"></a></th></th>
+					<td>
+						<input type="text" name="scan_maxDuration" id="scan_maxDuration"
+							   value="<?php $w->f( 'scan_maxDuration' ); ?>"/> 0 or empty means the default of <?php echo wfUtils::makeDuration(WORDFENCE_DEFAULT_MAX_SCAN_TIME); ?> will be used.
+					</td>
+				</tr>
+				<tr>
 					<td colspan="2">
 						<div class="wfMarker" id="wfMarkerFirewallRules"></div>
 						<h3 class="wfConfigHeading">Rate Limiting Rules<a

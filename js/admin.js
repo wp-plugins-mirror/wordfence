@@ -179,8 +179,8 @@
 					}
 					startTicker = true;
 					if (this.needTour()) {
-						this.tour('wfWelcomeContent3', 'wfHeading', 'top', 'left', "Learn about Site Performance", function() {
-							self.tourRedir('WordfenceSitePerf');
+						this.tour('wfWelcomeContent3', 'wfHeading', 'top', 'left', "Learn about IP Blocking", function() {
+							self.tourRedir('WordfenceBlockedIPs');
 						});
 					}
 				} else if (jQuery('#wordfenceMode_options').length > 0) {
@@ -552,7 +552,7 @@
 					}
 					html += '">[' + item.date + ']&nbsp;' + item.msg + '</div>';
 					jQuery('#consoleActivity').append(html);
-					if (/Scan complete\./i.test(item.msg)) {
+					if (/Scan complete\./i.test(item.msg) || /Scan interrupted\./i.test(item.msg)) {
 						this.loadIssues();
 					}
 				}
