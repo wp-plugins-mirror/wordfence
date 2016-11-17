@@ -658,9 +658,7 @@ class wfUtils {
 				return self::getCleanIPAndServerVar($ipsToCheck);
 			}
 		} else {
-			$ipsToCheck = array(
-				$connectionIP,
-			);
+			$ipsToCheck = array($connectionIP);
 			if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 				$ipsToCheck[] = array($_SERVER['HTTP_X_FORWARDED_FOR'], 'HTTP_X_FORWARDED_FOR');
 			}
@@ -1094,7 +1092,8 @@ class wfUtils {
 		}
 	}
 	public static function doNotCache(){
-		header("Cache-Control: no-cache, must-revalidate");
+		header("Pragma: no-cache");
+		header("Cache-Control: no-cache, must-revalidate, private");
 		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); //In the past
 		if(! defined('DONOTCACHEPAGE')){ define('DONOTCACHEPAGE', true); }
 		if(! defined('DONOTCACHEDB')){ define('DONOTCACHEDB', true); }
@@ -1334,6 +1333,74 @@ class wfUtils {
 		}
 		$keys[$index] = $newKey;
 		return array_combine($keys, array_values($array));
+	}
+	
+	/**
+	 * Takes a string that may have characters that will be interpreted as invalid UTF-8 byte sequences and translates them into a string of the equivalent hex sequence.
+	 * 
+	 * @param $string
+	 * @param bool $inline
+	 * @return string
+	 */
+	public static function potentialBinaryStringToHTML($string, $inline = false) {
+		$output = '';
+		
+		if (!defined('ENT_SUBSTITUTE')) {
+			define('ENT_SUBSTITUTE', 0);
+		}
+		
+		$span = '<span class="wf-hex-sequence">';
+		if ($inline) {
+			$span = '<span style="color:#587ECB">';
+		}
+		
+		for ($i = 0; $i < strlen($string); $i++) {
+			$c = $string[$i];
+			$b = ord($c);
+			if ($b < 0x20) {
+				$output .= $span . '\x' . str_pad(dechex($b), 2, '0', STR_PAD_LEFT) . '</span>';
+			}
+			else if ($b < 0x80) {
+				$output .= htmlspecialchars($c, ENT_QUOTES, 'UTF-8');
+			}
+			else { //Assume multi-byte UTF-8
+				$bytes = 0;
+				$test = $b;
+				
+				while (($test & 0x80) > 0) {
+					$bytes++;
+					$test = (($test << 1) & 0xff);
+				}
+				
+				$brokenUTF8 = ($i + $bytes > strlen($string) || $bytes == 1);
+				if (!$brokenUTF8) { //Make sure we have all the bytes
+					for ($n = 1; $n < $bytes; $n++) {
+						$c2 = $string[$i + $n];
+						$b2 = ord($c2);
+						if (($b2 & 0xc0) != 0x80) {
+							$brokenUTF8 = true;
+							$bytes = $n;
+							break;
+						}
+					}
+				}
+				
+				if ($brokenUTF8) {
+					$bytes = min($bytes, strlen($string) - $i);
+					for ($n = 0; $n < $bytes; $n++) {
+						$c2 = $string[$i + $n];
+						$b2 = ord($c2);
+						$output .= $span . '\x' . str_pad(dechex($b2), 2, '0', STR_PAD_LEFT) . '</span>';
+					}
+					$i += ($bytes - 1);
+				}
+				else {
+					$output .= htmlspecialchars(substr($string, $i, $bytes), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+					$i += ($bytes - 1);
+				}
+			}
+		}
+		return $output;
 	}
 }
 

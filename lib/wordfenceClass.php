@@ -582,13 +582,25 @@ SQL
 			}
 		}
 	}
-	public static function initProtection(){
-		self::getLog()->initLogRequest();
-		if(preg_match('/\/wp\-admin\/admin\-ajax\.php/', $_SERVER['REQUEST_URI'])){
-			if(
-				(isset($_GET['action']) && $_GET['action'] == 'revslider_show_image' && isset($_GET['img']) && preg_match('/\.php$/i', $_GET['img'])) ||
-				(isset($_POST['action']) && $_POST['action'] == 'revslider_show_image' && isset($_POST['img']) && preg_match('/\.php$/i', $_POST['img']))
-			){
+	public static function initProtection(){ //Basic protection during WAF learning period
+		if (preg_match('#/wp\-admin/admin\-ajax\.php$#i', $_SERVER['SCRIPT_FILENAME'])) {
+			$gAction = isset($_GET['action']) ? $_GET['action'] : '';
+			$pAction = isset($_POST['action']) ? $_POST['action'] : '';
+			if (
+				(($gAction == 'revslider_show_image' || $gAction == 'nopriv_revslider_show_image') && isset($_GET['img']) && preg_match('/\.php$/i', $_GET['img'])) ||
+				(($pAction == 'revslider_show_image' || $pAction == 'nopriv_revslider_show_image') && isset($_POST['img']) && preg_match('/\.php$/i', $_POST['img']))
+			) {
+				self::getLog()->do503(86400, "URL not allowed. Slider Revolution Hack attempt detected. #2");
+				exit(); //function above exits anyway
+			}
+			
+			if (
+				(
+					(($gAction == 'revslider_ajax_action' || $gAction == 'nopriv_revslider_ajax_action') && isset($_GET['client_action']) && $_GET['client_action'] == 'update_plugin') ||
+					(($pAction == 'revslider_ajax_action' || $pAction == 'nopriv_revslider_ajax_action') && isset($_POST['client_action']) && $_POST['client_action'] == 'update_plugin')
+				) &&
+				!wfUtils::isAdmin()
+			) {
 				self::getLog()->do503(86400, "URL not allowed. Slider Revolution Hack attempt detected. #2");
 				exit(); //function above exits anyway
 			}
@@ -603,8 +615,8 @@ SQL
 			//Either there is no version in options or the version in options is greater and we need to run the upgrade
 			self::runInstall();
 		}
-
-		self::initProtection();
+		
+		self::getLog()->initLogRequest();
 		
 		//Fix wp_mail bug when $_SERVER['SERVER_NAME'] is undefined
 		add_filter('wp_mail_from', 'wordfence::fixWPMailFromAddress');
@@ -1027,6 +1039,8 @@ SQL
 	public static function veryFirstAction() {
 		/** @var wpdb $wpdb ; */
 		global $wpdb;
+		
+		self::initProtection();
 
 		$wfFunc = isset($_GET['_wfsf']) ? @$_GET['_wfsf'] : false;
 		if($wfFunc == 'unlockEmail'){

@@ -279,7 +279,7 @@ h6 a:visited { color: purple !important; }
 							<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc;white-space: nowrap;<?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline"><?php echo $this->attackTime($attack_row->attackLogTime) ?></td>
 							<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc;<?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline">
 								<div style="font-weight: bold; font-size: 12px;"><?php echo $this->displayIP($attack_row->IP) ?></div> 
-								<pre class="display-file" style="font-size: 12px; vertical-align: baseline; width: 420px; margin: 0; padding: 0; border: 0; white-space: normal;"><?php echo esc_html($attack_row->longDescription) ?></pre>
+								<pre class="display-file" style="font-size: 12px; vertical-align: baseline; width: 420px; margin: 0; padding: 0; border: 0; white-space: normal;"><?php echo wfUtils::potentialBinaryStringToHTML($attack_row->longDescription, true) ?></pre>
 							</td>
 						</tr>
 					<?php endforeach ?>

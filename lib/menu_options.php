@@ -422,7 +422,7 @@ $w = new wfConfig();
 				</tr>
 				<?php if ( wfConfig::get( 'isPaid' ) ) { ?>
 					<tr>
-						<th>Scan public facing site for vulnerabilities?<a
+						<th>Scan public facing site for vulnerabilities<a
 								href="http://docs.wordfence.com/en/Wordfence_options#Scan_public_facing_site"
 								target="_blank" class="wfhelp"></a></th>
 						<td><input type="checkbox" id="scansEnabled_public" class="wfConfigElem"
@@ -430,7 +430,7 @@ $w = new wfConfig();
 					</tr>
 				<?php } else { ?>
 					<tr>
-						<th style="color: #F00;">Scan public facing site for vulnerabilities?<a
+						<th style="color: #F00;">Scan public facing site for vulnerabilities<a
 								href="http://docs.wordfence.com/en/Wordfence_options#Scan_public_facing_site"
 								target="_blank" class="wfhelp"></a>(<a
 								href="https://www.wordfence.com/gnl1optPdOnly1/wordfence-signup/" target="_blank">Paid members only</a>)
@@ -440,7 +440,7 @@ $w = new wfConfig();
 					</tr>
 				<?php } ?>
 				<tr>
-					<th>Scan for the HeartBleed vulnerability?<a
+					<th>Scan for the HeartBleed vulnerability<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_the_HeartBleed_vulnerability"
 							target="_blank" class="wfhelp"></a></th>
 					<td><input type="checkbox" id="scansEnabled_heartbleed" class="wfConfigElem"
