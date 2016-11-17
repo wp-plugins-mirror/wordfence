@@ -191,11 +191,11 @@ Secure your website with Wordfence.
 == Changelog ==
 
 = 6.2.6 =
-Improvement: Improved formatting of attack data when it contains binary characters.
-Improvement: Updated internal GeoIP database.
-Improvement: Improved the ordering of rules in the malware scan so more specific rules are checked first.
-Fix: Country blocking redirects are no longer allowed to be cached.
-Fix: Fixed an issue with 2FA on multisite where the site could report URLs with different schemes depending on the state of plugin loading.
+* Improvement: Improved formatting of attack data when it contains binary characters.
+* Improvement: Updated internal GeoIP database.
+* Improvement: Improved the ordering of rules in the malware scan so more specific rules are checked first.
+* Fix: Country blocking redirects are no longer allowed to be cached.
+* Fix: Fixed an issue with 2FA on multisite where the site could report URLs with different schemes depending on the state of plugin loading.
 
 = 6.2.5 =
 * Fix: Fixed an issue that could occur on older WordPress versions when processing login attempts
