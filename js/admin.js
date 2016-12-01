@@ -405,6 +405,10 @@
 					jQuery('#pointer-close').after('<a id="pointer-primary" class="button-primary">' + buttonLabel + '</a>');
 					jQuery('#pointer-primary').click(buttonCallback);
 				}
+
+				$('html, body').animate({
+					scrollTop: $('.wp-pointer').offset().top - 100
+				}, 1000);
 			},
 			startTourAgain: function() {
 				var self = this;
@@ -1143,6 +1147,25 @@
 						self.colorbox('400px', 'An error occurred', res.cerrorMsg);
 					});
 				}
+			},
+			useRecommendedHowGetIPs: function(issueID) {
+				var self = this;
+				this.ajax('wordfence_misconfiguredHowGetIPsChoice', {
+					issueID: issueID,
+					choice: 'yes'
+				}, function(res) {
+					if (res.ok) {
+						jQuery('#wordfenceMisconfiguredHowGetIPsNotice').fadeOut();
+						
+						self.loadIssues(function() {
+							self.colorbox('400px', "Success updating option", "The 'How does Wordfence get IPs' option was successfully updated to the recommended value.");
+						});
+					} else if (res.cerrorMsg) {
+						self.loadIssues(function() {
+							self.colorbox('400px', 'An error occurred', res.cerrorMsg);
+						}); 
+					}
+				});	
 			},
 			fixFPD: function(issueID) {
 				var self = this;
@@ -2237,9 +2260,10 @@
 							
 							var message = "Scan the code below with your authenticator app to add this account. Some authenticator apps also allow you to type in the text version instead.<br><div id=\"wfTwoFactorQRCodeTable\"></div><br><strong>Key:</strong> <input type=\"text\" size=\"45\" value=\"" + res.base32Secret + "\" onclick=\"this.select();\" readonly>";
 							if (res.recoveryCodes.length > 0) {
-								message = message + "<br><br><strong>Recovery Codes</strong><br><p>Use these codes to log in if you lose access to your authenticator device. Each one may be used only once.</p><ul id=\"wfTwoFactorRecoveryCodes\">";
+								message = message + "<br><br><strong>Recovery Codes</strong><br><p>Use one of these " + res.recoveryCodes.length + " codes to log in if you lose access to your authenticator device. Codes are 16 characters long, plus optional spaces. Each one may be used only once.</p><ul id=\"wfTwoFactorRecoveryCodes\">";
 
 								var recoveryCodeFileContents = "Cellphone Sign-In Recovery Codes - " + res.homeurl + " (" + res.username + ")\r\n";
+								recoveryCodeFileContents = recoveryCodeFileContents + "\r\nEach line of 16 letters and numbers is a single recovery code, with optional spaces for readability. When typing your password, enter \"wf\" followed by the entire code like \"mypassword wf1234 5678 90AB CDEF\". If your site shows a separate prompt for entering a code after entering only your username and password, enter only the code like \"1234 5678 90AB CDEF\". Your recovery codes are:\r\n\r\n";
 								var splitter = /.{4}/g;
 								for (var i = 0; i < res.recoveryCodes.length; i++) { 
 									var code = res.recoveryCodes[i];
@@ -2268,9 +2292,10 @@
 							self.twoFacStatus('User added! Check the user\'s phone to get the activation code.');
 
 							if (res.recoveryCodes.length > 0) {
-								var message = "<p>Use these codes to log in if you are unable to access your phone. Each one may be used only once.</p><ul id=\"wfTwoFactorRecoveryCodes\">";
+								var message = "<p>Use one of these " + res.recoveryCodes.length + " codes to log in if you are unable to access your phone. Codes are 16 characters long, plus optional spaces. Each one may be used only once.</p><ul id=\"wfTwoFactorRecoveryCodes\">";
 
 								var recoveryCodeFileContents = "Cellphone Sign-In Recovery Codes - " + res.homeurl + " (" + res.username + ")\r\n";
+								recoveryCodeFileContents = recoveryCodeFileContents + "\r\nEach line of 16 letters and numbers is a single recovery code, with optional spaces for readability. When typing your password, enter \"wf\" followed by the entire code like \"mypassword wf1234 5678 90AB CDEF\". If your site shows a separate prompt for entering a code after entering only your username and password, enter only the code like \"1234 5678 90AB CDEF\". Your recovery codes are:\r\n\r\n";
 								var splitter = /.{4}/g;
 								for (var i = 0; i < res.recoveryCodes.length; i++) {
 									var code = res.recoveryCodes[i];

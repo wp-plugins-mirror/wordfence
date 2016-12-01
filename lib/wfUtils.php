@@ -630,6 +630,10 @@ class wfUtils {
 		}
 	}
 	public static function getIP(){
+		static $theIP = null;
+		if (isset($theIP)) {
+			return $theIP;
+		}
 		//For debugging. 
 		//return '54.232.205.132';
 		//return self::makeRandomIP();
@@ -638,6 +642,7 @@ class wfUtils {
 		$ip = self::getIPAndServerVarible();
 		if (is_array($ip)) {
 			list($IP, $variable) = $ip;
+			$theIP = $IP;
 			return $IP;
 		}
 		return false;
@@ -658,7 +663,15 @@ class wfUtils {
 				return self::getCleanIPAndServerVar($ipsToCheck);
 			}
 		} else {
-			$ipsToCheck = array($connectionIP);
+			$ipsToCheck = array();
+			
+			$recommendedField = wfConfig::get('detectProxyRecommendation', ''); //Prioritize the result from our proxy check if done
+			if (!empty($recommendedField) && $recommendedField != 'UNKNOWN') {
+				if (isset($_SERVER[$recommendedField])) {
+					$ipsToCheck[] = array($_SERVER[$recommendedField], $recommendedField);
+				}
+			}
+			$ipsToCheck[] = $connectionIP;
 			if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 				$ipsToCheck[] = array($_SERVER['HTTP_X_FORWARDED_FOR'], 'HTTP_X_FORWARDED_FOR');
 			}
@@ -1401,6 +1414,94 @@ class wfUtils {
 			}
 		}
 		return $output;
+	}
+	
+	public static function requestDetectProxyCallback($timeout = 0.01, $blocking = false) {
+		$nonce = bin2hex(wfWAFUtils::random_bytes(32));
+		$callback = self::getSiteBaseURL() . '?_wfsf=detectProxy';
+		
+		wfConfig::set('detectProxyNonce', $nonce, wfConfig::DONT_AUTOLOAD);
+		wfConfig::set('detectProxyRecommendation', '', wfConfig::DONT_AUTOLOAD);
+		
+		$payload = array(
+			'nonce' => $nonce,
+			'callback' => $callback,
+		);
+		
+		$siteurl = '';
+		if (function_exists('get_bloginfo')) {
+			if (is_multisite()) {
+				$siteurl = network_home_url();
+				$siteurl = rtrim($siteurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
+			} else {
+				$siteurl = home_url();
+			}
+		}
+		
+		wp_remote_post(WFWAF_API_URL_SEC . "?" . http_build_query(array(
+				'action' => 'detect_proxy',
+				'k'      => wfConfig::get('apiKey'),
+				's'      => $siteurl,
+				't'		 => microtime(true),
+			), null, '&'),
+			array(
+				'body'    => json_encode($payload),
+				'headers' => array(
+					'Content-Type' => 'application/json',
+				),
+				'timeout' => $timeout,
+				'blocking' => $blocking,
+			));
+		
+		//Asynchronous so we don't care about a response at this point.
+	}
+	
+	/**
+	 * @return bool Returns false if the payload is invalid, true if it processed the callback (even if the IP wasn't found).
+	 */
+	public static function processDetectProxyCallback() {
+		$nonce = wfConfig::get('detectProxyNonce', '');
+		$testNonce = (isset($_POST['nonce']) ? $_POST['nonce'] : '');
+		if (empty($nonce) || empty($testNonce)) {
+			return false;
+		}
+		
+		if (!hash_equals($nonce, $testNonce)) {
+			return false;
+		}
+		
+		$ips = (isset($_POST['ips']) ? $_POST['ips'] : array());
+		if (empty($ips)) {
+			return false;
+		}
+		
+		$expandedIPs = array();
+		foreach ($ips as $ip) {
+			$expandedIPs[] = self::inet_pton($ip);
+		}
+		
+		$checks = array('HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'REMOTE_ADDR', 'HTTP_X_FORWARDED_FOR');
+		foreach ($checks as $key) {
+			if (!isset($_SERVER[$key])) {
+				continue;
+			}
+			
+			$testIP = self::getCleanIPAndServerVar(array(array($_SERVER[$key], $key)));
+			if ($testIP === false) {
+				continue;
+			}
+			
+			$testIP = self::inet_pton($testIP[0]);
+			if (in_array($testIP, $expandedIPs)) {
+				wfConfig::set('detectProxyRecommendation', $key, wfConfig::DONT_AUTOLOAD);
+				wfConfig::set('detectProxyNonce', '', wfConfig::DONT_AUTOLOAD);
+				return true;
+			}
+		}
+		
+		wfConfig::set('detectProxyRecommendation', 'UNKNOWN', wfConfig::DONT_AUTOLOAD);
+		wfConfig::set('detectProxyNonce', '', wfConfig::DONT_AUTOLOAD);
+		return true;
 	}
 }
 

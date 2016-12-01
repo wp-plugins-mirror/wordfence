@@ -49,6 +49,8 @@ class wfScanEngine {
 	private $knownFilesLoader;
 	
 	private $metrics = array();
+	
+	private $checkHowGetIPsRequestTime = 0;
 
 	public static function testForFullPathDisclosure($url = null, $filePath = null) {
 		if ($url === null && $filePath === null) {
@@ -73,7 +75,7 @@ class wfScanEngine {
 	}
 
 	public function __sleep(){ //Same order here as above for properties that are included in serialization
-		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics');
+		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics', 'checkHowGetIPsRequestTime');
 	}
 	public function __construct(){
 		$this->startTime = time();
@@ -91,6 +93,8 @@ class wfScanEngine {
 		$this->jobList[] = 'checkSpamIP';
 		$this->jobList[] = 'checkGSB';
 		$this->jobList[] = 'heartbleed';
+		$this->jobList[] = 'checkHowGetIPs_init';
+		$this->jobList[] = 'checkHowGetIPs_main';
 		$this->jobList[] = 'knownFiles_init';
 		$this->jobList[] = 'knownFiles_main';
 		$this->jobList[] = 'knownFiles_finish';
@@ -338,6 +342,57 @@ class wfScanEngine {
 		} else {
 			wordfence::statusPaidOnly("Checking if your site is on the Google Safe Browsing list is for paid members only");
 			sleep(2);
+		}
+	}
+	
+	private function scan_checkHowGetIPs_init() {
+		if (wfConfig::get('scansEnabled_checkHowGetIPs')) {
+			$this->statusIDX['checkHowGetIPs'] = wordfence::statusStart("Checking for the most secure way to get IPs");
+			$this->checkHowGetIPsRequestTime = time();
+			wfUtils::requestDetectProxyCallback();
+		}
+		else {
+			wordfence::statusDisabled("Skipping scan for misconfigured How does Wordfence get IPs");
+		}
+	}
+	
+	private function scan_checkHowGetIPs_main() {
+		if (!defined('WORDFENCE_CHECKHOWGETIPS_TIMEOUT')) { define('WORDFENCE_CHECKHOWGETIPS_TIMEOUT', 30); }
+		
+		if (wfConfig::get('scansEnabled_checkHowGetIPs')) {
+			$haveIssues = false;
+			$existing = wfConfig::get('howGetIPs', '');
+			$recommendation = wfConfig::get('detectProxyRecommendation', '');
+			while (empty($recommendation) && (time() - $this->checkHowGetIPsRequestTime) < WORDFENCE_CHECKHOWGETIPS_TIMEOUT) {
+				sleep(1);
+				$this->forkIfNeeded();
+				$recommendation = wfConfig::get('detectProxyRecommendation', '');
+			}
+			
+			if ($recommendation == 'UNKNOWN' || empty($recommendation)) {
+				$this->addIssue('checkHowGetIPs', 2, 'checkHowGetIPs', 'checkHowGetIPs' . $recommendation . WORDFENCE_VERSION, "Unable to accurately detect IPs", 'Wordfence was unable to validate a test request to your website. This can happen if your website is behind a proxy that does not use one of the standard ways to convey the IP of the request or it is unreachable publicly. IP blocking and live traffic information may not be accurate. <a href="https://docs.wordfence.com/en/Misconfigured_how_get_IPs_notice " target="_blank">Get More Information</a>', array());
+				$haveIssues = true;
+			}
+			else if (!empty($existing) && $existing != $recommendation) {
+				$extraMsg = '';
+				if ($recommendation == 'REMOTE_ADDR') {
+					$extraMsg = ' For maximum security use PHP\'s built in REMOTE_ADDR.';
+				}
+				else if ($recommendation == 'HTTP_X_FORWARDED_FOR') {
+					$extraMsg = ' This site appears to be behind a front-end proxy, so using the X-Forwarded-For HTTP header will resolve to the correct IPs.';
+				}
+				else if ($recommendation == 'HTTP_X_REAL_IP') {
+					$extraMsg = ' This site appears to be behind a front-end proxy, so using the X-Real-IP HTTP header will resolve to the correct IPs.';
+				}
+				else if ($recommendation == 'HTTP_CF_CONNECTING_IP') {
+					$extraMsg = ' This site appears to be behind Cloudflare, so using the Cloudflare "CF-Connecting-IP" HTTP header will resolve to the correct IPs.';
+				}
+				
+				$this->addIssue('checkHowGetIPs', 2, 'checkHowGetIPs', 'checkHowGetIPs' . $recommendation . WORDFENCE_VERSION, "'How does Wordfence get IPs' is misconfigured", 'A test request to this website was detected on a different value for this setting. IP blocking and live traffic information may not be accurate. <a href="https://docs.wordfence.com/en/Misconfigured_how_get_IPs_notice " target="_blank">Get More Information</a>' . $extraMsg, array('recommendation' => $recommendation));
+				$haveIssues = true;
+			}
+			
+			wordfence::statusEnd($this->statusIDX['checkHowGetIPs'], $haveIssues);
 		}
 	}
 

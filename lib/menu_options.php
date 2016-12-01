@@ -440,6 +440,14 @@ $w = new wfConfig();
 					</tr>
 				<?php } ?>
 				<tr>
+					<th>Scan for misconfigured How does Wordfence get IPs<a
+							href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_misconfigured_How_does_Wordfence_get_IPs"
+							target="_blank" class="wfhelp"></a></th>
+					<td><input type="checkbox" id="scansEnabled_checkHowGetIPs" class="wfConfigElem"
+							   name="scansEnabled_checkHowGetIPs" value="1" <?php $w->cb( 'scansEnabled_checkHowGetIPs' ); ?> />
+					</td>
+				</tr>
+				<tr>
 					<th>Scan for the HeartBleed vulnerability<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_the_HeartBleed_vulnerability"
 							target="_blank" class="wfhelp"></a></th>
@@ -625,7 +633,9 @@ $w = new wfConfig();
 					</td>
 				</tr>
 				<tr>
-					<th>Limit the number of issues sent in the scan results email.</th>
+					<th>Limit the number of issues sent in the scan results email.<a
+							href="https://docs.wordfence.com/en/Wordfence_options#Limit_the_number_of_issues_sent_in_the_scan_results_email"
+							target="_blank" class="wfhelp"></a></th>
 					<td>
 						<input type="text" name="scan_maxIssues" id="scan_maxIssues"
 					           value="<?php $w->f( 'scan_maxIssues' ); ?>"/> 0 or empty means unlimited

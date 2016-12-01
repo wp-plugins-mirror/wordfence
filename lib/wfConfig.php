@@ -36,6 +36,7 @@ class wfConfig {
 			"lowResourceScansEnabled" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_public" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_heartbleed" => array('value' => true, 'autoload' => self::AUTOLOAD),
+			"scansEnabled_checkHowGetIPs" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_core" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_themes" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_plugins" => array('value' => false, 'autoload' => self::AUTOLOAD),
