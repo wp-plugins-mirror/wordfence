@@ -498,7 +498,9 @@ class wfUtils {
 			foreach(array(',', ' ', "\t") as $char){
 				if(strpos($item, $char) !== false){
 					$sp = explode($char, $item);
+					$sp = array_reverse($sp);
 					foreach($sp as $j){
+						$j = trim($j);
 						if (!self::isValidIP($j)) {
 							$j = preg_replace('/:\d+$/', '', $j); //Strip off port
 						}
@@ -569,6 +571,7 @@ class wfUtils {
 			foreach(array(',', ' ', "\t") as $char){
 				if(strpos($item, $char) !== false){
 					$sp = explode($char, $item);
+					$sp = array_reverse($sp);
 					foreach($sp as $j){
 						$j = trim($j);
 						if (!self::isValidIP($j)) {
@@ -666,7 +669,7 @@ class wfUtils {
 			$ipsToCheck = array();
 			
 			$recommendedField = wfConfig::get('detectProxyRecommendation', ''); //Prioritize the result from our proxy check if done
-			if (!empty($recommendedField) && $recommendedField != 'UNKNOWN') {
+			if (!empty($recommendedField) && $recommendedField != 'UNKNOWN' && $recommendedField != 'DEFERRED') {
 				if (isset($_SERVER[$recommendedField])) {
 					$ipsToCheck[] = array($_SERVER[$recommendedField], $recommendedField);
 				}
@@ -1416,7 +1419,50 @@ class wfUtils {
 		return $output;
 	}
 	
-	public static function requestDetectProxyCallback($timeout = 0.01, $blocking = false) {
+	public static function requestDetectProxyCallback($timeout = 0.01, $blocking = false, $forceCheck = false) {
+		if (!$forceCheck) {
+			$detectProxyNextCheck = wfConfig::get('detectProxyNextCheck', false);
+			if ($detectProxyNextCheck !== false && time() < $detectProxyNextCheck) {
+				return; //Let it pull the currently-stored value
+			}
+		}
+
+		try {
+			$waf = wfWAF::getInstance();
+			if ($waf->getStorageEngine()->getConfig('attackDataKey', false) === false) {
+				$waf->getStorageEngine()->setConfig('attackDataKey', mt_rand(0, 0xfff));
+			}
+			$response = wp_remote_get(sprintf(WFWAF_API_URL_SEC . "proxy-check/%d.txt", $waf->getStorageEngine()->getConfig('attackDataKey')));
+			
+			if (!is_wp_error($response)) {
+				$currentRecommendation = wfConfig::get('detectProxyRecommendation', '');
+				$okToSendBody = wp_remote_retrieve_body($response);
+				if (preg_match('/^(ok|wait),\s*(\d+)$/i', $okToSendBody, $matches)) {
+					$command = $matches[1];
+					$ttl = $matches[2];
+					if ($command == 'wait') {
+						wfConfig::set('detectProxyNextCheck', time() + $ttl, wfConfig::DONT_AUTOLOAD);
+						if (empty($currentRecommendation) || $currentRecommendation == 'UNKNOWN') {
+							wfConfig::set('detectProxyRecommendation', 'DEFERRED', wfConfig::DONT_AUTOLOAD);
+						}
+						return;
+					}
+					
+					wfConfig::set('detectProxyNextCheck', time() + $ttl, wfConfig::DONT_AUTOLOAD);
+				}
+				else { //Unknown response
+					wfConfig::set('detectProxyNextCheck', false, wfConfig::DONT_AUTOLOAD);
+					if (empty($currentRecommendation) || $currentRecommendation == 'UNKNOWN') {
+						wfConfig::set('detectProxyRecommendation', 'DEFERRED', wfConfig::DONT_AUTOLOAD);
+					}
+					return;
+				}
+			}
+		}
+		catch (Exception $e) {
+			return;
+		}
+		
 		$nonce = bin2hex(wfWAFUtils::random_bytes(32));
 		$callback = self::getSiteBaseURL() . '?_wfsf=detectProxy';
 		

@@ -369,7 +369,10 @@ class wfScanEngine {
 				$recommendation = wfConfig::get('detectProxyRecommendation', '');
 			}
 			
-			if ($recommendation == 'UNKNOWN' || empty($recommendation)) {
+			if ($recommendation == 'DEFERRED' || empty($recommendation)) { 
+				//Do nothing
+			}
+			else if ($recommendation == 'UNKNOWN') {
 				$this->addIssue('checkHowGetIPs', 2, 'checkHowGetIPs', 'checkHowGetIPs' . $recommendation . WORDFENCE_VERSION, "Unable to accurately detect IPs", 'Wordfence was unable to validate a test request to your website. This can happen if your website is behind a proxy that does not use one of the standard ways to convey the IP of the request or it is unreachable publicly. IP blocking and live traffic information may not be accurate. <a href="https://docs.wordfence.com/en/Misconfigured_how_get_IPs_notice " target="_blank">Get More Information</a>', array());
 				$haveIssues = true;
 			}
@@ -763,42 +766,47 @@ class wfScanEngine {
 	private function scan_comments_init(){
 		$this->statusIDX['comments'] = wordfence::statusStart('Scanning comments for URLs in Google\'s Safe Browsing List');
 		$this->scanData = array();
-		$this->scanQueue = array();
+		$this->scanQueue = '';
 		$this->hoover = new wordfenceURLHoover($this->apiKey, $this->wp_version);
 		$blogsToScan = self::getBlogsToScan('comments');
 		$wfdb = new wfDB();
 		foreach($blogsToScan as $blog){
 			$q1 = $wfdb->querySelect("select comment_ID from " . $blog['table'] . " where comment_approved=1");
 			foreach($q1 as $idRow){
-				$this->scanQueue[] = array($blog, $idRow['comment_ID']);
+				$this->scanQueue .= pack('LL', $blog['blog_id'], $idRow['comment_ID']);
 			}
 		}
 	}
 	private function scan_comments_main(){
+		global $wpdb;
+		$prefix = $wpdb->base_prefix;
 		$wfdb = new wfDB();
-		while($elem = array_shift($this->scanQueue)){
-			$queueSize = sizeof($this->scanQueue);
-			if($queueSize > 0 && $queueSize % 1000 == 0){
-				wordfence::status(2, 'info', "Scanning comments with $queueSize left to scan.");
+		while (strlen($this->scanQueue) > 0) {
+			$segment = substr($this->scanQueue, 0, 8);
+			$this->scanQueue = substr($this->scanQueue, 8);
+			$elem = unpack('Lblog/Lcomment', $segment);
+			$queueSize = strlen($this->scanQueue) / 8;
+			if ($queueSize > 0 && $queueSize % 1000 == 0) {
+				wordfence::status(2, 'info', "Scanning comments with {$queueSize} left to scan.");
 			}
-			$blog = $elem[0];
-			$commentID = $elem[1];
-			$row = $wfdb->querySingleRec("select comment_ID, comment_date, comment_type, comment_author, comment_author_url, comment_content from " . $blog['table'] . " where comment_ID=%d", $commentID);
-			$this->hoover->hoover($blog['blog_id'] . '-' . $row['comment_ID'], $row['comment_author_url'] . ' ' . $row['comment_author'] . ' ' . $row['comment_content']);
-			$this->scanData[$blog['blog_id'] . '-' . $row['comment_ID']] = array(
-				'contentMD5' => md5($row['comment_content'] . $row['comment_author'] . $row['comment_author_url']),
-				'author' => $row['comment_author'],
-				'type' => ($row['comment_type'] ? $row['comment_type'] : 'comment'),
-				'date' => $row['comment_date'],
-				'isMultisite' => $blog['isMultisite'],
-				'domain' => $blog['domain'],
-				'path' => $blog['path'],
-				'blog_id' => $blog['blog_id']
-				);
+			
+			$blogID = $elem['blog'];
+			$commentID = $elem['comment'];
+			
+			if ($blogID == 1) {
+				$table = "{$prefix}comments";
+			}
+			else {
+				$table = "{$prefix}{$blogID}_comments";
+			}
+			
+			$row = $wfdb->querySingleRec("select comment_ID, comment_date, comment_type, comment_author, comment_author_url, comment_content from {$table} where comment_ID=%d", $commentID);
+			$this->hoover->hoover($blogID . '-' . $row['comment_ID'], $row['comment_author_url'] . ' ' . $row['comment_author'] . ' ' . $row['comment_content']);
 			$this->forkIfNeeded();
 		}
 	}
 	private function scan_comments_finish(){
+		$wfdb = new wfDB();
 		$hooverResults = $this->hoover->getBaddies();
 		if($this->hoover->errorMsg){
 			wordfence::statusEndErr();
@@ -810,35 +818,53 @@ class wfScanEngine {
 			$arr = explode('-', $idString);
 			$blogID = $arr[0];
 			$commentID = $arr[1];
-			$uctype = ucfirst($this->scanData[$idString]['type']);
-			$type = $this->scanData[$idString]['type'];
-			foreach($hresults as $result){
-				if($result['badList'] == 'goog-malware-shavar'){
-					$shortMsg = "$uctype with author " . esc_html($this->scanData[$idString]['author']) . " contains a suspected malware URL.";
+			$blog = null;
+			$comment = null;
+			foreach ($hresults as $result) {
+				if ($result['badList'] != 'goog-malware-shavar' && $result['badList'] != 'googpub-phish-shavar') { 
+					continue; //A list type that may be new and the plugin has not been upgraded yet.
+				}
+				
+				if ($blog === null) {
+					$blogs = self::getBlogsToScan('comments', $blogID);
+					$blog = array_shift($blogs);
+				}
+				
+				if ($comment === null) {
+					$comment = $wfdb->querySingleRec("select comment_ID, comment_date, comment_type, comment_author, comment_author_url, comment_content from " . $blog['table'] . " where comment_ID=%d", $commentID);
+					$type = $comment['comment_type'] ? $comment['comment_type'] : 'comment';
+					$uctype = ucfirst($type);
+					$author = $comment['comment_author'];
+					$date = $comment['comment_date'];
+					$contentMD5 = md5($comment['comment_content'] . $comment['comment_author'] . $comment['comment_author_url']);
+				}
+				
+				if ($result['badList'] == 'goog-malware-shavar') {
+					$shortMsg = "$uctype with author " . esc_html($author) . " contains a suspected malware URL.";
 					$longMsg = "This $type contains a suspected malware URL listed on Google's list of malware sites. The URL is: " . esc_html($result['URL']) . " - More info available at <a href=\"http://safebrowsing.clients.google.com/safebrowsing/diagnostic?site=" . urlencode($result['URL']) . "&client=googlechrome&hl=en-US\" target=\"_blank\">Google Safe Browsing diagnostic page</a>.";
-				} else if($result['badList'] == 'googpub-phish-shavar'){
+				}
+				else if ($result['badList'] == 'googpub-phish-shavar') {
 					$shortMsg = "$uctype contains a suspected phishing site URL.";
 					$longMsg = "This $type contains a URL that is a suspected phishing site that is currently listed on Google's list of known phishing sites. The URL is: " . esc_html($result['URL']);
-				} else {
-					//A list type that may be new and the plugin has not been upgraded yet.
-					continue;
 				}
+				
 				if(is_multisite()){
 					switch_to_blog($blogID);
 				}
+				
 				$ignoreP = $idString;
-				$ignoreC = $idString . '-' . $this->scanData[$idString]['contentMD5'];
+				$ignoreC = $idString . '-' . $contentMD5;
 				if($this->addIssue('commentBadURL', 1, $ignoreP, $ignoreC, $shortMsg, $longMsg, array(
 					'commentID' => $commentID,
 					'badURL' => $result['URL'],
-					'author' => $this->scanData[$idString]['author'],
+					'author' => $author,
 					'type' => $type,
 					'uctype' => $uctype,
 					'editCommentLink' => get_edit_comment_link($commentID),
-					'commentDate' => $this->scanData[$idString]['date'],
-					'isMultisite' => $this->scanData[$idString]['isMultisite'],
-					'domain' => $this->scanData[$idString]['domain'],
-					'path' => $this->scanData[$idString]['path'],
+					'commentDate' => $date,
+					'isMultisite' => $blog['isMultisite'],
+					'domain' => $blog['domain'],
+					'path' => $blog['path'],
 					'blog_id' => $blogID
 					))){
 					$haveIssues = true;
@@ -887,13 +913,19 @@ class wfScanEngine {
 		$this->status(2, 'info', "Scanned comment with $cDesc");
 		return false;
 	}
-	public static function getBlogsToScan($table){
+	public static function getBlogsToScan($table, $withID = null){
 		$wfdb = new wfDB();
 		global $wpdb;
 		$prefix = $wpdb->base_prefix;
 		$blogsToScan = array();
 		if(is_multisite()){
-			$q1 = $wfdb->querySelect("select blog_id, domain, path from $prefix"."blogs where deleted=0 order by blog_id asc");
+			if ($withID === null) {
+				$q1 = $wfdb->querySelect("select blog_id, domain, path from $prefix"."blogs where deleted=0 order by blog_id asc");
+			}
+			else {
+				$q1 = $wfdb->querySelect("select blog_id, domain, path from $prefix"."blogs where deleted=0 and blog_id = %d", $withID);
+			}
+			
 			foreach($q1 as $row){
 				$row['isMultisite'] = true;
 				if($row['blog_id'] == 1){
@@ -1177,7 +1209,8 @@ class wfScanEngine {
 		$haveIssues = false;
 
 		$update_check = new wfUpdateCheck();
-		$update_check->checkAllUpdates();
+		$update_check->checkAllUpdates(false);
+		$update_check->checkAllVulnerabilities();
 
 		// WordPress core updates needed
 		if ($update_check->needsCoreUpdate()) {
@@ -1210,8 +1243,15 @@ class wfScanEngine {
 		// Theme updates needed
 		if (count($update_check->getThemeUpdates()) > 0) {
 			foreach ($update_check->getThemeUpdates() as $theme) {
+				$severity = 1; //Critical
+				if (isset($theme['vulnerabilityPatched'])) {
+					if (!$theme['vulnerabilityPatched']) {
+						$severity = 2; //Warning
+					}
+				}
 				$key = 'wfThemeUpgrade' . ' ' . $theme['Name'] . ' ' . $theme['version'] . ' ' . $theme['newVersion'];
-				if ($this->addIssue('wfThemeUpgrade', 1, $key, $key, "The Theme \"" . $theme['Name'] . "\" needs an upgrade.", "You need to upgrade \"" . $theme['Name'] . "\" to the newest version to ensure you have any security fixes the developer has released.", $theme)) {
+				$shortMsg = "The Theme \"" . $theme['Name'] . "\" needs an upgrade (" . $theme['version'] . " -> " . $theme['newVersion'] . ").";
+				if ($this->addIssue('wfThemeUpgrade', $severity, $key, $key, $shortMsg, "You need to upgrade \"" . $theme['Name'] . "\" to the newest version to ensure you have any security fixes the developer has released.", $theme)) {
 					$haveIssues = true;
 				}
 			}

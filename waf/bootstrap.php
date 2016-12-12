@@ -84,6 +84,7 @@ class wfWAFWordPressRequest extends wfWAFRequest {
 			foreach (array(',', ' ', "\t") as $char) {
 				if (strpos($item, $char) !== false) {
 					$sp = explode($char, $item);
+					$sp = array_reverse($sp);
 					foreach ($sp as $j) {
 						$j = trim($j);
 						if (!$this->_isValidIP($j)) {

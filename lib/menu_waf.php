@@ -6,7 +6,6 @@ $wafRemoveURL = network_admin_url('admin.php?page=WordfenceWAF&wafAction=removeA
 /** @var array $wafData */
 ?>
 <div class="wrap wordfence" id="paidWrap">
-	<?php require('menuHeader.php'); ?>
 	<?php
 	$pageTitle = "Wordfence Web Application Firewall";
 	$helpLink = "http://docs.wordfence.com/en/WAF";

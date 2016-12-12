@@ -3,7 +3,6 @@ $w = new wfConfig();
 ?>
 <div class="wordfenceModeElem" id="wordfenceMode_options"></div>
 <div class="wrap wordfence">
-	<?php require( 'menuHeader.php' ); ?>
 	<?php $helpLink = "http://docs.wordfence.com/en/Wordfence_options";
 	$helpLabel      = "Learn more about Wordfence Options";
 	$pageTitle      = "Wordfence Options";
@@ -456,7 +455,7 @@ $w = new wfConfig();
 					</td>
 				</tr>
 				<tr>
-					<th>Scan for publically accessible configuration, backup, or log files<a
+					<th>Scan for publicly accessible configuration, backup, or log files<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Configuration_Readable"
 							target="_blank" class="wfhelp"></a></th>
 					<td><input type="checkbox" id="scansEnabled_checkReadableConfig" class="wfConfigElem"
@@ -889,7 +888,7 @@ $w = new wfConfig();
 					           name="loginSec_blockAdminReg" <?php $w->cb( 'loginSec_blockAdminReg' ); ?> /></td>
 				</tr>
 				<tr>
-					<th>Prevent discovery of usernames through '/?author=N' scans and the oEmbed API<a
+					<th>Prevent discovery of usernames through '/?author=N' scans, the oEmbed API, and the WordPress REST API<a
 							href="http://docs.wordfence.com/en/Wordfence_options#Prevent_discovery_of_usernames_through_.27.3F.2Fauthor.3DN.27_scans"
 							target="_blank" class="wfhelp"></a></th>
 					<td><input type="checkbox" id="loginSec_disableAuthorScan" class="wfConfigElem"
