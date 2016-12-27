@@ -1420,9 +1420,13 @@ class wfUtils {
 	}
 	
 	public static function requestDetectProxyCallback($timeout = 0.01, $blocking = false, $forceCheck = false) {
+		$currentRecommendation = wfConfig::get('detectProxyRecommendation', '');
 		if (!$forceCheck) {
 			$detectProxyNextCheck = wfConfig::get('detectProxyNextCheck', false);
 			if ($detectProxyNextCheck !== false && time() < $detectProxyNextCheck) {
+				if (empty($currentRecommendation)) {
+					wfConfig::set('detectProxyRecommendation', 'DEFERRED', wfConfig::DONT_AUTOLOAD);
+				}
 				return; //Let it pull the currently-stored value
 			}
 		}
@@ -1435,7 +1439,6 @@ class wfUtils {
 			$response = wp_remote_get(sprintf(WFWAF_API_URL_SEC . "proxy-check/%d.txt", $waf->getStorageEngine()->getConfig('attackDataKey')));
 			
 			if (!is_wp_error($response)) {
-				$currentRecommendation = wfConfig::get('detectProxyRecommendation', '');
 				$okToSendBody = wp_remote_retrieve_body($response);
 				if (preg_match('/^(ok|wait),\s*(\d+)$/i', $okToSendBody, $matches)) {
 					$command = $matches[1];

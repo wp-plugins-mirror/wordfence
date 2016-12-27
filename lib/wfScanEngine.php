@@ -369,8 +369,15 @@ class wfScanEngine {
 				$recommendation = wfConfig::get('detectProxyRecommendation', '');
 			}
 			
-			if ($recommendation == 'DEFERRED' || empty($recommendation)) { 
+			$failed = false;
+			if ($recommendation == 'DEFERRED') { 
 				//Do nothing
+				wordfence::statusEnd($this->statusIDX['checkHowGetIPs'], $haveIssues, $failed, true);
+				return;
+			}
+			else if (empty($recommendation)) {
+				$failed = true;
+				$haveIssues = true;
 			}
 			else if ($recommendation == 'UNKNOWN') {
 				$this->addIssue('checkHowGetIPs', 2, 'checkHowGetIPs', 'checkHowGetIPs' . $recommendation . WORDFENCE_VERSION, "Unable to accurately detect IPs", 'Wordfence was unable to validate a test request to your website. This can happen if your website is behind a proxy that does not use one of the standard ways to convey the IP of the request or it is unreachable publicly. IP blocking and live traffic information may not be accurate. <a href="https://docs.wordfence.com/en/Misconfigured_how_get_IPs_notice " target="_blank">Get More Information</a>', array());
@@ -395,7 +402,7 @@ class wfScanEngine {
 				$haveIssues = true;
 			}
 			
-			wordfence::statusEnd($this->statusIDX['checkHowGetIPs'], $haveIssues);
+			wordfence::statusEnd($this->statusIDX['checkHowGetIPs'], $haveIssues, $failed);
 		}
 	}
 

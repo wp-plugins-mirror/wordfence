@@ -5335,19 +5335,24 @@ HTML
 		self::status(10, 'info', 'SUM_START:' . $msg);
 		return sizeof($statusStartMsgs) - 1;
 	}
-	public static function statusEnd($idx, $haveIssues, $successFailed = false){
+	public static function statusEnd($idx, $haveIssues, $successFailed = false, $skipped = false){
 		$statusStartMsgs = wfConfig::get_ser('wfStatusStartMsgs', array());
-		if($haveIssues){
-			if($successFailed){
-				self::status(10, 'info', 'SUM_ENDFAILED:' . $statusStartMsgs[$idx]);
+		if ($skipped) {
+			self::status(10, 'info', 'SUM_ENDSKIPPED:' . $statusStartMsgs[$idx]);
+		}
+		else {
+			if($haveIssues){
+				if($successFailed){
+					self::status(10, 'info', 'SUM_ENDFAILED:' . $statusStartMsgs[$idx]);
+				} else {
+					self::status(10, 'info', 'SUM_ENDBAD:' . $statusStartMsgs[$idx]);
+				}
 			} else {
-				self::status(10, 'info', 'SUM_ENDBAD:' . $statusStartMsgs[$idx]);
-			}
-		} else {
-			if($successFailed){
-				self::status(10, 'info', 'SUM_ENDSUCCESS:' . $statusStartMsgs[$idx]);
-			} else {
-				self::status(10, 'info', 'SUM_ENDOK:' . $statusStartMsgs[$idx]);
+				if($successFailed){
+					self::status(10, 'info', 'SUM_ENDSUCCESS:' . $statusStartMsgs[$idx]);
+				} else {
+					self::status(10, 'info', 'SUM_ENDOK:' . $statusStartMsgs[$idx]);
+				}
 			}
 		}
 		$statusStartMsgs[$idx] = '';
