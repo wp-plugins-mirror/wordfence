@@ -149,7 +149,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 				<a href="#" target="_blank" class="wfALogViewLink" id="wfALogViewLink">View activity log</a>
 			</div>
 			<div style="margin: 0 0 20px 5px; width: 795px;">
-				<strong>Docs:</strong> Our <a href="http://support.wordfence.com/" target="_blank">Support Site</a> can answer many common (and some less common) questions. It also includes our priority support ticketing system for Premium Wordfence users. 
+				<strong>Docs:</strong> Our <a href="http://docs.wordfence.com/" target="_blank">support site</a> can answer many common (and some less common) questions. It also includes a link to our priority support ticketing system for Premium Wordfence users. 
 				<?php $unknownFilesLink = wfUtils::siteURLRelative() . '?_wfsf=unknownFiles&nonce=' . wp_create_nonce('wp-ajax'); ?>
 			</div>
 

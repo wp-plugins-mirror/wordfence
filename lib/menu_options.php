@@ -38,7 +38,9 @@ $w = new wfConfig();
 			<tr>
 				<th>Key type currently active:</th>
 				<td>
-					<?php if (wfConfig::get( 'isPaid' )){ ?>
+					<?php if (wfConfig::get('hasKeyConflict')) { ?>
+						<span style="font-weight: bold; color: #A00;">The currently active Premium API Key is in use on another site.</span>
+					<?php } else if (wfConfig::get( 'isPaid' )){ ?>
 						The currently active API Key is a Premium Key. <span style="font-weight: bold; color: #0A0;">Premium scanning enabled!</span>
 					<?php } else { ?>
 					The currently active API Key is a <span style="color: #F00; font-weight: bold;">Free Key</span>. <a
@@ -49,7 +51,18 @@ $w = new wfConfig();
 			</tr>
 			<tr>
 				<td colspan="2">
-					<?php if (wfConfig::get('isPaid')): ?>
+					<?php if (wfConfig::get('hasKeyConflict')): ?>
+						<table border="0">
+							<tr>
+								<td><a href="https://www.wordfence.com/gnl1optMngKysReset/manage-wordfence-api-keys/"
+									   target="_blank"><input type="button" value="Reset your premium license"/></a>
+								</td>
+								<td>&nbsp;</td>
+								<td><input type="button" value="Downgrade to a free license"
+										   onclick="WFAD.downgradeLicense();"/></td>
+							</tr>
+						</table>
+					<?php elseif (wfConfig::get('isPaid')): ?>
 						<table border="0">
 							<tr>
 								<td><a href="https://www.wordfence.com/gnl1optMngKys/manage-wordfence-api-keys/"
@@ -953,11 +966,11 @@ $w = new wfConfig();
 				</tr>
 				
 				<tr>
-					<th style="vertical-align: top;">Whitelisted IP addresses for Wordfence Web Application Firewall alerting:</th>
+					<th style="vertical-align: top;">Ignored IP addresses for Wordfence Web Application Firewall alerting:</th>
 					<td><textarea name="wafAlertWhitelist" id="wafAlertWhitelist" cols="40" rows="4"><?php echo esc_html(preg_replace('/,/', "\n", $w->get('wafAlertWhitelist'))); ?></textarea></td>
 				</tr>
 				<tr>
-					<th colspan="2" style="color: #999;">Whitelisted IPs must be separated by commas or placed on separate lines. These addresses will be ignored from any alerts about increased attacks and can be used to ignore things like standalone website security scanners.<br/><br/></th>
+					<th colspan="2" style="color: #999;">Ignored IPs must be separated by commas or placed on separate lines. These addresses will be ignored from any alerts about increased attacks and can be used to ignore things like standalone website security scanners.<br/><br/></th>
 				</tr>
 				<tr class="hidden">
 					<th style="vertical-align: top;">Minimum number of blocked attacks before sending an alert</th>

@@ -552,6 +552,21 @@ SQL
 		//6.2.8
 		wfCache::removeCaching();
 		
+		//6.2.10
+		$snipCacheTable = "{$wpdb->base_prefix}wfSNIPCache";
+		$hasType = $wpdb->get_col($wpdb->prepare(<<<SQL
+SELECT * FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA=DATABASE()
+AND COLUMN_NAME='type'
+AND TABLE_NAME=%s
+SQL
+			, $snipCacheTable));
+		if (!$hasType) {
+			$wpdb->query("ALTER TABLE `{$snipCacheTable}` ADD `type` INT  UNSIGNED  NOT NULL  DEFAULT '0'");
+			$wpdb->query("ALTER TABLE `{$snipCacheTable}` ADD INDEX (`type`)");
+		}
+
+		
 		//Check the How does Wordfence get IPs setting
 		wfUtils::requestDetectProxyCallback();
 
@@ -1712,7 +1727,7 @@ SQL
 			if($maxBlockTime = self::wfsnIsBlocked($IP, 'brute')){
 				self::getLog()->blockIP($IP, "Blocked by Wordfence Security Network", true, false, $maxBlockTime);
 				$secsToGo = wfConfig::get('blockedTime');
-				self::getLog()->getCurrentRequest()->action = 'blocked:wfsnrepeat';
+				self::getLog()->getCurrentRequest()->action = 'blocked:wfsn';
 				self::getLog()->do503($secsToGo, "Blocked by Wordfence Security Network");
 			}
 
@@ -1774,23 +1789,36 @@ SQL
 		$wfdb = new wfDB();
 		global $wpdb;
 		$p = $wpdb->base_prefix;
-		$rawBlocks = $wfdb->querySelect("SELECT SQL_CALC_FOUND_ROWS IP, ctime FROM {$p}wfHits WHERE ctime > %.6f AND action = 'blocked:wfsnrepeat' ORDER BY ctime ASC LIMIT 100", $threshold);
+		$rawBlocks = $wfdb->querySelect("SELECT SQL_CALC_FOUND_ROWS IP, ctime, actionData FROM {$p}wfHits WHERE ctime > %.6f AND action = 'blocked:wfsnrepeat' ORDER BY ctime ASC LIMIT 100", $threshold);
 		$totalRows = $wpdb->get_var('SELECT FOUND_ROWS()');
 		$ipCounts = array();
 		$maxctime = 0;
 		foreach ($rawBlocks as $record) {
 			$maxctime = max($maxctime, $record['ctime']);
+			$endpointType = 0;
+			if (!empty($record['actionData'])) {
+				$actionData = wfRequestModel::unserializeActionData($record['actionData']);
+				if (isset($actionData['type'])) {
+					$endpointType = $actionData['type'];
+				}
+			}
 			if (isset($ipCounts[$record['IP']])) {
-				$ipCounts[$record['IP']]++;
+				$ipCounts[$record['IP']] = array();
+			}
+			
+			if (isset($ipCounts[$record['IP']][$endpointType])) {
+				$ipCounts[$record['IP']][$endpointType]++;
 			}
 			else {
-				$ipCounts[$record['IP']] = 1;
+				$ipCounts[$record['IP']][$endpointType] = 1;
 			}
 		}
 		
 		$toSend = array();
-		foreach ($ipCounts as $IP => $count) {
-			$toSend[] = array('IP' => base64_encode($IP), 'count' => $count, 'blocked' => 1);
+		foreach ($ipCounts as $IP => $endpoints) {
+			foreach ($endpoints as $endpointType => $count) {
+				$toSend[] = array('IP' => base64_encode($IP), 'count' => $count, 'blocked' => 1, 'type' => $endpointType);
+			}
 		}
 		
 		try {
@@ -1833,6 +1861,8 @@ SQL
 	}
 	public static function wfsnReportBlockedAttempt($IP, $type){
 		self::wfsnScheduleBatchReportBlockedAttempts();
+		$endpointType = self::wfsnEndpointType();
+		self::getLog()->getCurrentRequest()->actionData = wfRequestModel::serializeActionData(array('type' => $endpointType));
 	}
 	public static function wfsnBatchReportFailedAttempts() {
 		$threshold = time();
@@ -1840,7 +1870,7 @@ SQL
 		$wfdb = new wfDB();
 		global $wpdb;
 		$p = $wpdb->base_prefix;
-		$toSend = $wfdb->querySelect("SELECT id, IP, count, 1 AS failed FROM {$p}wfSNIPCache WHERE count > 0 AND expiration < FROM_UNIXTIME(%d) LIMIT 100", $threshold);
+		$toSend = $wfdb->querySelect("SELECT id, IP, type, count, 1 AS failed FROM {$p}wfSNIPCache WHERE count > 0 AND expiration < FROM_UNIXTIME(%d) LIMIT 100", $threshold);
 		$toDelete = array();
 		if (count($toSend)) {
 			foreach ($toSend as &$record) {
@@ -1888,11 +1918,12 @@ SQL
 			restore_current_blog();
 		}
 	}
-	public static function wfsnIsBlocked($IP, $type){
+	public static function wfsnIsBlocked($IP, $hitType){
 		$wfdb = new wfDB();
 		global $wpdb;
 		$p = $wpdb->base_prefix;
-		$cachedRecord = $wfdb->querySingleRec("SELECT id, body FROM {$p}wfSNIPCache WHERE IP = '%s' AND expiration > NOW()", $IP);
+		$endpointType = self::wfsnEndpointType();
+		$cachedRecord = $wfdb->querySingleRec("SELECT id, body FROM {$p}wfSNIPCache WHERE IP = '%s' AND type = %d AND expiration > NOW()", $IP, $endpointType);
 		if (isset($cachedRecord)) {
 			$wfdb->queryWriteIgnoreError("UPDATE {$p}wfSNIPCache SET count = count + 1 WHERE id = %d", $cachedRecord['id']);
 			if (preg_match('/BLOCKED:(\d+)/', $cachedRecord['body'], $matches) && (!self::getLog()->isWhitelisted($IP))) {
@@ -1902,14 +1933,18 @@ SQL
 		}
 		
 		try {
-			$result = wp_remote_get(WORDFENCE_HACKATTEMPT_URL . 'hackAttempt/?k=' . rawurlencode(wfConfig::get('apiKey')) . '&IP=' . rawurlencode(filter_var($IP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? wfUtils::inet_aton($IP) : wfUtils::inet_pton($IP)) . '&t=' . rawurlencode($type), array(
-				'timeout' => 3,
-				'user-agent' => "Wordfence.com UA " . (defined('WORDFENCE_VERSION') ? WORDFENCE_VERSION : '[Unknown version]'),
-			));
+			$result = wp_remote_get(WORDFENCE_HACKATTEMPT_URL . 'hackAttempt/?k=' . rawurlencode(wfConfig::get('apiKey')) . 
+																			'&IP=' . rawurlencode(filter_var($IP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? wfUtils::inet_aton($IP) : wfUtils::inet_pton($IP)) . 
+																			'&t=' . rawurlencode($hitType) .
+																			'&type=' . $endpointType, 
+				array(
+					'timeout' => 3,
+					'user-agent' => "Wordfence.com UA " . (defined('WORDFENCE_VERSION') ? WORDFENCE_VERSION : '[Unknown version]'),
+				));
 			if (is_wp_error($result)) {
 				return false;
 			}
-			$wfdb->queryWriteIgnoreError("INSERT INTO {$p}wfSNIPCache (IP, expiration, body) VALUES ('%s', DATE_ADD(NOW(), INTERVAL %d SECOND), '%s')", $IP, 30, $result['body']);
+			$wfdb->queryWriteIgnoreError("INSERT INTO {$p}wfSNIPCache (IP, type, expiration, body) VALUES ('%s', %d, DATE_ADD(NOW(), INTERVAL %d SECOND), '%s')", $IP, $endpointType, 30, $result['body']);
 			self::wfsnScheduleBatchReportFailedAttempts();
 			if (preg_match('/BLOCKED:(\d+)/', $result['body'], $matches) && (!self::getLog()->isWhitelisted($IP))) {
 				return $matches[1];
@@ -1918,6 +1953,17 @@ SQL
 		} catch (Exception $err) {
 			return false;
 		}
+	}
+	public static function wfsnEndpointType() {
+		$wploginPath = ABSPATH . 'wp-login.php';
+		$type = 0; //Unknown
+		if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
+			$type = 2;
+		}
+		else if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] == $wploginPath) {
+			$type = 1;
+		}
+		return $type;
 	}
 	public static function logoutAction(){
 		$userID = get_current_user_id();
@@ -2766,7 +2812,12 @@ SQL
 			}
 		} else {
 			$api = new wfAPI($opts['apiKey'], wfUtils::getWPVersion());
-			$api->call('ping_api_key', array(), array());
+			try {
+				$api->call('ping_api_key', array(), array());
+			}
+			catch (Exception $e){
+				return array('errorMsg' => "Your options have been saved. However we tried to verify your API key with the Wordfence servers and received an error: " . wp_kses($e->getMessage(), array()) );
+			}
 		}
 		return array('ok' => 1, 'reload' => $reload, 'paidKeyMsg' => $paidKeyMsg );
 	}
@@ -6089,7 +6140,11 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 	ORDER BY attackLogTime DESC
 	LIMIT 10", array_merge($wafAlertWhitelist, array($cutoffTime))));
 			$attackCount = $wpdb->get_var('SELECT FOUND_ROWS()');
-			if ($attackCount >= wfConfig::get('wafAlertThreshold')) {
+			$threshold = (int) wfConfig::get('wafAlertThreshold');
+			if ($threshold < 1) {
+				$threshold = 100;
+			}
+			if ($attackCount >= $threshold) {
 				$durationMessage = wfUtils::makeDuration($alertInterval);
 				$message = <<<ALERTMSG
 The Wordfence Web Application Firewall has blocked {$attackCount} attacks over the last {$durationMessage}. Below is a sample of these recent attacks:
@@ -6336,6 +6391,7 @@ LIMIT %d", $lastSendTime, $limit));
 							if (class_exists('wfWAFIPBlocksController')) {
 								if ($action == wfWAFIPBlocksController::WFWAF_BLOCK_WFSN) {
 									$hit->action = 'blocked:wfsnrepeat';
+									wordfence::wfsnReportBlockedAttempt($hit->IP, 'waf');
 								}
 							}
 							$hit->actionDescription = $actionDescription;
