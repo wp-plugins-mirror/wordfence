@@ -1,43 +1,23 @@
-<div class="wordfenceModeElem" id="wordfenceMode_blockedIPs"></div>
-<div class="wrap wordfence">
-	<?php $helpLink="http://docs.wordfence.com/en/Blocked_IPs"; $helpLabel="Learn more about Blocked IPs"; $pageTitle = "Wordfence Blocked IPs"; include('pageTitle.php'); ?>
-	<div class="wordfenceLive">
-		<table border="0" cellpadding="0" cellspacing="0" class="wordfenceLiveActivity">
-			<tr>
-				<td><h2>Wordfence Live Activity:</h2></td>
-				<td id="wfLiveStatus"></td>
-			</tr>
-		</table>
-		<table border="0" cellpadding="0" cellspacing="0" class="wordfenceLiveStateMessage">
-			<tr>
-				<td>Live Updates Paused &mdash; Click inside window to resume</td>
-			</tr>
-		</table>
-	</div>
+<div class="wordfenceHelpLink"><a href="<?php echo $helpLink; ?>" target="_blank" class="wfhelp"></a><a href="<?php echo $helpLink; ?>" target="_blank"><?php echo $helpLabel; ?></a></div>
+<div>
+	<div class="wordfenceModeElem" id="wordfenceMode_blockedIPs"></div>
 	<?php if(! wfConfig::get('firewallEnabled')){ ?><div style="color: #F00; font-weight: bold;">Rate limiting rules and advanced blocking are disabled. You can enable it on the <a href="admin.php?page=WordfenceSecOpt">Wordfence Options page</a> at the top.</div><?php } ?>
-	<div class="wordfenceWrap" style="margin: 20px 20px 20px 30px;">
+	<p>
 		<a href="#" onclick="WFAD.clearAllBlocked('blocked'); return false;">Clear all blocked IP addresses</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#" onclick="WFAD.clearAllBlocked('locked'); return false;">Clear all locked out IP addresses</a><br />
 		You can manually (and permanently) block an IP by entering the address here: <input type="text" id="wfManualBlock" size="20" maxlength="40" value="" onkeydown="if(event.keyCode == 13){ WFAD.blockIPTwo(jQuery('#wfManualBlock').val(), 'Manual block by administrator', true); return false; }" />&nbsp;<input type="button" name="but1" value="Manually block IP" onclick="WFAD.blockIPTwo(jQuery('#wfManualBlock').val(), 'Manual block by administrator', true); return false;" />
-	</div>
-	<div class="wordfenceWrap<?php if (!wfConfig::get('isPaid')) { echo " wordfence-community"; }?>">
-		<?php
-		$rightRail = new wfView('marketing/rightrail', array('additionalClasses' => 'wordfenceRightRailBlockedIPs'));
-		echo $rightRail;
-		?>
-		<div>
-			<div id="wfTabs">
-				<a href="#" class="wfTab1 wfTabSwitch selected" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_blockedIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs that are blocked from accessing the site</a>
-				<a href="#" class="wfTab1 wfTabSwitch" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_lockedOutIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs that are Locked Out from Login</a>
-				<a href="#" class="wfTab1 wfTabSwitch" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_throttledIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs who were throttled for accessing the site too frequently</a>
-			</div>
-			<div class="wfTabsContainer">
-				<div id="wfActivity_blockedIPs" class="wfDataPanel"><div class="wfLoadingWhite32"></div></div>
-				<div id="wfActivity_lockedOutIPs" class="wfDataPanel" style="display: none;"><div class="wfLoadingWhite32"></div></div>
-				<div id="wfActivity_throttledIPs" class="wfDataPanel" style="display: none;"><div class="wfLoadingWhite32"></div></div>
-			</div>
+	</p>
+	<div>
+		<div id="wfTabs">
+			<a href="#" class="wfTab1 wfTabSwitch selected" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_blockedIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs blocked from accessing the site</a>
+			<a href="#" class="wfTab1 wfTabSwitch" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_lockedOutIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs locked out from login</a>
+			<a href="#" class="wfTab1 wfTabSwitch" onclick="wordfenceAdmin.switchTab(this, 'wfTab1', 'wfDataPanel', 'wfActivity_throttledIPs', function(){ WFAD.staticTabChanged(); }); return false;">IPs throttled for accessing the site too frequently</a>
+		</div>
+		<div class="wfTabsContainer">
+			<div id="wfActivity_blockedIPs" class="wfDataPanel"><div class="wfLoadingWhite32"></div></div>
+			<div id="wfActivity_lockedOutIPs" class="wfDataPanel" style="display: none;"><div class="wfLoadingWhite32"></div></div>
+			<div id="wfActivity_throttledIPs" class="wfDataPanel" style="display: none;"><div class="wfLoadingWhite32"></div></div>
 		</div>
 	</div>
-
 </div>
 
 <script type="text/x-jquery-template" id="wfThrottledIPsWrapperTmpl">

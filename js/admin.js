@@ -89,6 +89,51 @@
 					$(this).hide();
 				});
 
+				var tabs = jQuery('#wordfenceTopTabs').find('a');
+				if (tabs.length > 0) {
+					tabs.click(function() {
+						jQuery('#wordfenceTopTabs').find('a').removeClass('nav-tab-active');
+						jQuery('.wordfenceTopTab').removeClass('active');
+						jQuery(this).addClass('nav-tab-active');
+						
+						var tab = jQuery('#' + jQuery(this).attr('id').replace('-tab', ''));
+						tab.addClass('active');
+						jQuery('#wfHeading').html(tab.data('title'));
+						self.sectionInit();
+					});
+					if (window.location.hash) {
+						var hashes = window.location.hash.split('#');
+						var hash = hashes[hashes.length - 1];
+						for (var i = 0; i < tabs.length; i++) {
+							if (hash == jQuery(tabs[i]).attr('id').replace('-tab', '')) {
+								jQuery(tabs[i]).trigger('click');
+							}
+						}
+					}
+					else {
+						jQuery(tabs[0]).trigger('click');
+					}
+					jQuery(window).on('hashchange', function () {
+						var hashes = window.location.hash.split('#');
+						var hash = hashes[hashes.length - 1];
+						for (var i = 0; i < tabs.length; i++) {
+							if (hash == jQuery(tabs[i]).attr('id').replace('-tab', '')) {
+								jQuery(tabs[i]).trigger('click');
+							}
+						}
+					});
+				}
+				else {
+					this.sectionInit();
+				}
+				
+				if (this.mode) {
+					jQuery(document).bind('cbox_closed', function() {
+						self.colorboxIsOpen = false;
+						self.colorboxServiceQueue();
+					});
+				}
+
 				$(document).focus();
 
 				// (docs|support).wordfence.com GA links
@@ -109,23 +154,35 @@
 						this.href = 'https://support.wordfence.com/support/home?utm_source=plugin&utm_medium=pluginUI&utm_campaign=supportLink';
 					}
 				});
-
-				if (jQuery('#wordfenceMode_scan').length > 0) {
+			},
+			sectionInit: function() {
+				var self = this;
+				var startTicker = false;
+				this.mode = false;
+				if (jQuery('#wordfenceMode_dashboard:visible').length > 0) {
+					this.mode = 'dashboard';
+					if (this.needTour()) {
+						this.scanTourStart();
+					}
+				} else if (jQuery('#wordfenceMode_scan:visible').length > 0) {
 					this.mode = 'scan';
 					jQuery('#wfALogViewLink').prop('href', WordfenceAdminVars.siteBaseURL + '?_wfsf=viewActivityLog&nonce=' + this.nonce);
 					jQuery('#consoleActivity').scrollTop(jQuery('#consoleActivity').prop('scrollHeight'));
-					jQuery('#consoleScan').scrollTop(jQuery('#consoleScan').prop('scrollHeight'));
+					jQuery('#consoleSummary').scrollTop(jQuery('#consoleSummary').prop('scrollHeight'));
 					this.noScanHTML = jQuery('#wfNoScanYetTmpl').tmpl().html();
 
 
 					var loadingIssues = true;
-					
+
 					this.loadIssues(function() {
 						loadingIssues = false;
 					});
 					this.startActivityLogUpdates();
+
 					if (this.needTour()) {
-						this.scanTourStart();
+						self.tour('wfTourScan', 'wfHeading', 'top', 'left', "Learn about the Firewall", function() {
+							self.tourRedir('WordfenceWAF');
+						});
 					}
 
 					var issuesWrapper = $('#wfScanIssuesWrapper');
@@ -149,13 +206,15 @@
 							// console.log('no infinite scroll');
 						}
 					});
-				} else if (jQuery('#wordfenceMode_waf').length > 0) {
+				} else if (jQuery('#wordfenceMode_waf:visible').length > 0) {
+					this.mode = 'waf';
+					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWAFTour', 'wfHeading', 'top', 'left', "Learn about Live Traffic", function() {
 							self.tourRedir('WordfenceActivity');
 						});
 					}
-				} else if (jQuery('#wordfenceMode_activity').length > 0) {
+				} else if (jQuery('#wordfenceMode_activity:visible').length > 0) {
 					this.mode = 'activity';
 					this.setupSwitches('wfLiveTrafficOnOff', 'liveTrafficEnabled', function() {
 					});
@@ -176,10 +235,10 @@
 					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeContent3', 'wfHeading', 'top', 'left', "Learn about IP Blocking", function() {
-							self.tourRedir('WordfenceBlockedIPs');
+							self.tourRedir('WordfenceWAF#top#blockedips');
 						});
 					}
-				} else if (jQuery('#wordfenceMode_options').length > 0) {
+				} else if (jQuery('#wordfenceMode_options:visible').length > 0) {
 					this.mode = 'options';
 					this.updateTicker(true);
 					startTicker = true;
@@ -196,14 +255,14 @@
 							});
 						});
 					}
-				} else if (jQuery('#wordfenceMode_blockedIPs').length > 0) {
+				} else if (jQuery('#wordfenceMode_blockedIPs:visible').length > 0) {
 					this.mode = 'blocked';
 					this.staticTabChanged();
 					this.updateTicker(true);
 					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeContent4', 'wfHeading', 'top', 'left', "Learn about Auditing Passwords", function() {
-							self.tourRedir('WordfencePasswdAudit');
+							self.tourRedir('WordfenceTools');
 						});
 					}
 
@@ -218,43 +277,43 @@
 						if (hasScrolled && !self.loadingBlockedIPs && currentScrollBottom >= scrollThreshold) {
 							// console.log('infinite scroll');
 							hasScrolled = false;
-							
+
 							self.loadStaticPanelContent(true);
 						} else if (currentScrollBottom < scrollThreshold) {
 							hasScrolled = true;
 							// console.log('no infinite scroll');
 						}
 					});
-				} else if (jQuery('#wordfenceMode_passwd').length > 0) {
+				} else if (jQuery('#wordfenceMode_passwd:visible').length > 0) {
 					this.mode = 'passwd';
-					startTicker = false;
+					startTicker = true;
 					this.doPasswdAuditUpdate();
 					if (this.needTour()) {
 						this.tour('wfWelcomePasswd', 'wfHeading', 'top', 'left', "Learn about Cellphone Sign-in", function() {
-							self.tourRedir('WordfenceTwoFactor');
+							self.tourRedir('WordfenceWAF#top#twofactor');
 						});
 					}
-				} else if (jQuery('#wordfenceMode_twoFactor').length > 0) {
+				} else if (jQuery('#wordfenceMode_twoFactor:visible').length > 0) {
 					this.mode = 'twoFactor';
-					startTicker = false;
+					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeTwoFactor', 'wfHeading', 'top', 'left', "Learn how to Block Countries", function() {
-							self.tourRedir('WordfenceCountryBlocking');
+							self.tourRedir('WordfenceWAF#top#countryblocking');
 						});
 					}
 					this.loadTwoFactor();
 
-				} else if (jQuery('#wordfenceMode_countryBlocking').length > 0) {
+				} else if (jQuery('#wordfenceMode_countryBlocking:visible').length > 0) {
 					this.mode = 'countryBlocking';
-					startTicker = false;
+					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeContentCntBlk', 'wfHeading', 'top', 'left', "Learn how to Schedule Scans", function() {
-							self.tourRedir('WordfenceScanSchedule');
+							self.tourRedir('WordfenceScan#top#scheduling');
 						});
 					}
-				} else if (jQuery('#wordfenceMode_rangeBlocking').length > 0) {
+				} else if (jQuery('#wordfenceMode_rangeBlocking:visible').length > 0) {
 					this.mode = 'rangeBlocking';
-					startTicker = false;
+					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeContentRangeBlocking', 'wfHeading', 'top', 'left', "Learn how to Customize Wordfence", function() {
 							self.tourRedir('WordfenceSecOpt');
@@ -262,40 +321,38 @@
 					}
 					this.calcRangeTotal();
 					this.loadBlockRanges();
-				} else if (jQuery('#wordfenceMode_whois').length > 0) {
+				} else if (jQuery('#wordfenceMode_whois:visible').length > 0) {
 					this.mode = 'whois';
-					startTicker = false;
+					startTicker = true;
 					if (this.needTour()) {
 						this.tour('wfWelcomeContentWhois', 'wfHeading', 'top', 'left', "Learn how to use Advanced Blocking", function() {
-							self.tourRedir('WordfenceRangeBlocking');
+							self.tourRedir('WordfenceWAF#top#advancedblocking');
 						});
 					}
 					this.calcRangeTotal();
 					this.loadBlockRanges();
 
-				} else if (jQuery('#wordfenceMode_scanScheduling').length > 0) {
+				} else if (jQuery('#wordfenceMode_scanScheduling:visible').length > 0) {
 					this.mode = 'scanScheduling';
-					startTicker = false;
 					this.sched_modeChange();
 					if (this.needTour()) {
 						this.tour('wfWelcomeContentScanSched', 'wfHeading', 'top', 'left', "Learn about WHOIS", function() {
-							self.tourRedir('WordfenceWhois');
+							self.tourRedir('WordfenceTools#top#whois');
 						});
 					}
-				} else {
-					this.mode = false;
 				}
+				
 				if (this.mode) { //We are in a Wordfence page
 					if (startTicker) {
 						this.updateTicker();
+						if (this.liveInt > 0) {
+							clearInterval(this.liveInt);
+							this.liveInt = 0;
+						}
 						this.liveInt = setInterval(function() {
 							self.updateTicker();
 						}, WordfenceAdminVars.actUpdateInterval);
 					}
-					jQuery(document).bind('cbox_closed', function() {
-						self.colorboxIsOpen = false;
-						self.colorboxServiceQueue();
-					});
 				}
 			},
 			needTour: function() {
@@ -348,9 +405,7 @@
 				var self = this;
 				this.tour('wfWelcomeContent1', 'wfHeading', 'top', 'left', "Continue the Tour", function() {
 					self.tour('wfWelcomeContent2', 'wfHeading', 'top', 'left', "Learn how to use Wordfence", function() {
-						self.tour('wfWelcomeContent3', 'wfHeading', 'top', 'left', "Learn about the Firewall", function() {
-							self.tourRedir('WordfenceWAF');
-						});
+						self.tourRedir('WordfenceScan');
 					});
 				});
 			},
@@ -669,14 +724,14 @@
 			handleTickerReturn: function(res) {
 				this.tickerUpdatePending = false;
 				var newMsg = "";
-				var oldMsg = jQuery('#wfLiveStatus').text();
+				var oldMsg = jQuery('.wf-live-activity-message').text();
 				if (res.msg) {
 					newMsg = res.msg;
 				} else {
 					newMsg = "Idle";
 				}
 				if (newMsg && newMsg != oldMsg) {
-					jQuery('#wfLiveStatus').hide().html(newMsg).fadeIn(200);
+					jQuery('.wf-live-activity-message').hide().html(newMsg).fadeIn(200);
 				}
 				var haveEvents, newElem;
 				this.serverTimestampOffset = (new Date().getTime() / 1000) - res.serverTime;
@@ -1800,7 +1855,7 @@
 								var ip2num = self.inet_aton(ips[1]);
 								totalIPs = ip2num - ip1num + 1;
 							}
-							return "<a href=\"admin.php?page=WordfenceRangeBlocking&wfBlockRange=" + ipRange + "\"" + redStyle + ">" + ipRange + " [" + (!isNaN(totalIPs) ? "<strong>" + totalIPs + "</strong> addresses in this network. " : "") + "Click to block this network]<\/a>";
+							return "<a href=\"admin.php?page=WordfenceWAF&wfBlockRange=" + ipRange + "#top#advancedblocking\"" + redStyle + ">" + ipRange + " [" + (!isNaN(totalIPs) ? "<strong>" + totalIPs + "</strong> addresses in this network. " : "") + "Click to block this network]<\/a>";
 						}
 
 						function buildRangeLink2(str, octet1, octet2, octet3, octet4, cidrRange) {
@@ -1819,7 +1874,7 @@
 								rangeEndNum = rangeEndNum >>> 0;
 								var ipRange = self.inet_ntoa(rangeStartNum) + '-' + self.inet_ntoa(rangeEndNum);
 								var totalIPs = rangeEndNum - rangeStartNum;
-								return "<a href=\"admin.php?page=WordfenceRangeBlocking&wfBlockRange=" + ipRange + "\"" + redStyle + ">" + ipRange + " [" + (!isNaN(totalIPs) ? "<strong>" + totalIPs + "</strong> addresses in this network. " : "") + "Click to block this network]<\/a>";
+								return "<a href=\"admin.php?page=WordfenceWAF&wfBlockRange=" + ipRange + "#top#advancedblocking\"" + redStyle + ">" + ipRange + " [" + (!isNaN(totalIPs) ? "<strong>" + totalIPs + "</strong> addresses in this network. " : "") + "Click to block this network]<\/a>";
 							}
 							return str;
 						}
@@ -1981,6 +2036,26 @@
 						} else {
 							self.pulse('.wfSavedMsg');
 						}
+					} else if (res.errorMsg) {
+						return;
+					} else {
+						self.colorbox('400px', 'An error occurred', 'We encountered an error trying to save your changes.');
+					}
+				});
+			},
+			savePartialConfig: function(formSelector) {
+				var qstr = jQuery(formSelector).serialize();
+				jQuery(formSelector).find('input:checkbox:not(:checked)').each(function(idx, el) {
+					qstr += '&' + encodeURIComponent(jQuery(el).attr('name')) + '=0';
+				});
+				
+				var self = this;
+				jQuery('.wfSavedMsg').hide();
+				jQuery('.wfAjax24').show();
+				this.ajax('wordfence_savePartialConfig', qstr, function(res) {
+					jQuery('.wfAjax24').hide();
+					if (res.ok) {
+						self.pulse('.wfSavedMsg');
 					} else if (res.errorMsg) {
 						return;
 					} else {

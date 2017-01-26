@@ -186,6 +186,16 @@ class wfSchema {
   `path` text NOT NULL,
   PRIMARY KEY (`id`)
 ) DEFAULT CHARSET=utf8",
+'wfNotifications' => "(
+  `id` varchar(32) NOT NULL DEFAULT '',
+  `new` tinyint(3) unsigned NOT NULL DEFAULT '1',
+  `category` varchar(255) NOT NULL,
+  `priority` int(11) NOT NULL DEFAULT '1000',
+  `ctime` int(10) unsigned NOT NULL,
+  `html` text NOT NULL,
+  `links` text NOT NULL,
+  PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8;"
 /*
 'wfPerfLog' => "(
 	id int UNSIGNED NOT NULL auto_increment PRIMARY KEY,

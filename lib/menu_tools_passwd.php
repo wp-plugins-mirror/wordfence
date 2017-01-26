@@ -1,22 +1,8 @@
-<div class="wordfenceModeElem" id="wordfenceMode_passwd"></div>
-<div class="wrap wordfence" id="paidWrap">
-	<?php $pageTitle = "Audit the Strength of your Passwords";
-	$helpLink = "http://docs.wordfence.com/en/Wordfence_Password_Auditing";
-	$helpLabel = "Learn more about Password Auditing";
-	include('pageTitle.php'); ?>
+<div class="wordfenceHelpLink"><a href="<?php echo $helpLink; ?>" target="_blank" class="wfhelp"></a><a href="<?php echo $helpLink; ?>" target="_blank"><?php echo $helpLabel; ?></a></div>
+<div>
+	<div id="wordfenceMode_passwd"></div>
 	<?php if (!wfConfig::get('isPaid')) { ?>
-		<div class="wordfenceRightRail">
-			<ul>
-				<li><a href="https://www.wordfence.com/gnl1rightRailGetPremium/wordfence-signup/" target="_blank"><img src="<?php echo wfUtils::getBaseURL() . 'images/rr_premium.png'; ?>" alt="Upgrade your protection - Get Wordfence Premium"></a></li>
-				<li><a href="https://www.wordfence.com/gnl1rightRailSiteCleaning/wordfence-site-cleanings/" target="_blank"><img src="<?php echo wfUtils::getBaseURL() . 'images/rr_sitecleaning.jpg'; ?>" alt="Have you been hacked? Get help from Wordfence"></a></li> 
-				<li>
-					<p class="center"><strong>Would you like to remove these ads?</strong><br><a href="https://www.wordfence.com/gnl1rightRailBottomUpgrade/wordfence-signup/" target="_blank">Get Premium</a></p>
-				</li>
-			</ul>
-		</div>
-	<?php } ?>
-	<?php if (!wfConfig::get('isPaid')) { ?>
-		<div class="wf-premium-callout" style="margin: 20px 0 20px 20px; width: 700px;">
+		<div class="wf-premium-callout wf-add-bottom">
 			<h3>Password Auditing is only available to Premium Members</h3>
 			<p>Wordfence Password Auditing uses our high performance password auditing cluster to test the strength of your admin and user passwords. We securely simulate a high-performance password cracking attack on your password database and will alert you to weak passwords. We then provide a way to change weak passwords or alert members that they need to improve their password strength.</p>
 
@@ -27,61 +13,53 @@
 				<li>Access to Premium Support</li>
 				<li>Discounts of up to 90% available for multiyear and multi-license purchases</li>
 			</ul>
-			<p class="center"><a class="button button-primary" href="https://www.wordfence.com/gnl1pwAuditUp1/wordfence-signup/" target="_blank">Get Premium</a></p>
+			<p class="center"><a class="wf-btn wf-btn-primary wf-btn-callout" href="https://www.wordfence.com/gnl1pwAuditUp1/wordfence-signup/" target="_blank">Get Premium</a></p>
 		</div>
 	<?php } ?>
 
-	<div class="wordfenceWrap" style="margin: 20px 20px 20px 30px;">
+	<div>
 		<h2>Start a Password Audit</h2>
-		<table class="wfConfigForm" width="800px">
-			<tr>
-				<td colspan="2">Audit your site passwords by having
-					us securely simulate a password cracking attempt using our high performance servers.
-					Your report will appear here and you can easily alert your users to a weak password or change their passwords and email them the change.
-				</td>
-			</tr>
-			<tr>
-				<th colspan="2">Select the kind of audit you would like to do:</th>
-			</tr>
-			<tr>
-				<th colspan="2">
-					<select id="auditType">
+		<p>Audit your site passwords by having us securely simulate a password cracking attempt using our high performance servers. Your report will appear here and you can easily alert your users to a weak password or change their passwords and email them the change.</p>
+		<div class="wf-form-horizontal">
+			<div class="wf-form-group">
+				<label for="auditType" class="wf-col-sm-3 wf-control-label">Select the kind of audit you would like to do</label>
+				<div class="wf-col-sm-9">
+					<select id="auditType" class="wf-form-control">
 						<option value="admin">Audit administrator level accounts (extensive audit against a large dictionary of approx. 260 Million passwords)</option>
 						<option value="user">Audit user level accounts (less extensive against a dictionary of approximately 50,000 passwords)</option>
 						<option value="both">Audit all WordPress accounts</option>
 					</select>
-				</th>
-			</tr>
-			<tr>
-				<th>Results will appear on this page. We will email you when they're ready. Enter the email address we should email:</th>
-				<td><input type="text" id="emailAddr" size="50" maxlength="255" value="<?php wfConfig::f('alertEmails') ?>"/></td>
-			</tr>
-			<tr>
-				<td colspan="2"><input type="button" name="but4" class="button-primary" value="Start Password Audit"
-				                       onclick="WFAD.startPasswdAudit(jQuery('#auditType').val(), jQuery('#emailAddr').val());"/>
-				</td>
-			</tr>
-
-		</table>
-		<h2 style="margin-top: 20px;">Audit Status:</h2>
-
-		<div id="wfAuditJobs">
+				</div>
+			</div>
+			<div class="wf-form-group">
+				<label for="emailAddr" class="wf-col-sm-3 wf-control-label">Notify when ready</label>
+				<div class="wf-col-sm-9">
+					<input type="text" id="emailAddr" class="wf-form-control" size="50" maxlength="255" value="<?php wfConfig::f('alertEmails') ?>">
+					<span class="wf-help-block">Results will appear on this page. We will email you when they're ready.</span>
+				</div>
+			</div>
+			<div class="wf-form-group">
+				<div class="wf-col-sm-9 wf-col-sm-offset-3">
+					<input type="button" name="but4" class="wf-btn wf-btn-primary wf-btn-callout" value="Start Password Audit" onclick="WFAD.startPasswdAudit(jQuery('#auditType').val(), jQuery('#emailAddr').val());">
+				</div>
+			</div>
 		</div>
-		<h2 style="margin-top: 20px;">Password Audit Results:</h2>
-
-		<div id="wfAuditResults">
-		</div>
+		
+		<h2>Audit Status</h2>
+		<div id="wfAuditJobs"></div>
+		
+		<h2>Password Audit Results</h2>
+		<div id="wfAuditResults"></div>
 	</div>
-
 </div>
 <script type="text/x-jquery-template" id="wfAuditResultsTable">
-<div style="margin: 0 0 20px 0;">
+<div class="wf-add-bottom">
 	<select id="wfPasswdFixAction">
 		<option value="email">Action: Email selected users and ask them to change their weak password.</option>
 		<option value="fix">Action: Change weak passwords to a strong password and email users the new password.</option>
 	</select><input type="button" value="Fix Weak Passwords" onclick="WFAD.doFixWeakPasswords(); return false;" class="button-primary"/>
 </div>
-<table class="wf-table">
+<table class="wf-striped-table">
 	<thead>
 		<th style="text-align: center">
 			<input type="checkbox" id="wfSelectAll" onclick="jQuery('.wfUserCheck').attr('checked', this.checked);" />
@@ -114,7 +92,7 @@
 </script>
 
 <script type="text/x-jquery-template" id="wfAuditJobsTable">
-<table class="wf-table">
+<table class="wf-striped-table">
 	<thead>
 		<th>Audit Type</th>
 		<th>Admin Accounts</th>

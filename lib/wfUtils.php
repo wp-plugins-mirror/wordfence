@@ -819,6 +819,28 @@ class wfUtils {
 		}
 		return false;
 	}
+	public static function hasTwoFactorEnabled($user = false) {
+		if (!$user) {
+			$user = get_user_by('ID', get_current_user_id());
+		}
+		
+		if (!$user) {
+			return false;
+		}
+		
+		$twoFactorUsers = wfConfig::get_ser('twoFactorUsers', array());
+		$hasActivatedTwoFactorUser = false;
+		foreach ($twoFactorUsers as &$t) {
+			if ($t[3] == 'activated') {
+				$userID = $t[0];
+				if ($userID == $user->ID && wfUtils::isAdmin($user)) {
+					$hasActivatedTwoFactorUser = true;
+				}
+			}
+		}
+		
+		return $hasActivatedTwoFactorUser;
+	}
 	public static function isWindows(){
 		if(! self::$isWindows){
 			if(preg_match('/^win/i', PHP_OS)){
@@ -1551,6 +1573,75 @@ class wfUtils {
 		wfConfig::set('detectProxyRecommendation', 'UNKNOWN', wfConfig::DONT_AUTOLOAD);
 		wfConfig::set('detectProxyNonce', '', wfConfig::DONT_AUTOLOAD);
 		return true;
+	}
+	
+	public static function base32_encode($rawString, $rightPadFinalBits = false, $padFinalGroup = false, $padCharacter = '=') //Adapted from https://github.com/ademarre/binary-to-text-php
+	{
+		// Unpack string into an array of bytes
+		$bytes = unpack('C*', $rawString);
+		$byteCount = count($bytes);
+		
+		$encodedString = '';
+		$byte = array_shift($bytes);
+		$bitsRead = 0;
+		$oldBits = 0;
+		
+		$chars             = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+		$bitsPerCharacter  = 5;
+		
+		$charsPerByte = 8 / $bitsPerCharacter;
+		$encodedLength = $byteCount * $charsPerByte;
+		
+		// Generate encoded output; each loop produces one encoded character
+		for ($c = 0; $c < $encodedLength; $c++) {
+			
+			// Get the bits needed for this encoded character
+			if ($bitsRead + $bitsPerCharacter > 8) {
+				// Not enough bits remain in this byte for the current character
+				// Save the remaining bits before getting the next byte
+				$oldBitCount = 8 - $bitsRead;
+				$oldBits = $byte ^ ($byte >> $oldBitCount << $oldBitCount);
+				$newBitCount = $bitsPerCharacter - $oldBitCount;
+				
+				if (!$bytes) {
+					// Last bits; match final character and exit loop
+					if ($rightPadFinalBits) $oldBits <<= $newBitCount;
+					$encodedString .= $chars[$oldBits];
+					
+					if ($padFinalGroup) {
+						// Array of the lowest common multiples of $bitsPerCharacter and 8, divided by 8
+						$lcmMap = array(1 => 1, 2 => 1, 3 => 3, 4 => 1, 5 => 5, 6 => 3, 7 => 7, 8 => 1);
+						$bytesPerGroup = $lcmMap[$bitsPerCharacter];
+						$pads = $bytesPerGroup * $charsPerByte - ceil((strlen($rawString) % $bytesPerGroup) * $charsPerByte);
+						$encodedString .= str_repeat($padCharacter, $pads);
+					}
+					
+					break;
+				}
+				
+				// Get next byte
+				$byte = array_shift($bytes);
+				$bitsRead = 0;
+				
+			} else {
+				$oldBitCount = 0;
+				$newBitCount = $bitsPerCharacter;
+			}
+			
+			// Read only the needed bits from this byte
+			$bits = $byte >> 8 - ($bitsRead + ($newBitCount));
+			$bits ^= $bits >> $newBitCount << $newBitCount;
+			$bitsRead += $newBitCount;
+			
+			if ($oldBitCount) {
+				// Bits come from seperate bytes, add $oldBits to $bits
+				$bits = ($oldBits << $newBitCount) | $bits;
+			}
+			
+			$encodedString .= $chars[$bits];
+		}
+		
+		return $encodedString;
 	}
 }
 

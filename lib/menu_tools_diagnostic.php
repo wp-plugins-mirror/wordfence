@@ -9,24 +9,12 @@ $currentTheme = wp_get_theme();
 $cols = 3;
 
 $w = new wfConfig();
+if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 ?>
 
-<div class="wrap wordfence">
-	<h2 id="wfHeading">
-		Diagnostics
-	</h2>
-	<br clear="both"/>
-	
-	<?php
-	if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
-	if (!$sendingDiagnosticEmail) {
-		$rightRail = new wfView('marketing/rightrail', array('additionalClasses' => 'wordfenceRightRailDiagnostics'));
-		echo $rightRail;
-	}
-	?>
-
+<div>
 	<form id="wfConfigForm">
-		<table class="wf-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
+		<table class="wf-striped-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
 			<?php foreach ($diagnostic->getResults() as $title => $tests): ?>
 				<tbody class="thead">
 				<tr>
@@ -313,7 +301,7 @@ $w = new wfConfig();
 			$databaseCols = count($q[0]);
 			?>
 			<div style="max-width: 100%; overflow: auto; padding: 1px;">
-				<table class="wf-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
+				<table class="wf-striped-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
 					<tbody class="empty-row">
 					<tr>
 						<td colspan="<?php echo $databaseCols ?>"></td>
@@ -349,7 +337,7 @@ $w = new wfConfig();
 			</div>
 		<?php endif ?>
 		<div style="max-width: 100%; overflow: auto; padding: 1px;">
-			<table class="wf-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
+			<table class="wf-striped-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
 				<tbody class="empty-row">
 				<tr>
 					<td colspan="2"></td>
@@ -386,7 +374,6 @@ $w = new wfConfig();
 			</table>
 		</div>
 	</form>
-</div>
 
 <?php if (!empty($inEmail)): ?>
 	<?php phpinfo(); ?>
@@ -446,7 +433,7 @@ $w = new wfConfig();
 		<h3>Firewall Rules</h3>
 
 		<p>
-			<button type="button" onclick="WFAD.wafUpdateRules()" class="button button-primary">
+			<button type="button" onclick="WFAD.wafUpdateRules()" class="wf-btn wf-btn-primary wf-btn-callout">
 				Manually refresh firewall rules
 			</button>
 <!--			<em id="waf-rules-last-updated"></em>-->
@@ -544,3 +531,4 @@ $w = new wfConfig();
 	</form>
 
 <?php endif ?>
+</div>

@@ -134,6 +134,17 @@ class wfScanEngine {
 			$this->recordMetric('scan', 'duration', (time() - $this->startTime));
 			$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0));
 			$this->submitMetrics();
+			
+			$issueCount = $this->i->getIssueCount();
+			if ($issueCount) {
+				new wfNotification(null, wfNotification::PRIORITY_HIGH, "<a href=\"" . network_admin_url('admin.php?page=WordfenceScan') . "\">{$issueCount} issue" . ($issueCount == 1 ? '' : 's') . ' found in most recent scan</a>', 'wfplugin_scan');
+			}
+			else {
+				$n = wfNotification::getNotificationForCategory('wfplugin_scan');
+				if ($n !== null) {
+					$n->markAsRead();
+				}
+			}
 		}
 		catch (wfScanEngineDurationLimitException $e) {
 			wfConfig::set('lastScanCompleted', $e->getMessage());
@@ -143,6 +154,7 @@ class wfScanEngine {
 			$this->recordMetric('scan', 'duration', (time() - $this->startTime));
 			$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0));
 			$this->submitMetrics();
+			new wfNotification(null, wfNotification::PRIORITY_HIGH, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan aborted due to duration limit</a>', 'wfplugin_scan');
 			throw $e;
 		}
 		catch(Exception $e) {
@@ -151,6 +163,11 @@ class wfScanEngine {
 			$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0));
 			$this->recordMetric('scan', 'failure', $e->getMessage());
 			$this->submitMetrics();
+			
+			$error = $e->getMessage();
+			$trimmedError = substr($error, 0, 100) . (strlen($error) > 100 ? '...' : '');
+			
+			new wfNotification(null, wfNotification::PRIORITY_HIGH, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan failed: ' . esc_html($trimmedError) . '</a>', 'wfplugin_scan');
 			throw $e;
 		}
 	}
