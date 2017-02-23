@@ -4108,6 +4108,7 @@ HTACCESS;
 			else if ($period == 'fail') { $data = $dashboard->loginsFail; }
 			
 			if ($data !== null) {
+				$data = array_slice($data, 0, 100);
 				foreach ($data as &$d) {
 					$d['ip'] = esc_html($d['ip']);
 					$d['name'] = esc_html($d['name']);
@@ -4359,6 +4360,11 @@ HTML;
 	}
 
 	public static function wfFunc_view(){
+		wfUtils::doNotCache();
+		if (WORDFENCE_DISABLE_FILE_VIEWER) {
+			echo "File access blocked. (WORDFENCE_DISABLE_FILE_VIEWER is true)";
+			exit();
+		}
 		$localFile = ABSPATH . preg_replace('/^(?:\.\.|[\/]+)/', '', sanitize_text_field($_GET['file']));
 		if(strpos($localFile, '..') !== false){
 			echo "Invalid file requested. (Relative paths not allowed)";
@@ -4394,6 +4400,11 @@ HTML;
 		exit(0);
 	}
 	public static function wfFunc_diff(){
+		wfUtils::doNotCache();
+		if (WORDFENCE_DISABLE_FILE_VIEWER) {
+			echo "File access blocked. (WORDFENCE_DISABLE_FILE_VIEWER is true)";
+			exit();
+		}
 		if(preg_match('/[\'\"<>\!\{\}\(\)\&\@\%\$\*\+\[\]\?]+/', $_GET['file'])){
 			echo "File contains illegal characters.";
 			exit();
@@ -4427,6 +4438,11 @@ HTML;
 	}
 
 	public static function wfFunc_download() {
+		wfUtils::doNotCache();
+		if (WORDFENCE_DISABLE_FILE_VIEWER) {
+			echo "File access blocked. (WORDFENCE_DISABLE_FILE_VIEWER is true)";
+			exit();
+		}
 		$localFile = ABSPATH . preg_replace('/^(?:\.\.|[\/]+)/', '', sanitize_text_field($_GET['file']));
 		if (strpos($localFile, '..') !== false) {
 			echo "Invalid file requested. (Relative paths not allowed)";

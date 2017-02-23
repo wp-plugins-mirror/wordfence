@@ -102,7 +102,7 @@ class wfDashboard {
 			array('name' => 'Scheduled Scans', 'link' => network_admin_url('admin.php?page=WordfenceScan#top#scheduling'), 'state' => wordfence::getNextScanStartTimestamp() !== false && wfConfig::get('scheduledScansEnabled') ? self::FEATURE_ENABLED : self::FEATURE_DISABLED),
 			array('name' => 'Cellphone Sign-in', 'link' => network_admin_url('admin.php?page=WordfenceTools#top#twofactor'), 'state' => !wfConfig::get('isPaid') ? self::FEATURE_PREMIUM : (wfUtils::hasTwoFactorEnabled() ? self::FEATURE_ENABLED : self::FEATURE_DISABLED)),
 			array('name' => 'Live Traffic', 'link' => network_admin_url('admin.php?page=WordfenceActivity'), 'state' => wfConfig::liveTrafficEnabled() ? self::FEATURE_ENABLED : self::FEATURE_DISABLED),
-			array('name' => 'Country Blocking', 'link' => network_admin_url('admin.php?page=WordfenceWAF#top#countryblocking'), 'state' => $countryBlocking),
+			array('name' => 'Country Blocking', 'link' => network_admin_url('admin.php?page=WordfenceBlocking#top#countryblocking'), 'state' => $countryBlocking),
 			array('name' => 'Rate Limiting', 'link' => network_admin_url('admin.php?page=WordfenceSecOpt#focus-firewallEnabled'), 'state' => wfConfig::get('firewallEnabled') ? self::FEATURE_ENABLED : self::FEATURE_DISABLED),
 			array('name' => 'Spamvertising Check', 'link' => network_admin_url('admin.php?page=WordfenceSecOpt#focus-spamvertizeCheck'), 'state' => !wfConfig::get('isPaid') ? self::FEATURE_PREMIUM : (wfConfig::get('spamvertizeCheck') ? self::FEATURE_ENABLED : self::FEATURE_DISABLED)),
 			array('name' => 'Spam Blacklist Check', 'link' => network_admin_url('admin.php?page=WordfenceSecOpt#focus-checkSpamIP'), 'state' => !wfConfig::get('isPaid') ? self::FEATURE_PREMIUM : (wfConfig::get('checkSpamIP') ? self::FEATURE_ENABLED : self::FEATURE_DISABLED)),
@@ -120,18 +120,21 @@ class wfDashboard {
 		$this->ips24h = (array) $activityReport->getTopIPsBlocked(100, 1);
 		foreach ($this->ips24h as &$r24h) {
 			$r24h = (array) $r24h;
+			if (empty($r24h['countryName'])) { $r24h['countryName'] = 'Unknown'; }
 		}
 		$this->ips7d = (array) $activityReport->getTopIPsBlocked(100, 7);
 		foreach ($this->ips7d as &$r7d) {
 			$r7d = (array) $r7d;
+			if (empty($r7d['countryName'])) { $r7d['countryName'] = 'Unknown'; }
 		}
 		$this->ips30d = (array) $activityReport->getTopIPsBlocked(100, 30);
 		foreach ($this->ips30d as &$r30d) {
 			$r30d = (array) $r30d;
+			if (empty($r30d['countryName'])) { $r30d['countryName'] = 'Unknown'; }
 		}
 		
 		// Recent Logins
-		$logins = wordfence::getLog()->getHits('logins', 'loginLogout', 0);
+		$logins = wordfence::getLog()->getHits('logins', 'loginLogout', 0, 200);
 		$this->loginsSuccess = array();
 		$this->loginsFail = array();
 		foreach ($logins as $l) {
@@ -159,6 +162,7 @@ class wfDashboard {
 		$this->countriesLocal = (array) $activityReport->getTopCountriesBlocked(10, 7);
 		foreach ($this->countriesLocal as &$rLocal) {
 			$rLocal = (array) $rLocal;
+			if (empty($rLocal['countryName'])) { $rLocal['countryName'] = 'Unknown'; }
 		}
 		
 		if (is_array($data) && isset($data['countries']) && isset($data['countries']['7d'])) {
@@ -166,6 +170,7 @@ class wfDashboard {
 			foreach ($data['countries']['7d'] as $rNetwork) {
 				$countryCode = $rNetwork['cd'];
 				$countryName = $activityReport->getCountryNameByCode($countryCode);
+				if (empty($countryName)) { $countryName = 'Unknown'; }
 				$totalBlockCount = $rNetwork['ct'];
 				$networkCountries[] = array('countryCode' => $countryCode, 'countryName' => $countryName, 'totalBlockCount' => $totalBlockCount);
 			}

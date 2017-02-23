@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: security, secure, security plugin, wordpress security, login security, firewall, malware, antivirus, web application firewall, block hackers, country blocking
 Requires at least: 3.9
 Tested up to: 4.7.2
-Stable tag: 6.3.1
+Stable tag: 6.3.2
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -160,6 +160,17 @@ Secure your website with Wordfence.
 7. If you're technically minded, this is the under-the-hood view of Wordfence Security options where you can fine-tune your security settings.
 
 == Changelog ==
+
+= 6.3.2 =
+* Improvement: Improved the WAF's ability to inspect POST bodies.
+* Improvement: Dashboard now shows up to 100 each of failed/successful logins.
+* Improvement: Updated internal GeoIP database.
+* Improvement: Updated internal browscap database.
+* Improvement: Better documentation on Country Blocking regarding Google AdWords
+* Advanced: Added constant "WORDFENCE_DISABLE_FILE_VIEWER" to prohibit file-viewing actions from Wordfence.
+* Advanced: Added constant "WORDFENCE_DISABLE_LIVE_TRAFFIC" to prohibit live traffic from capturing regular site visits.
+* Fix: Fixed a few links that didn't open the correct configuration pages.
+* Fix: Unknown countries in the dashboard now show "Unknown" rather than empty.
 
 = 6.3.1 =
 * Improvement: Locked out IPs are now enforced at the WAF level to reduce server load.

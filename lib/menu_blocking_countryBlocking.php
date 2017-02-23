@@ -37,7 +37,7 @@ WFAD.countryMap = <?php echo json_encode($wfBulkCountries); ?>;
 	<span style="color: #999;">Must start with http:// for example http://yoursite.com/blocked/</span></td></tr>
 	<tr><th>Block countries even if they are logged in:</th><td><input type="checkbox" id="wfLoggedInBlocked" value="1" <?php if(wfConfig::get('cbl_loggedInBlocked')){ echo 'checked'; } ?> /></td></tr>
 	<tr><th>Block access to the login form:</th><td><input type="checkbox" id="wfLoginFormBlocked" value="1" <?php if(wfConfig::get('cbl_loginFormBlocked')){ echo 'checked'; } ?> /></td></tr>
-	<tr><th>Block access to the rest of the site (outside the login form):</th><td><input type="checkbox" id="wfRestOfSiteBlocked" value="1" <?php if(wfConfig::get('cbl_restOfSiteBlocked')){ echo 'checked'; } ?> /></td></tr>
+	<tr><th>Block access to the rest of the site (outside the login form):</th><td><input type="checkbox" id="wfRestOfSiteBlocked" value="1" <?php if(wfConfig::get('cbl_restOfSiteBlocked')){ echo 'checked'; } ?> /><br><span style="color: #999;">If you use Google Adwords, this is not recommended. <a href="https://docs.wordfence.com/en/Country_blocking#Google_Adwords_says_I_can.27t_block_countries._How_do_I_work_around_that.3F" target="_blank">Learn More</a></span></td></tr>
 	<tr><td colspan="2"><h2>Advanced Country Blocking Options</h2></td></tr>
 	<tr><th colspan="2">
 		If user hits the URL 

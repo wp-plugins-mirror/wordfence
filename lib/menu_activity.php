@@ -33,8 +33,11 @@
 			echo $rightRail;
 			?>
 			<div class="<?php echo wfStyle::contentClasses(); ?>">
-			<?php if (!wfConfig::liveTrafficEnabled()): ?>
-				<div id="wordfenceLiveActivityDisabled"><p><strong>Live activity is disabled.</strong> Login and firewall activity will still appear below.</p></div>
+			<?php
+			$overridden = false;
+			if (!wfConfig::liveTrafficEnabled($overridden)):
+			?>
+				<div id="wordfenceLiveActivityDisabled"><p><strong>Live activity is disabled<?php if ($overridden) { echo ' by the host'; } ?>.</strong> Login and firewall activity will still appear below.</p></div>
 			<?php endif ?>
 				<div class="wf-row wf-add-bottom-small">
 					<div class="wf-col-xs-12" id="wf-live-traffic-legend-wrapper">
