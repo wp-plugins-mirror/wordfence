@@ -368,6 +368,9 @@ class wfWAFWordPress extends wfWAF {
 					}
 				}
 			}
+			else if (array_search('blocked', $failedRules) !== false) {
+				parent::blockAction($e, $httpCode, $redirect, '403-blacklist'); //exits
+			}
 			
 			parent::blockAction($e, $httpCode, $redirect, $template);
 		}
