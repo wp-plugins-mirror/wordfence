@@ -5,7 +5,7 @@
 			<div class="wf-dashboard-item-inner">
 				<div class="wf-dashboard-item-content">
 					<div class="wf-dashboard-item-title">
-						<strong>Top Countries by Number of Attacks - Last 7 Days</strong>
+						<strong>Top Countries by Number of Attacks: </strong><span class="wf-dashboard-item-inline-subtitle">Last 7 Days</span>
 					</div>
 					<div class="wf-dashboard-item-action"><div class="wf-dashboard-item-action-disclosure"></div></div>
 				</div>

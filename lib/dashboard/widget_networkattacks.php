@@ -4,7 +4,7 @@
 			<div class="wf-dashboard-item-inner">
 				<div class="wf-dashboard-item-content">
 					<div class="wf-dashboard-item-title">
-						<strong>Total Attacks Blocked - Wordfence Network</strong>
+						<strong>Total Attacks Blocked: </strong><span class="wf-dashboard-item-inline-subtitle">Wordfence Network</span>
 					</div>
 					<div class="wf-dashboard-item-action"><div class="wf-dashboard-item-action-disclosure"></div></div>
 				</div>

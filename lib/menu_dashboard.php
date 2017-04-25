@@ -53,7 +53,7 @@ $d = new wfDashboard();
 					<div class="wf-dashboard-item-extra">
 						<ul class="wf-dashboard-item-list">
 							<li>
-								<ul class="wf-dashboard-item-list wf-dashboard-item-list-horizontal wf-dashboard-item-list-equal">
+								<ul class="wf-dashboard-item-list-bordered wf-dashboard-item-list-horizontal-bordered wf-dashboard-item-list-equal">
 								<?php foreach ($d->features as $f): ?>
 									<li>
 										<div class="wf-dashboard-item-list-title"><a href="<?php echo esc_html($f['link']); ?>"><?php echo esc_html($f['name']); ?></a></div>
@@ -95,6 +95,11 @@ $d = new wfDashboard();
 				<!-- begin total attacks blocked network -->
 				<?php include(dirname(__FILE__) . '/dashboard/widget_networkattacks.php'); ?>
 				<!-- end total attacks blocked network -->
+				<?php if (isset($d->blacklist7d)): ?>
+					<!-- begin blacklist blocks -->
+					<?php include(dirname(__FILE__) . '/dashboard/widget_blacklist.php'); ?>
+					<!-- end blacklist blocks -->
+				<?php endif; ?> 
 				<!-- begin countries blocked -->
 				<?php include(dirname(__FILE__) . '/dashboard/widget_countries.php'); ?>
 				<!-- end countries blocked -->

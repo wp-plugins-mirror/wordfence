@@ -1,6 +1,10 @@
 <?php
 
 class wfActivityReport {
+	
+	const BLOCK_TYPE_COMPLEX = 'complex';
+	const BLOCK_TYPE_BRUTE_FORCE = 'bruteforce';
+	const BLOCK_TYPE_BLACKLIST = 'blacklist';
 
 	/**
 	 * @var int
@@ -185,7 +189,7 @@ class wfActivityReport {
 		);
 	}
 	
-	public function getBlockedCount($maxAgeDays = null) {
+	public function getBlockedCount($maxAgeDays = null, $grouping = null) {
 		$maxAgeDays = (int) $maxAgeDays;
 		if ($maxAgeDays <= 0) {
 			$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval 7 day)) / 86400)';
@@ -202,13 +206,67 @@ class wfActivityReport {
 			$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval ' . $maxAgeDays . ' day)) / 86400)';
 		}
 		
+		//Possible values for blockType: throttle, manual, brute, fakegoogle, badpost, country, advanced, blacklist, waf
+		$groupingWHERE = '';
+		switch ($grouping) {
+			case self::BLOCK_TYPE_COMPLEX:
+				$groupingWHERE = ' AND blockType IN ("throttle", "fakegoogle", "badpost", "country", "advanced", "waf", "manual")';
+				break;
+			case self::BLOCK_TYPE_BRUTE_FORCE:
+				$groupingWHERE = ' AND blockType IN ("brute")';
+				break;
+			case self::BLOCK_TYPE_BLACKLIST:
+				$groupingWHERE = ' AND blockType IN ("blacklist")'; 
+				break;
+		}
+		
 		$count = $this->db->get_var(<<<SQL
 SELECT SUM(blockCount) as blockCount
 FROM {$this->db->prefix}wfBlockedIPLog
-WHERE unixday >= {$interval}
+WHERE unixday >= {$interval}{$groupingWHERE}
 SQL
 			);
 		return $count;
+	}
+	
+	public function getBlacklistBlockedStats($maxAgeDays = null, $ips = null) {
+		$maxAgeDays = (int) $maxAgeDays;
+		if ($maxAgeDays <= 0) {
+			$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval 7 day)) / 86400)';
+			switch (wfConfig::get('email_summary_interval', 'weekly')) {
+				case 'daily':
+					$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval 1 day)) / 86400)';
+					break;
+				case 'monthly':
+					$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval 1 month)) / 86400)';
+					break;
+			}
+		}
+		else {
+			$interval = 'FLOOR(UNIX_TIMESTAMP(DATE_SUB(NOW(), interval ' . $maxAgeDays . ' day)) / 86400)';
+		}
+		
+		if ($ips !== null) {
+			foreach ($ips as &$ip) {
+				$ip = '"' . esc_sql($ip) . '"';
+			}
+			$ipsWHERE = ' AND IP IN (' . implode(',', $ips) . ')';
+		}
+		
+		$stats = $this->db->get_results(<<<SQL
+SELECT SUM(blockCount) as blockCount, IP, countryCode
+FROM {$this->db->prefix}wfBlockedIPLog
+WHERE unixday >= {$interval}{$ipsWHERE} GROUP BY IP
+SQL
+		, ARRAY_A);
+		
+		if ($stats) {
+			foreach ($stats as &$row) {
+				$row['countryName'] = $this->getCountryNameByCode($row['countryCode']);
+			}
+		}
+		
+		return $stats;
 	}
 
 	/**
@@ -423,7 +481,7 @@ SQL
 	 * @param mixed $ip_address
 	 * @param int|null $unixday
 	 */
-	public static function logBlockedIP($ip_address, $unixday = null, $type = null) {
+	public static function logBlockedIP($ip_address, $unixday = null, $type = null, $count = 1) {
 		/** @var wpdb $wpdb */
 		global $wpdb;
 		
@@ -451,10 +509,10 @@ SQL
 
 		$wpdb->query($wpdb->prepare(<<<SQL
 INSERT INTO $blocked_table (IP, countryCode, blockCount, unixday, blockType)
-VALUES (%s, %s, 1, $unixday_insert, %s)
-ON DUPLICATE KEY UPDATE blockCount = blockCount + 1
+VALUES (%s, %s, %d, $unixday_insert, %s)
+ON DUPLICATE KEY UPDATE blockCount = blockCount + VALUES(blockCount)
 SQL
-			, $ip_bin, $country, $type));
+			, $ip_bin, $country, $count, $type));
 	}
 
 	/**
