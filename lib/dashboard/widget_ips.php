@@ -1,7 +1,8 @@
 <?php
 //$d is defined here as a wfDashboard instance
 
-if (!isset($limit)) { $limit = 10; }
+$initial = false;
+if (!isset($limit)) { $limit = 10; $initial = true; }
 ?>
 <div class="wf-row">
 	<div class="wf-col-xs-12">
@@ -30,7 +31,7 @@ if (!isset($limit)) { $limit = 10; }
 									<div class="wf-dashboard-item-list-text"><p><em>No blocks have been recorded.</em></p></div>
 								<?php else: ?>
 									<?php $data = array_slice($d->ips24h, 0, min($limit, count($d->ips24h)), true); include(dirname(__FILE__) . '/widget_content_ips.php'); ?>
-									<?php if (count($d->ips24h) > $limit): ?>
+									<?php if (count($d->ips24h) > $limit && $initial): ?>
 										<div class="wf-dashboard-item-list-text"><div class="wf-dashboard-show-more" data-grouping="ips" data-period="24h"><a href="#">Show more</a></div></div>
 									<?php endif; ?>
 								<?php endif; ?>
@@ -40,7 +41,7 @@ if (!isset($limit)) { $limit = 10; }
 									<div class="wf-dashboard-item-list-text"><p><em>No blocks have been recorded.</em></p></div>
 								<?php else: ?>
 									<?php $data = array_slice($d->ips7d, 0, min($limit, count($d->ips7d)), true); include(dirname(__FILE__) . '/widget_content_ips.php'); ?>
-									<?php if (count($d->ips7d) > $limit): ?>
+									<?php if (count($d->ips7d) > $limit && $initial): ?>
 										<div class="wf-dashboard-item-list-text"><div class="wf-dashboard-show-more" data-grouping="ips" data-period="7d"><a href="#">Show more</a></div></div>
 									<?php endif; ?>
 								<?php endif; ?>
@@ -50,7 +51,7 @@ if (!isset($limit)) { $limit = 10; }
 									<div class="wf-dashboard-item-list-text"><p><em>No blocks have been recorded.</em></p></div>
 								<?php else: ?>
 									<?php $data = array_slice($d->ips30d, 0, min($limit, count($d->ips30d)), true); include(dirname(__FILE__) . '/widget_content_ips.php'); ?>
-									<?php if (count($d->ips30d) > $limit): ?>
+									<?php if (count($d->ips30d) > $limit && $initial): ?>
 										<div class="wf-dashboard-item-list-text"><div class="wf-dashboard-show-more" data-grouping="ips" data-period="30d"><a href="#">Show more</a></div></div>
 									<?php endif; ?>
 								<?php endif; ?>

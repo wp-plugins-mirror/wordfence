@@ -167,8 +167,7 @@ class wordfence {
 	public static function dailyCron(){
 		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
 		try {
-			$postParams = wfDashboard::updatePOSTParams();
-			$keyData = $api->call('ping_api_key', array(), $postParams);
+			$keyData = $api->call('ping_api_key');
 			if(isset($keyData['_isPaidKey']) && $keyData['_isPaidKey']){
 				$keyExpDays = $keyData['_keyExpDays'];
 				$keyIsExpired = $keyData['_expired'];
@@ -209,7 +208,7 @@ class wordfence {
 			}
 			if (isset($keyData['dashboard'])) {
 				wfConfig::set('lastDashboardCheck', time());
-				wfDashboard::processDashboardResponse($keyData['dashboard'], @base64_decode($postParams['topBlacklist']));
+				wfDashboard::processDashboardResponse($keyData['dashboard']);
 			}
 		}
 		catch(Exception $e){
@@ -3053,11 +3052,10 @@ SQL
 		} else {
 			$api = new wfAPI($opts['apiKey'], wfUtils::getWPVersion());
 			try {
-				$postParams = wfDashboard::updatePOSTParams();
-				$keyData = $api->call('ping_api_key', array(), $postParams);
+				$keyData = $api->call('ping_api_key', array(), array());
 				if (isset($keyData['dashboard'])) {
 					wfConfig::set('lastDashboardCheck', time());
-					wfDashboard::processDashboardResponse($keyData['dashboard'], @base64_decode($postParams['topBlacklist']));
+					wfDashboard::processDashboardResponse($keyData['dashboard']);
 				}
 			}
 			catch (Exception $e){
@@ -4271,17 +4269,6 @@ HTACCESS;
 				}
 				return array('ok' => 1, 'data' => $data);
 			}
-		}
-		else if ($grouping == 'blacklist') {
-			$data = $dashboard->blacklist7d['counts'];
-			foreach ($data as &$d) {
-				$d['IP'] = esc_html($d['ip']);
-				$d['localCount'] = esc_html(number_format_i18n($d['local']));
-				$d['networkCount'] = esc_html(number_format_i18n($d['network']));
-				$d['countryFlag'] = esc_attr(wfUtils::getBaseURL() . 'images/flags/' . esc_attr(strtolower($d['countryCode'])) . '.png');
-				$d['countryName'] = esc_html($d['countryName']);
-			}
-			return array('ok' => 1, 'data' => $data);
 		}
 		
 		return array('error' => 'Unknown dashboard data set.');
@@ -6937,38 +6924,6 @@ LIMIT %d", $lastSendTime, $limit));
 							
 							if (array_key_exists('data', $jsonData) && array_key_exists('watchedIPList', $jsonData['data'])) {
 								$waf->getStorageEngine()->setConfig('watchedIPs', $jsonData['data']['watchedIPList']);
-							}
-							
-							if (array_key_exists('data', $jsonData) && array_key_exists('blacklisted', $jsonData['data'])) {
-								$blacklisted = base64_decode($jsonData['data']['blacklisted']);
-								$statsToUpdate = array();
-								foreach ($dataToSend as $record) {
-									$blockDay = floor($record[0] / 86400);
-									$blockIP = @wfUtils::inet_pton($record[2]);
-									if ($blockIP !== false) {
-										$position = wfUtils::strpos($blacklisted, $blockIP);
-										if ($position !== false && $position % 16 == 0) {
-											if (!isset($statsToUpdate[$blockIP])) {
-												$statsToUpdate[$blockIP] = array();
-											}
-											$statsToUpdate[$blockIP][$blockDay] = 1;
-										}
-									}
-								}
-								
-								global $wpdb;
-								foreach ($statsToUpdate as $blockIP => $days) {
-									$days = array_keys($days);
-									foreach ($days as $d) {
-										$existingCount = $wpdb->get_var($wpdb->prepare("SELECT blockCount FROM {$wpdb->base_prefix}wfBlockedIPLog WHERE IP = %s AND unixday = %d and blockType = 'waf'", $blockIP, $d));
-										if ($existingCount > 0) {
-											wfActivityReport::logBlockedIP(wfUtils::inet_ntop($blockIP), $d, 'blacklist', $existingCount);
-											$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->base_prefix}wfBlockedIPLog WHERE IP = %s AND unixday = %d and blockType = 'waf'", $blockIP, $d));
-										}
-									}
-									
-									
-								}
 							}
 						}
 					}

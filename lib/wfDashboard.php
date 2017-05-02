@@ -22,7 +22,6 @@ class wfDashboard {
 	
 	public $tdfCommunity;
 	public $tdfPremium;
-	public $tdfBlacklist;
 	
 	public $ips24h;
 	public $ips7d;
@@ -31,9 +30,9 @@ class wfDashboard {
 	public $loginsSuccess;
 	public $loginsFail;
 	
-	public $blacklist7d;
-	
-	public $localBlocks;
+	public $localBlockToday;
+	public $localBlockWeek;
+	public $localBlockMonth;
 	
 	public $networkBlock24h;
 	public $networkBlock7d;
@@ -42,21 +41,7 @@ class wfDashboard {
 	public $countriesLocal;
 	public $countriesNetwork;
 	
-	public static function updatePOSTParams() {
-		if (wfConfig::p()) {
-			global $wpdb;
-			$topIPs = $wpdb->get_col("SELECT DISTINCT IP FROM (SELECT IP FROM {$wpdb->prefix}wfBlockedIPLog WHERE unixday >= FLOOR(UNIX_TIMESTAMP() / 86400) - 7 AND unixday <= FLOOR(UNIX_TIMESTAMP() / 86400) AND blockType = 'blacklist' ORDER BY blockCount DESC LIMIT 50) AS t ORDER BY IP ASC");
-			$topIPs = base64_encode(implode('', $topIPs));
-			return array('topBlacklist' => $topIPs);
-		}
-		return array();
-	}
-	
-	/**
-	 * @param array $data The data, parsed from JSON, of the response from noc1.
-	 * @param bool|string $blacklistIPs The binary list of IPs that was sent for `topBlacklist` and that the `blacklistCounts` fields will correspond to.
-	 */
-	public static function processDashboardResponse($data, $blacklistIPs = false) {
+	public static function processDashboardResponse($data) {
 		if (isset($data['notifications'])) {
 			foreach ($data['notifications'] as $n) {
 				if (!isset($n['id']) || !isset($n['priority']) || !isset($n['html'])) {
@@ -68,28 +53,6 @@ class wfDashboard {
 			
 			unset($data['notifications']);
 		}
-		
-		if (isset($data['blacklistCounts']) && is_string($blacklistIPs))  {
-			$rawCounts = @base64_decode($data['blacklistCounts']);
-			if ((wfUtils::strlen($rawCounts) / 4) == (wfUtils::strlen($blacklistIPs) / 16)) {
-				$blacklistCounts = array('updated' => time(), 'counts' => array());
-				$offsetIPs = 0;
-				$offsetCounts = 0;
-				while ($offsetIPs < wfUtils::strlen($blacklistIPs)) {
-					$ip = wfUtils::inet_ntop(wfUtils::substr($blacklistIPs, $offsetIPs, 16));
-					$countArr = @unpack('V', wfUtils::substr($rawCounts, $offsetCounts, 4));
-					$count = (int) @array_shift($countArr);
-					$blacklistCounts['counts'][] = array('ip' => $ip, 'network' => $count);
-					$offsetIPs += 16;
-					$offsetCounts += 4;
-				}
-				$data['blacklistCounts'] = $blacklistCounts;
-			}
-			else {
-				unset($data['blacklistCounts']);
-			}
-		}
-		
 		wfConfig::set_ser('dashboardData', $data);
 	}
 	
@@ -156,19 +119,10 @@ class wfDashboard {
 			$api = new wfAPI($apiKey, $wp_version);
 			wfConfig::set('lastDashboardCheck', time());
 			try {
-				if (isset($data['blacklistCounts']) && $data['blacklistCounts']['updated'] > (time() - 86400)) { //Preserve blacklist stats across hourly updates for 24 hours
-					$blacklistCounts = $data['blacklistCounts'];
-				}
-				
 				$json = $api->getStaticURL('/stats.json');
-				$updated = @json_decode($json, true);
-				if ($json && is_array($updated)) {
-					self::processDashboardResponse($updated);
-					$data = wfConfig::get_ser('dashboardData');
-					if (isset($blacklistCounts)) { //Re-insert blacklist stats
-						$data['blacklistCounts'] = $blacklistCounts;
-						wfConfig::set_ser('dashboardData', $data);
-					}
+				$data = @json_decode($json, true);
+				if ($json && is_array($data)) {
+					self::processDashboardResponse($data);
 				}
 			}
 			catch (Exception $e) {
@@ -182,10 +136,9 @@ class wfDashboard {
 		}
 		
 		// TDF
-		if (is_array($data) && isset($data['tdf']) && isset($data['tdf']['community']) && isset($data['tdf']['premium']) && isset($data['tdf']['blacklist'])) {
+		if (is_array($data) && isset($data['tdf']) && isset($data['tdf']['community'])) {
 			$this->tdfCommunity = (int) $data['tdf']['community'];
 			$this->tdfPremium = (int) $data['tdf']['premium'];
-			$this->tdfBlacklist = (int) $data['tdf']['blacklist'];
 		}
 		
 		// Top IPs Blocked
@@ -219,53 +172,10 @@ class wfDashboard {
 			}
 		}
 		
-		// Blacklist
-		if (is_array($data) && isset($data['blacklistCounts']) && wfConfig::p()) {
-			$this->blacklist7d = $data['blacklistCounts'];
-			$ips = array();
-			foreach ($this->blacklist7d['counts'] as $entry) {
-				$ips[] = wfUtils::inet_pton($entry['ip']);
-			}
-			
-			$localStats = $activityReport->getBlacklistBlockedStats(7, $ips);
-			foreach ($this->blacklist7d['counts'] as &$blacklistEntry) {
-				$local = 0;
-				$countryName = 'Unknown';
-				$countryCode = '';
-				foreach ($localStats as $l) {
-					if ($l['IP'] == wfUtils::inet_pton($blacklistEntry['ip'])) { 
-						$local = $l['blockCount'];
-						$countryName = $l['countryName'];
-						$countryCode = $l['countryCode'];
-						break;
-					}
-				}
-				$blacklistEntry['ip'] = $this->_obfuscateIP($blacklistEntry['ip']);
-				$blacklistEntry['local'] = $local;
-				$blacklistEntry['countryName'] = $countryName;
-				$blacklistEntry['countryCode'] = $countryCode;
-			}
-			
-			usort($this->blacklist7d['counts'], array($this, '_sortBlacklist'));
-		}
-		
 		// Local Attack Data
-		$this->localBlocks = array();
-		$this->localBlocks[] = array('title' => 'Complex', 
-									 '24h' => (int) $activityReport->getBlockedCount(1, wfActivityReport::BLOCK_TYPE_COMPLEX),
-									 '7d' => (int) $activityReport->getBlockedCount(7, wfActivityReport::BLOCK_TYPE_COMPLEX),
-									 '30d' => (int) $activityReport->getBlockedCount(30, wfActivityReport::BLOCK_TYPE_COMPLEX),
-									);
-		$this->localBlocks[] = array('title' => 'Brute Force',
-									 '24h' => (int) $activityReport->getBlockedCount(1, wfActivityReport::BLOCK_TYPE_BRUTE_FORCE),
-									 '7d' => (int) $activityReport->getBlockedCount(7, wfActivityReport::BLOCK_TYPE_BRUTE_FORCE),
-									 '30d' => (int) $activityReport->getBlockedCount(30, wfActivityReport::BLOCK_TYPE_BRUTE_FORCE),
-									);
-		$this->localBlocks[] = array('title' => 'Blacklist',
-									 '24h' => (int) $activityReport->getBlockedCount(1, wfActivityReport::BLOCK_TYPE_BLACKLIST),
-									 '7d' => (int) $activityReport->getBlockedCount(7, wfActivityReport::BLOCK_TYPE_BLACKLIST),
-									 '30d' => (int) $activityReport->getBlockedCount(30, wfActivityReport::BLOCK_TYPE_BLACKLIST),
-									);
+		$this->localBlockToday = (int) $activityReport->getBlockedCount(1);
+		$this->localBlockWeek = (int) $activityReport->getBlockedCount(7);
+		$this->localBlockMonth = (int) $activityReport->getBlockedCount(30);
 		
 		// Network Attack Data
 		if (is_array($data) && isset($data['attackdata']) && isset($data['attackdata']['24h'])) {
@@ -292,24 +202,5 @@ class wfDashboard {
 			}
 			$this->countriesNetwork = $networkCountries;
 		}
-	}
-	
-	protected function _sortBlacklist($a, $b) {
-		if ($a['local'] == $b['local']) { return 0; }
-		if ($a['local'] < $b['local']) { return 1; }
-		return -1;
-	}
-	
-	protected function _obfuscateIP($ip) {
-		if (wfUtils::isIPv6MappedIPv4($ip)) {
-			$ip = substr($ip, strrpos($ip, ':') + 1);
-		}
-		
-		if (preg_match('/^(\d+)\.\d+\.\d+\.(\d+)$/', $ip, $matches)) {
-			return $matches[1] . '.x.x.' . $matches[2];
-		}
-		
-		$binIP = wfUtils::inet_pton($ip);
-		return bin2hex(wfUtils::substr($binIP, 0, 4)) . '::x::' . bin2hex(wfUtils::substr($binIP, -4));
 	}
 }
