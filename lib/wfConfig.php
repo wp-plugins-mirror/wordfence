@@ -34,7 +34,6 @@ class wfConfig {
 			//"perfLoggingEnabled" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scheduledScansEnabled" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"lowResourceScansEnabled" => array('value' => false, 'autoload' => self::AUTOLOAD),
-			"scansEnabled_public" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_checkHowGetIPs" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_core" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"scansEnabled_themes" => array('value' => false, 'autoload' => self::AUTOLOAD),
@@ -324,6 +323,10 @@ SQL
 		}
 
 		if (($key == 'apiKey' || $key == 'isPaid' || $key == 'other_WFNet') && wfWAF::getInstance() && !WFWAF_SUBDIRECTORY_INSTALL) {
+			if ($key == 'isPaid' || $key == 'other_WFNet') {
+				$val = !!$val;
+			}
+			
 			try {
 				wfWAF::getInstance()->getStorageEngine()->setConfig($key, $val);
 			} catch (wfWAFStorageFileException $e) {

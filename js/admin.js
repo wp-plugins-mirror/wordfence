@@ -94,6 +94,15 @@
 					$(this).hide();
 				});
 
+				$(window).bind("scroll", function() {
+					$(this).scrollTop() > 200 ? $(".wf-scrollTop").fadeIn() : $(".wf-scrollTop").fadeOut()
+				});
+				$(".wf-scrollTop").click(function(e) {
+					return e.stopPropagation(), $("body,html").animate({
+						scrollTop: 0
+					}, 800), !1;
+				});
+
 				var tabs = jQuery('#wordfenceTopTabs').find('a');
 				if (tabs.length > 0) {
 					tabs.click(function() {
@@ -2708,7 +2717,12 @@
 						if (typeof onSuccess === 'function') {
 							return onSuccess.apply(this, arguments);
 						}
-					} else {
+					}
+					else if (typeof res === 'object' && res.errorMsg) {
+						self.colorbox((self.isSmallScreen ? '300px' : '400px'), 'Error saving Firewall configuration', 'There was an error saving the ' +
+							'Web Application Firewall configuration settings: ' + res.errorMsg);
+					}
+					else {
 						self.colorbox((self.isSmallScreen ? '300px' : '400px'), 'Error saving Firewall configuration', 'There was an error saving the ' +
 							'Web Application Firewall configuration settings.');
 					}

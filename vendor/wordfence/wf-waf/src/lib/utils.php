@@ -333,7 +333,7 @@ class wfWAFUtils {
 		if ($bytes === false || wfWAFUtils::strlen($bytes) != 4) {
 			throw new RuntimeException("Unable to get 4 bytes");
 		}
-		$val = unpack("Nint", $bytes);
+		$val = @unpack("Nint", $bytes);
 		$val = $val['int'] & 0x7FFFFFFF;
 		$fp = (float) $val / 2147483647.0; // convert to [0,1]
 		return (int) (round($fp * $diff) + $min);

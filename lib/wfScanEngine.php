@@ -83,7 +83,7 @@ class wfScanEngine {
 		if ($message == 'ok') {
 			$issueCount = $issuesInstance->getIssueCount();
 			if ($issueCount) {
-				new wfNotification(null, wfNotification::PRIORITY_HIGH, "<a href=\"" . network_admin_url('admin.php?page=WordfenceScan') . "\">{$issueCount} issue" . ($issueCount == 1 ? '' : 's') . ' found in most recent scan</a>', 'wfplugin_scan');
+				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, "<a href=\"" . network_admin_url('admin.php?page=WordfenceScan') . "\">{$issueCount} issue" . ($issueCount == 1 ? '' : 's') . ' found in most recent scan</a>', 'wfplugin_scan');
 			}
 			else {
 				$n = wfNotification::getNotificationForCategory('wfplugin_scan');
@@ -95,11 +95,11 @@ class wfScanEngine {
 		else {
 			$failureType = wfConfig::get('lastScanFailureType');
 			if ($failureType == 'duration') {
-				new wfNotification(null, wfNotification::PRIORITY_HIGH, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan aborted due to duration limit</a>', 'wfplugin_scan');
+				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan aborted due to duration limit</a>', 'wfplugin_scan');
 			}
 			else {
 				$trimmedError = substr($message, 0, 100) . (strlen($message) > 100 ? '...' : '');
-				new wfNotification(null, wfNotification::PRIORITY_HIGH, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan failed: ' . esc_html($trimmedError) . '</a>', 'wfplugin_scan');
+				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, '<a href="' . network_admin_url('admin.php?page=WordfenceScan') . '">Scan failed: ' . esc_html($trimmedError) . '</a>', 'wfplugin_scan');
 			}
 		}
 	}
@@ -118,7 +118,6 @@ class wfScanEngine {
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
 		include('wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
-		$this->jobList[] = 'publicSite';
 		$this->jobList[] = 'checkSpamvertized';
 		$this->jobList[] = 'checkSpamIP';
 		$this->jobList[] = 'checkGSB';
@@ -276,30 +275,6 @@ class wfScanEngine {
 	}
 	public function getCurrentJob(){
 		return $this->jobList[0];
-	}
-	private function scan_publicSite(){
-		if(wfConfig::get('isPaid')){
-			if(wfConfig::get('scansEnabled_public')){
-				$this->publicScanEnabled = true;
-				$this->statusIDX['public'] = wordfence::statusStart("Doing Remote Scan of public site for problems");
-				$result = $this->api->call('scan_public_site', array(), array(
-					'siteURL' => site_url()
-					));
-				$haveIssues = false;
-				if($result['haveIssues'] && is_array($result['issues']) ){
-					foreach($result['issues'] as $issue){
-						$this->addIssue($issue['type'], $issue['level'], $issue['ignoreP'], $issue['ignoreC'], $issue['shortMsg'], $issue['longMsg'], $issue['data']);
-						$haveIssues = true;
-					}
-				}
-				wordfence::statusEnd($this->statusIDX['public'], $haveIssues);
-			} else {
-				wordfence::statusDisabled("Skipping remote scan of public site for problems");
-			}
-		} else {
-			wordfence::statusPaidOnly("Remote scan of public facing site only available to paid members");
-			sleep(2); //enough time to read the message before it scrolls off.
-		}
 	}
 	private function scan_checkSpamIP(){
 		if(wfConfig::get('isPaid')){
@@ -1390,7 +1365,7 @@ class wfScanEngine {
 			//ajax requests can be sent by the server to itself
 			$cronURL = 'admin-ajax.php?action=wordfence_doScan&isFork=' . ($isFork ? '1' : '0') . '&cronKey=' . $cronKey;
 			$cronURL = admin_url($cronURL);
-			$headers = array();
+			$headers = array(/*'Cookie' => 'XDEBUG_SESSION=1'*/); 
 			wordfence::status(4, 'info', "Starting cron with normal ajax at URL $cronURL");
 			wp_remote_get( $cronURL, array(
 				'timeout' => $timeout, //Must be less than max execution time or more than 2 HTTP children will be occupied by scan

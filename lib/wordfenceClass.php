@@ -340,7 +340,7 @@ class wordfence {
 				$message .= $items[$i];
 			}
 			
-			new wfNotification(null, wfNotification::PRIORITY_DEFAULT, '<a href="' . network_admin_url('update-core.php') . '">' . $message . '</a>', 'wfplugin_updates');
+			new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, '<a href="' . network_admin_url('update-core.php') . '">' . $message . '</a>', 'wfplugin_updates');
 		}
 		else {
 			$n = wfNotification::getNotificationForCategory('wfplugin_updates');
@@ -1309,13 +1309,13 @@ SQL
 			try {
 				$configDefaults = array(
 					'apiKey'         => wfConfig::get('apiKey'),
-					'isPaid'         => wfConfig::get('isPaid'),
+					'isPaid'         => !!wfConfig::get('isPaid'),
 					'siteURL'        => $siteurl,
 					'homeURL'        => $homeurl,
 					'whitelistedIPs' => (string) wfConfig::get('whitelisted'),
 					'howGetIPs'      => (string) wfConfig::get('howGetIPs'),
 					'howGetIPs_trusted_proxies' => wfConfig::get('howGetIPs_trusted_proxies', ''),
-					'other_WFNet'    => wfConfig::get('other_WFNet', true), 
+					'other_WFNet'    => !!wfConfig::get('other_WFNet', true), 
 					'pluginABSPATH'	 => ABSPATH,
 				);
 				foreach ($configDefaults as $key => $value) {
@@ -1457,7 +1457,7 @@ SQL
 		$salt = wp_salt('logged_in');
 		$cookiename = 'wf_loginalerted_' . hash_hmac('sha256', wfUtils::getIP() . '|' . $user->ID, $salt);
 		$cookievalue = hash_hmac('sha256', $user->user_login, $salt);
-		if(user_can($userID, 'update_core')){
+		if(wfUtils::isAdmin($userID)){
 			if(wfConfig::get('alertOn_adminLogin')){
 				$shouldAlert = true;
 				if (wfConfig::get('alertOn_firstAdminLoginOnly') && isset($_COOKIE[$cookiename])) {
@@ -4003,7 +4003,7 @@ HTACCESS;
 		$admins = "";
 		$users = "";
 		foreach($q1 as $rec) {
-			$isAdmin = user_can($rec['ID'], 'manage_options');
+			$isAdmin = wfUtils::isAdmin($rec['ID']);
 			if($isAdmin && ($auditType == 'admin' || $auditType == 'both') ) {
 				$admins .= $rec['ID'] . ':' . base64_encode($rec['crypt_pass']) . '|';
 			} else if($auditType == 'user' || $auditType == 'both') {
@@ -4223,7 +4223,7 @@ HTACCESS;
 			$hresults = $hooverResults[1];
 			$count = count($hresults);
 			if ($count > 0) {
-				new wfNotification(null, wfNotification::PRIORITY_HIGH, "Page contains {$count} malware URL" . ($count == 1 ? '' : 's') . ': ' . esc_html($pageURL), 'wfplugin_malwareurl_' . md5($pageURL), null, array(array('link' => network_admin_url('admin.php?page=WordfenceScan'), 'label' => 'Run a Scan')));
+				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, "Page contains {$count} malware URL" . ($count == 1 ? '' : 's') . ': ' . esc_html($pageURL), 'wfplugin_malwareurl_' . md5($pageURL), null, array(array('link' => network_admin_url('admin.php?page=WordfenceScan'), 'label' => 'Run a Scan')));
 				return array('bad' => $count);
 			}
 		}
@@ -4360,35 +4360,60 @@ HTACCESS;
 		@error_reporting(E_ALL);
 		wfUtils::iniSet('display_errors','On');
 		set_error_handler('wordfence::memtest_error_handler', E_ALL);
+		
+		$maxMemory = ini_get('memory_limit');
+		$last = strtolower(substr($maxMemory, -1));
+		$maxMemory = (int) $maxMemory;
+		
+		$configuredMax = wfConfig::get('maxMem', 0);
+		if ($configuredMax <= 0) {
+			if ($last == 'g') { $configuredMax = $maxMemory * 1024; }
+			else if ($last == 'm') { $configuredMax = $maxMemory; }
+			else if ($last == 'k') { $configuredMax = $maxMemory / 1024; }
+			$configuredMax = floor($configuredMax);
+		}
+		
+		$stepSize = 5242880; //5 MB
 
 		echo "Wordfence Memory benchmarking utility version " . WORDFENCE_VERSION . ".\n";
 		echo "This utility tests if your WordPress host respects the maximum memory configured\nin their php.ini file, or if they are using other methods to limit your access to memory.\n\n--Starting test--\n";
 		echo "Current maximum memory configured in php.ini: " . ini_get('memory_limit') . "\n";
 		echo "Current memory usage: " . sprintf('%.2f', memory_get_usage(true) / (1024 * 1024)) . "M\n";
-		echo "Setting max memory to 90M.\n";
-		wfUtils::iniSet('memory_limit', '90M');
-		echo "Starting memory benchmark. Seeing an error after this line is not unusual. Read the error carefully\nto determine how much memory your host allows. We have requested 90 megabytes.\n";
-		if(memory_get_usage(true) < 1){
+		echo "Attempting to set max memory to {$configuredMax}M.\n";
+		wfUtils::iniSet('memory_limit', ($configuredMax + 1) . 'M'); //Allow a little extra for testing overhead
+		echo "Starting memory benchmark. Seeing an error after this line is not unusual. Read the error carefully\nto determine how much memory your host allows. We have requested {$configuredMax} megabytes.\n";
+		
+		if (memory_get_usage(true) < 1) {
 			echo "Exiting test because memory_get_usage() returned a negative number\n";
+			exit();
 		}
-		if(memory_get_usage(true) > (1024 * 1024 * 1024)){
+		if (memory_get_usage(true) > (1024 * 1024 * 1024)) {
 			echo "Exiting because current memory usage is greater than a gigabyte.\n";
+			exit();
 		}
-		$arr = array();
+		
 		//256 bytes
 		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678900000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111111111111111222222222222222222233333333333333334444444444444444444444444555555555555666666666666666666";
+		
+		$currentUsage = memory_get_usage(true);
+		$tenMB = 10 * 1024 * 1024;
+		$start = ceil($currentUsage / $tenMB) * $tenMB - $currentUsage; //Start at the closest 10 MB increment to the current usage
+		$configuredMax = $configuredMax * 1048576; //Bytes
+		$testLimit = $configuredMax - memory_get_usage(true);
 		$finalUsage = '0';
-		while(true){
-			if(memory_get_usage(true) > 80 * 1024 * 1024){
-				$finalUsage = sprintf('%.2f', (memory_get_usage(true) / 1024 / 1024));
-				echo "Completing test after benchmarking up to " . $finalUsage . " megabytes.\n";
-				break;
-			}
-			for($i = 0; $i < 1024; $i++){ //Roughly 1 megabyte if it's 256K and actual array size is 4x data size
-				$arr[] = $chars;
-			}
+		while ($start <= $testLimit) {
+			$accumulatedMemory = str_repeat($chars, $start / 256);
+			
+			$finalUsage = sprintf('%.2f', (memory_get_usage(true) / 1024 / 1024));
+			echo "Tested up to " . $finalUsage . " megabytes.\n";
+			if ($start == $testLimit) { break; }
+			$start = min($start + $stepSize, $testLimit);
+			
+			if (memory_get_usage(true) > $configuredMax) { break; }
+			
+			unset($accumulatedMemory);
 		}
-		echo "--Test complete.--\n\nCongratulations, your web host allows you to use at least $finalUsage megabytes of memory for each PHP process hosting your WordPress site.\n";
+		echo "--Test complete.--\n\nYour web host allows you to use at least {$finalUsage} megabytes of memory for each PHP process hosting your WordPress site.\n";
 		exit();
 	}
 	public static function wfLogPerfHeader(){
@@ -4893,6 +4918,9 @@ HTML;
 		echo '<div id="wordfenceAdminEmailWarning" class="fade error inline wf-admin-notice"><p><strong>You have not set an administrator email address to receive alerts for Wordfence.</strong> Please <a href="' . self::getMyOptionsURL() . '">click here to go to the Wordfence Options Page</a> and set an email address where you will receive security alerts from this site.</p><p><a class="wf-btn wf-btn-default wf-btn-sm" href="#" onclick="wordfenceExt.adminEmailChoice(\'mine\'); return false;"">Use My Email Address</a>
 		<a class="wf-btn wf-btn-default wf-btn-sm wf-dismiss-link" href="#" onclick="wordfenceExt.adminEmailChoice(\'no\'); return false;">Dismiss</a></p></div>';
 	}
+	public static function wafReadOnlyNotice() {
+		echo '<div id="wordfenceWAFReadOnlyNotice" class="fade error"><p><strong>The Wordfence Web Application Firewall is in read-only mode.</strong> PHP is currently running as a command line user and to avoid file permission issues, the WAF is running in read-only mode. It will automatically resume normal operation when run normally by a web server. <a class="wfhelp" target="_blank" href="https://docs.wordfence.com/en/Web_Application_Firewall_FAQ#What_is_read-only_mode.3F"></a></p></div>';
+	}
 	public static function misconfiguredHowGetIPsNotice() {
 		$url = network_admin_url('admin.php?page=WordfenceSecOpt');
 		$existing = wfConfig::get('howGetIPs', '');
@@ -4959,6 +4987,15 @@ HTML;
 				add_action('network_admin_notices', 'wordfence::misconfiguredHowGetIPsNotice');
 			} else {
 				add_action('admin_notices', 'wordfence::misconfiguredHowGetIPsNotice');
+			}
+		}
+		if (method_exists(wfWAF::getInstance(), 'isReadOnly') && wfWAF::getInstance()->isReadOnly()) {
+			$warningAdded = true;
+			if (wfUtils::isAdminPageMU()) {
+				add_action('network_admin_notices', 'wordfence::wafReadOnlyNotice');
+			}
+			else {
+				add_action('admin_notices', 'wordfence::wafReadOnlyNotice');
 			}
 		}
 		if(! $warningAdded){
@@ -6345,6 +6382,14 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 
 	public static function ajax_saveWAFConfig_callback() {
 		if (isset($_POST['wafConfigAction'])) {
+			$waf = wfWAF::getInstance();
+			if (method_exists($waf, 'isReadOnly') && $waf->isReadOnly()) {
+				return array(
+					'err'      => 1,
+					'errorMsg' => "The WAF is currently in read-only mode and will not save any configuration changes.",
+				);
+			}
+			
 			switch ($_POST['wafConfigAction']) {
 				case 'config':
 					if (!empty($_POST['wafStatus'])) {
@@ -6702,7 +6747,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 	}
 
 	public static function actionUserRegistration($user_id) {
-		if (user_can($user_id, 'manage_options') && ($request = self::getLog()->getCurrentRequest())) {
+		if (wfUtils::isAdmin($user_id) && ($request = self::getLog()->getCurrentRequest())) {
 			//self::getLog()->canLogHit = true;
 			$request->action = 'user:adminCreate';
 			$request->save();

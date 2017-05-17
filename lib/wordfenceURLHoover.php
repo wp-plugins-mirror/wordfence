@@ -54,7 +54,7 @@ class wordfenceURLHoover {
 	public function hoover($id, $data) {
 		$this->currentHooverID = $id;
 		$this->_foundSome = false;
-		@preg_replace_callback('/\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))/i', array($this, 'captureURL'), $data);
+		@preg_replace_callback('/\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))/iS', array($this, 'captureURL'), $data);
 		$this->writeHosts();
 		return $this->_foundSome;
 	}

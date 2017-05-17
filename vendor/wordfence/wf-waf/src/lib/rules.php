@@ -704,6 +704,7 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 		$request = $this->getWAF()->getRequest();
 		$files = $request->getFiles();
 		$patterns = $this->getWAF()->getMalwareSignatures();
+		$commonStrings = $this->getWAF()->getMalwareSignatureCommonStrings();
 		if (!is_array($patterns) || !is_array($files)) {
 			return false;
 		}
@@ -723,9 +724,26 @@ class wfWAFRuleComparison implements wfWAFRuleInterface {
 					if ($totalRead < 1) {
 						return false;
 					}
-				
-					foreach ($patterns as $rule) {
-						if (preg_match('/(' . $rule . ')/i', $data, $matches)) {
+					
+					$commonStringsChecked = array();
+					foreach ($patterns as $index => $rule) {
+						if (@preg_match('/' . $rule . '/iS', null) === false) {
+							continue; //This PCRE version can't compile the rule
+						}
+						
+						if (isset($commonStrings[$index])) {
+							foreach ($commonStrings[$index] as $s) {
+								if (!isset($commonStringsChecked[$s])) {
+									$commonStringsChecked[$s] = (preg_match('/' . $s . '/iS', $data) == 1);
+								}
+								
+								if (!$commonStringsChecked[$s]) {
+									continue 2;
+								}
+							}
+						}
+						
+						if (preg_match('/(' . $rule . ')/iS', $data, $matches)) {
 							return true;
 						}
 					}

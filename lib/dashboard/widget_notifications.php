@@ -10,9 +10,9 @@
 				</div>
 			</div>
 			<div class="wf-dashboard-item-extra">
-				<ul class="wf-dashboard-item-list">
+				<ul class="wf-dashboard-item-list wf-dashboard-item-list-striped">
 					<?php foreach ($d->notifications as $n): ?>
-						<li class="wf-notification" data-notification="<?php echo esc_html($n->id); ?>">
+						<li class="wf-notification<?php if ($n->priority % 10 == 1) { echo ' wf-notification-critical'; } else if ($n->priority % 10 == 2) { echo ' wf-notification-warning'; } ?>" data-notification="<?php echo esc_html($n->id); ?>">
 							<div class="wf-dashboard-item-list-title"><?php echo $n->html; ?></div>
 							<?php foreach ($n->links as $l): ?>
 								<div class="wf-dashboard-item-list-action"><a href="<?php echo esc_html($l['link']); ?>"<?php if (preg_match('/^https?:\/\//i', $l['link'])) { echo ' target="_blank"'; } ?>><?php echo esc_html($l['label']); ?></a></div>

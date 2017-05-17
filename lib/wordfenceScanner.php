@@ -77,24 +77,39 @@ class wordfenceScanner {
 		
 		if (wfWAF::getInstance() && method_exists(wfWAF::getInstance(), 'setMalwareSignatures')) {
 			try { wfWAF::getInstance()->setMalwareSignatures(array()); } catch (Exception $e) { /* Ignore */ }
+			if (method_exists(wfWAF::getInstance(), 'setMalwareSignatureCommonStrings')) {
+				try {
+					wfWAF::getInstance()->setMalwareSignatureCommonStrings(array(), array());
+				}
+				catch (Exception $e) { /* Ignore */ }
+			}
 		}
 
 		if (is_array($sigData['rules'])) {
 			$wafPatterns = array();
+			$wafCommonStringIndexes = array();
 			foreach ($sigData['rules'] as $key => $signatureRow) {
 				list(, , $pattern) = $signatureRow;
 				$logOnly = (isset($signatureRow[5]) && !empty($signatureRow[5])) ? $signatureRow[5] : false;
-				if (@preg_match('/' . $pattern . '/i', null) === false) {
-					wordfence::status(1, 'error', "A regex Wordfence received from it's servers is invalid. The pattern is: " . esc_html($pattern));
+				$commonStringIndexes = (isset($signatureRow[6]) && is_array($signatureRow[6])) ? $signatureRow[6] : array();
+				if (@preg_match('/' . $pattern . '/iS', null) === false) {
+					wordfence::status(1, 'error', "A regex Wordfence received from its servers is invalid. The pattern is: " . esc_html($pattern));
 					unset($sigData['rules'][$key]);
 				}
 				else if (!$logOnly) {
 					$wafPatterns[] = $pattern;
+					$wafCommonStringIndexes[] = $commonStringIndexes;
 				}
 			}
 			
 			if (wfWAF::getInstance() && method_exists(wfWAF::getInstance(), 'setMalwareSignatures')) {
 				try { wfWAF::getInstance()->setMalwareSignatures($wafPatterns); } catch (Exception $e) { /* Ignore */ }
+				if (method_exists(wfWAF::getInstance(), 'setMalwareSignatureCommonStrings') && isset($sigData['commonStrings']) && is_array($sigData['commonStrings'])) {
+					try {
+						wfWAF::getInstance()->setMalwareSignatureCommonStrings($sigData['commonStrings'], $wafCommonStringIndexes);
+					}
+					catch (Exception $e) { /* Ignore */ }
+				}
 			}
 		}
 
@@ -316,6 +331,9 @@ class wordfenceScanner {
 						break;
 					}
 					else {
+						$allCommonStrings = $this->patterns['commonStrings'];
+						$commonStringsFound = array_fill(0, count($allCommonStrings), null); //Lazily looked up below
+						
 						$regexMatched = false;
 						foreach ($this->patterns['rules'] as $rule) {
 							$stoppedOnSignature = $record->stoppedOnSignature;
@@ -330,11 +348,28 @@ class wordfenceScanner {
 							
 							$type = (isset($rule[4]) && !empty($rule[4])) ? $rule[4] : 'server';
 							$logOnly = (isset($rule[5]) && !empty($rule[5])) ? $rule[5] : false;
+							$commonStringIndexes = (isset($rule[6]) && is_array($rule[6])) ? $rule[6] : array();
 							if ($type == 'server' && !$treatAsBinary) { continue; }
 							else if (($type == 'both' || $type == 'browser') && $fileExt == 'js') { $extraMsg = ''; }
 							else if (($type == 'both' || $type == 'browser') && !$treatAsBinary) { continue; }
 							
-							if (preg_match('/(' . $rule[2] . ')/i', $data, $matches, PREG_OFFSET_CAPTURE)) {
+							foreach ($commonStringIndexes as $i) {
+								if ($commonStringsFound[$i] === null) {
+									$s = $allCommonStrings[$i];
+									$commonStringsFound[$i] = (preg_match('/' . $s . '/i', $data) == 1);
+								}
+								
+								if (!$commonStringsFound[$i]) {
+									//wordfence::status(4, 'info', "Skipping malware signature ({$rule[0]}) due to short circuit.");
+									continue 2;
+								}
+							}
+							
+							/*if (count($commonStringIndexes) > 0) {
+								wordfence::status(4, 'info', "Processing malware signature ({$rule[0]}) because short circuit matched.");
+							}*/
+							
+							if (preg_match('/(' . $rule[2] . ')/iS', $data, $matches, PREG_OFFSET_CAPTURE)) {
 								$matchString = $matches[1][0];
 								$matchOffset = $matches[1][1];
 								$beforeString = wfWAFUtils::substr($data, max(0, $matchOffset - 100), $matchOffset - max(0, $matchOffset - 100));

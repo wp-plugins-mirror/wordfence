@@ -13,6 +13,30 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 ?>
 
 <div>
+	<?php if (!$sendingDiagnosticEmail): ?>
+	<div id="sendByEmailThanks" class="hidden">
+		<h3>Thanks for sending your diagnostic page over email</h3>
+	</div>
+	<div id="sendByEmailDiv" class="wf-add-bottom">
+		<div id="sendByEmailForm" class="hidden">
+			<table class="wfConfigForm">
+				<tr>
+					<th>Email address:</th>
+					<td><input type="email" id="_email" value="wftest@wordfence.com"/></td>
+				</tr>
+				<tr>
+					<th>Ticket Number/Forum Username:</th>
+					<td><input type="text" id="_ticketnumber" required/></td>
+				</tr>
+				<tr>
+					<td colspan="2" style="text-align: right;"><input class="wf-btn wf-btn-default" type="button" id="doSendEmail" value="Send"/></td>
+				</tr>
+			</table>
+		</div>
+		<input class="wf-btn wf-btn-default" type="submit" id="sendByEmail" value="Send Report by Email"/>
+	</div>
+	<?php endif; ?>
+	
 	<form id="wfConfigForm" style="overflow-x: auto;">
 		<table class="wf-striped-table"<?php echo !empty($inEmail) ? ' border=1' : '' ?>>
 			<?php foreach ($diagnostic->getResults() as $title => $tests): ?>
@@ -170,12 +194,14 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 				'WP_ALLOW_REPAIR' => array('description' => 'Automatic database repair', 'value' => (defined('WP_ALLOW_REPAIR') && WP_ALLOW_REPAIR ? 'Enabled' : 'Disabled')),
 				'DO_NOT_UPGRADE_GLOBAL_TABLES' => array('description' => 'Do not upgrade global tables', 'value' => (defined('DO_NOT_UPGRADE_GLOBAL_TABLES') && DO_NOT_UPGRADE_GLOBAL_TABLES ? 'Yes' : 'No')),
 				'DISALLOW_FILE_EDIT' => array('description' => 'Disallow plugin/theme editing', 'value' => (defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT ? 'Yes' : 'No')),
-				'DISALLOW_FILE_MOD' => array('description' => 'Disallow plugin/theme update and installation', 'value' => (defined('DISALLOW_FILE_MOD') && DISALLOW_FILE_MOD ? 'Yes' : 'No')),
+				'DISALLOW_FILE_MODS' => array('description' => 'Disallow plugin/theme update and installation', 'value' => (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS ? 'Yes' : 'No')),
 				'IMAGE_EDIT_OVERWRITE' => array('description' => 'Overwrite image edits when restoring the original', 'value' => (defined('IMAGE_EDIT_OVERWRITE') && IMAGE_EDIT_OVERWRITE ? 'Yes' : 'No')),
 				'FORCE_SSL_ADMIN' => array('description' => 'Force SSL for administrative logins', 'value' => (defined('FORCE_SSL_ADMIN') && FORCE_SSL_ADMIN ? 'Yes' : 'No')),
 				'WP_HTTP_BLOCK_EXTERNAL' => array('description' => 'Block external URL requests', 'value' => (defined('WP_HTTP_BLOCK_EXTERNAL') && WP_HTTP_BLOCK_EXTERNAL ? 'Yes' : 'No')),
 				'WP_ACCESSIBLE_HOSTS' => 'Whitelisted hosts',
 				'WP_AUTO_UPDATE_CORE' => array('description' => 'Automatic WP Core updates', 'value' => defined('WP_AUTO_UPDATE_CORE') ? (is_bool(WP_AUTO_UPDATE_CORE) ? (WP_AUTO_UPDATE_CORE ? 'Everything' : 'None') : WP_AUTO_UPDATE_CORE) : 'Default'),
+				'WP_PROXY_HOST' => array('description' => 'Hostname for a proxy server', 'value' => defined('WP_PROXY_HOST') ? WP_PROXY_HOST : '(not set)'),
+				'WP_PROXY_PORT' => array('description' => 'Port for a proxy server', 'value' => defined('WP_PROXY_PORT') ? WP_PROXY_PORT : '(not set)'),
 			);
 
 			foreach ($wordPressValues as $settingName => $settingData):
@@ -350,7 +376,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 					</tbody>
 					<tbody class="thead thead-subhead" style="font-size: 85%">
 					<?php
-					$val = array_shift($q);
+					$val = wfUtils::array_first($q);
 					?>
 					<tr>
 						<?php foreach ($val as $tkey => $tval): ?>
@@ -360,13 +386,26 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 					</tbody>
 					<tbody style="font-size: 85%">
 					<?php
-					foreach ($q as $val): ?>
+					$count = 0;
+					foreach ($q as $val) {
+					?>
 						<tr>
 							<?php foreach ($val as $tkey => $tval): ?>
 								<td><?php echo esc_html($tval) ?></td>
 							<?php endforeach; ?>
 						</tr>
-					<?php endforeach; ?>
+					<?php
+						$count++;
+						if ($count >= 250) {
+							?>
+						<tr>
+							<td colspan="<?php echo $databaseCols; ?>">and <?php echo count($q) - $count; ?> more</td>
+						</tr>
+							<?php
+							break;
+						}
+					}
+					?>
 					</tbody>
 
 				</table>
@@ -422,17 +461,17 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 		<li>
 			<a href="<?php echo wfUtils::siteURLRelative(); ?>?_wfsf=sysinfo&nonce=<?php echo wp_create_nonce('wp-ajax'); ?>"
 			   target="_blank">Click to view your system's configuration in a new window</a>
-			<a href="http://docs.wordfence.com/en/Wordfence_options#Click_to_view_your_system.27s_configuration_in_a_new_window"
+			<a href="https://docs.wordfence.com/en/Wordfence_diagnostics#Click_to_view_your_system.27s_configuration_in_a_new_window"
 			   target="_blank" class="wfhelp"></a></li>
 		<li>
 			<a href="<?php echo wfUtils::siteURLRelative(); ?>?_wfsf=testmem&nonce=<?php echo wp_create_nonce('wp-ajax'); ?>"
 			   target="_blank">Test your WordPress host's available memory</a>
-			<a href="http://docs.wordfence.com/en/Wordfence_options#Test_your_WordPress_host.27s_available_memory"
+			<a href="https://docs.wordfence.com/en/Wordfence_diagnostics#Test_your_WordPress_host.27s_available_memory"
 			   target="_blank" class="wfhelp"></a>
 		</li>
 		<li>
 			Send a test email from this WordPress server to an email address:<a
-				href="http://docs.wordfence.com/en/Wordfence_options#Send_a_test_email_from_this_WordPress_server_to_an_email_address"
+				href="https://docs.wordfence.com/en/Wordfence_diagnostics#Send_a_test_email_from_this_WordPress_server_to_an_email_address"
 				target="_blank" class="wfhelp"></a>
 			<input type="text" id="testEmailDest" value="" size="20" maxlength="255" class="wfConfigElem"/>
 			<input class="wf-btn wf-btn-default" type="button" value="Send Test Email"
@@ -440,33 +479,9 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 		</li>
 	</ul>
 
-	<div id="sendByEmailThanks" class="hidden">
-		<h3>Thanks for sending your diagnostic page over email</h3>
-	</div>
-	<div id="sendByEmailDiv">
-		<h3>Send Report by Email</h3>
-
-		<div id="sendByEmailForm" class="hidden">
-			<table class="wfConfigForm">
-				<tr>
-					<th>Email address:</th>
-					<td><input type="email" id="_email" value="wftest@wordfence.com"/></td>
-				</tr>
-				<tr>
-					<th>Ticket Number/Forum Username:</th>
-					<td><input type="text" id="_ticketnumber" required/></td>
-				</tr>
-				<tr>
-					<td colspan="2" style="text-align: right;"><input class="wf-btn wf-btn-default" type="button" id="doSendEmail" value="Send"/></td>
-				</tr>
-			</table>
-		</div>
-		<input class="wf-btn wf-btn-default" type="submit" id="sendByEmail" value="Send Report by Email"/>
-	</div>
-
 	<?php if (!WFWAF_SUBDIRECTORY_INSTALL): ?>
 	<div id="updateWAFRules">
-		<h3>Firewall Rules</h3>
+		<h3>Firewall Rules <a href="https://docs.wordfence.com/en/Wordfence_diagnostics#Firewall_Rules" target="_blank" class="wfhelp"></a></h3>
 
 		<p>
 			<button type="button" onclick="WFAD.wafUpdateRules()" class="wf-btn wf-btn-primary">
@@ -515,7 +530,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 		<table class="wfConfigForm">
 			<tr>
 				<th>Enable debugging mode (increases database load)<a
-						href="http://docs.wordfence.com/en/Wordfence_options#Enable_debugging_mode_.28increases_database_load.29"
+						href="https://docs.wordfence.com/en/Wordfence_diagnostics#Enable_debugging_mode_.28increases_database_load.29"
 						target="_blank" class="wfhelp"></a></th>
 				<td><input type="checkbox" id="debugOn" class="wfConfigElem" name="debugOn"
 				           value="1" <?php $w->cb('debugOn'); ?> /></td>
@@ -523,7 +538,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 
 			<tr>
 				<th>Start all scans remotely<a
-						href="http://docs.wordfence.com/en/Wordfence_options#Start_all_scans_remotely"
+						href="https://docs.wordfence.com/en/Wordfence_diagnostics#Start_all_scans_remotely"
 						target="_blank" class="wfhelp"></a></th>
 				<td><input type="checkbox" id="startScansRemotely" class="wfConfigElem" name="startScansRemotely"
 				           value="1" <?php $w->cb('startScansRemotely'); ?> />
@@ -533,7 +548,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 
 			<tr>
 				<th><label class="wf-plain" for="ssl_verify">Enable SSL Verification</label><a
-						href="http://docs.wordfence.com/en/Wordfence_options#Enable_SSL_Verification"
+						href="https://docs.wordfence.com/en/Wordfence_diagnostics#Enable_SSL_Verification"
 						target="_blank" class="wfhelp"></a>
 				</th>
 				<td style="vertical-align: top;"><input type="checkbox" id="ssl_verify" class="wfConfigElem"
@@ -545,7 +560,9 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 			</tr>
 
 			<tr>
-				<th><label class="wf-plain" for="betaThreatDefenseFeed">Enable beta threat defense feed</label></th>
+				<th><label class="wf-plain" for="betaThreatDefenseFeed">Enable beta threat defense feed</label><a
+							href="https://docs.wordfence.com/en/Wordfence_diagnostics#Enable_beta_threat_defense_feed"
+							target="_blank" class="wfhelp"></a></th>
 				<td style="vertical-align: top;"><input type="checkbox" id="betaThreatDefenseFeed"
 				                                        class="wfConfigElem"
 				                                        name="betaThreatDefenseFeed"
@@ -567,4 +584,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 	</form>
 
 <?php endif ?>
+</div>
+<div class="wf-scrollTop">
+	<a href="javascript:void(0);"><i class="wf-ionicons wf-ion-chevron-up"></i></a>
 </div>

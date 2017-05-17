@@ -7,11 +7,6 @@ $w = new wfConfig();
 	<?php
 	$options = array( //Contents should already be HTML-escaped as needed
 		array(
-			'id' 		=> 'scansEnabled_public',
-			'label'		=> 'Scan public facing site for vulnerabilities <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_public_facing_site" target="_blank" class="wfhelp"></a>',
-			'premium'	=> true,
-		),
-		array(
 			'id' 		=> 'scansEnabled_checkHowGetIPs',
 			'label'		=> 'Scan for misconfigured How does Wordfence get IPs <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_misconfigured_How_does_Wordfence_get_IPs" target="_blank" class="wfhelp"></a>',
 		),
