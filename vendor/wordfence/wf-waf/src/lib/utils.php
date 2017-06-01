@@ -477,8 +477,10 @@ class wfWAFUtils {
 	 * @return mixed
 	 */
 	public static function substr($string, $start, $length = null) {
-		$args = func_get_args();
-		return self::callMBSafeStrFunction('substr', $args);
+		if ($length === null) { $length = self::strlen($string); }
+		return self::callMBSafeStrFunction('substr', array(
+			$string, $start, $length
+		));
 	}
 
 	/**
@@ -500,9 +502,9 @@ class wfWAFUtils {
 	 * @return mixed
 	 */
 	public static function substr_count($haystack, $needle, $offset = 0, $length = null) {
-		$haystack = self::substr($haystack, $offset, $length);
+		if ($length === null) { $length = self::strlen($haystack); }
 		return self::callMBSafeStrFunction('substr_count', array(
-			$haystack, $needle,
+			$haystack, $needle, $offset, $length
 		));
 	}
 
@@ -741,8 +743,8 @@ class wfWAFUtils {
 			}
 		}
 		
-		$bin_network = substr(self::inet_pton($network), 0, ceil($prefix / 8));
-		$bin_ip = substr(self::inet_pton($ip), 0, ceil($prefix / 8));
+		$bin_network = wfWAFUtils::substr(self::inet_pton($network), 0, ceil($prefix / 8));
+		$bin_ip = wfWAFUtils::substr(self::inet_pton($ip), 0, ceil($prefix / 8));
 		if ($prefix % 8 != 0) { //Adjust the last relevant character to fit the mask length since the character's bits are split over it
 			$pos = intval($prefix / 8);
 			$adjustment = chr(((0xff << (8 - ($prefix % 8))) & 0xff));

@@ -2,8 +2,8 @@
 Contributors: mmaunder 
 Tags: security, secure, security plugin, wordpress security, login security, firewall, malware, antivirus, web application firewall, block hackers, country blocking
 Requires at least: 3.9
-Tested up to: 4.7.5
-Stable tag: 6.3.9
+Tested up to: 4.8.0
+Stable tag: 6.3.10
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -159,6 +159,25 @@ Secure your website with Wordfence.
 7. The Advanced Options page allows technically-minded users fine-tune their security settings.
 
 == Changelog ==
+
+= 6.3.10 =
+* Improvement: Reduction in overall memory usage and peak memory usage for the scanner.
+* Improvement: Support for exporting a list of all blocked and locked out IP addresses.
+* Improvement: Updated the WAF's CA certificate bundle.
+* Improvement: Updated the browscap database.
+* Improvement: Suppressed the automatic HTTP referer added by WordPress for API calls to reduce overall bandwidth usage.
+* Improvement: When all issues for a scan stage have been previously ignored, the results now indicate this rather than saying problems were found.
+* Fix: Worked around an issue with WordPress caching to allow password audits to succeed on sites with tens of thousands of users.
+* Fix: Fixed an IPv6 detection issue with one form of IPv6 address.
+* Fix: An empty ignored IP list for WAF alerts no longer creates a PHP notice.
+* Fix: Better detection for when to use secure cookies.
+* Fix: Fixed a couple issue types that were not able to be permanently ignored.
+* Fix: Adjusted the changelog link in the scan results email to work for the new wordpress.org repository.
+* Fix: Fixed some broken links in the activity summary email.
+* Fix: Fixed a typo in the scan summary text.
+* Fix: The increased attack rate emails now correctly identify blacklist blocks.
+* Fix: Fixed an issue with the dashboard where it could show the last scan failed when one has never ran.
+* Fix: Brute force records are now coalesced when possible prior to sending.
 
 = 6.3.9 =
 * Improvement: Malware signature checking has been better optimized to improve overall speed.

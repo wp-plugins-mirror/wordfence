@@ -23,7 +23,7 @@
 <?php foreach($issues as $i){ if($i['severity'] == 1){ ?>
 <p>* <?php echo htmlspecialchars($i['shortMsg']) ?></p>
 <?php if (isset($i['tmplData']['wpURL'])): ?>
-<p><?php if ($i['tmplData']['vulnerabilityPatched']) { ?><strong>Update includes security-related fixes.</strong> <?php } echo $i['tmplData']['wpURL']; ?>/changelog</p>
+<p><?php if ($i['tmplData']['vulnerabilityPatched']) { ?><strong>Update includes security-related fixes.</strong> <?php } echo $i['tmplData']['wpURL']; ?>/#developers</p>
 <?php elseif (isset($i['tmplData']['vulnerabilityPatched']) && $i['tmplData']['vulnerabilityPatched']): ?>
 <p><strong>Update includes security-related fixes.</strong></p>
 <?php endif ?>
@@ -45,7 +45,7 @@
 <?php foreach($issues as $i){ if($i['severity'] == 2){  ?>
 <p>* <?php echo htmlspecialchars($i['shortMsg']) ?></p>
 		<?php if (isset($i['tmplData']['wpURL'])): ?>
-			<p><?php echo $i['tmplData']['wpURL']; ?>/changelog</p>
+			<p><?php echo $i['tmplData']['wpURL']; ?>/#developers</p>
 		<?php endif ?>
 
 <?php } } } ?>

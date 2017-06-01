@@ -1059,7 +1059,7 @@ class wfLog {
 		return $val;
 	}
 	public function setCBLCookieBypass(){
-		wfUtils::setcookie('wfCBLBypass', self::getCBLCookieVal(), time() + (86400 * 365), '/', null, null, true);
+		wfUtils::setcookie('wfCBLBypass', self::getCBLCookieVal(), time() + (86400 * 365), '/', null, wfUtils::isFullSSL(), true);
 	}
 	public function isCBLBypassCookieSet(){
 		if(isset($_COOKIE['wfCBLBypass']) && $_COOKIE['wfCBLBypass'] == wfConfig::get('cbl_cookieVal')){

@@ -135,8 +135,8 @@ class wfUtils {
 			}
 		}
 		
-		$bin_network = substr(self::inet_pton($network), 0, ceil($prefix / 8));
-		$bin_ip = substr(self::inet_pton($ip), 0, ceil($prefix / 8));
+		$bin_network = wfUtils::substr(self::inet_pton($network), 0, ceil($prefix / 8));
+		$bin_ip = wfUtils::substr(self::inet_pton($ip), 0, ceil($prefix / 8));
 		if ($prefix % 8 != 0) { //Adjust the last relevant character to fit the mask length since the character's bits are split over it
 			$pos = intval($prefix / 8);
 			$adjustment = chr(((0xff << (8 - ($prefix % 8))) & 0xff));
@@ -1542,7 +1542,7 @@ class wfUtils {
 			if ($waf->getStorageEngine()->getConfig('attackDataKey', false) === false) {
 				$waf->getStorageEngine()->setConfig('attackDataKey', mt_rand(0, 0xfff));
 			}
-			$response = wp_remote_get(sprintf(WFWAF_API_URL_SEC . "proxy-check/%d.txt", $waf->getStorageEngine()->getConfig('attackDataKey')));
+			$response = wp_remote_get(sprintf(WFWAF_API_URL_SEC . "proxy-check/%d.txt", $waf->getStorageEngine()->getConfig('attackDataKey')), array('headers' => array('Referer' => false)));
 			
 			if (!is_wp_error($response)) {
 				$okToSendBody = wp_remote_retrieve_body($response);
@@ -1597,6 +1597,7 @@ class wfUtils {
 				'body'    => json_encode($payload),
 				'headers' => array(
 					'Content-Type' => 'application/json',
+					'Referer' => false,
 				),
 				'timeout' => $timeout,
 				'blocking' => $blocking,
@@ -1779,7 +1780,16 @@ class wfUtils {
 		if (!is_string($string)) { return false; }
 		if (strlen($string) % 2 == 1) { return false; }
 		return pack('H*', $string);
-  }
+	}
+	
+	/**
+	 * Returns whether or not the site should be treated as if it's full-time SSL.
+	 * 
+	 * @return bool
+	 */
+	public static function isFullSSL() {
+		return is_ssl() && parse_url(self::wpHomeURL(), PHP_URL_SCHEME) === 'https'; //It's possible for only wp-admin to be SSL so we check the home URL too
+	}
 
 	/**
 	 * Identical to the same functions in wfWAFUtils.
@@ -1888,8 +1898,10 @@ class wfUtils {
 	 * @return mixed
 	 */
 	public static function substr($string, $start, $length = null) {
-		$args = func_get_args();
-		return self::callMBSafeStrFunction('substr', $args);
+		if ($length === null) { $length = self::strlen($string); }
+		return self::callMBSafeStrFunction('substr', array(
+			$string, $start, $length
+		));
 	}
 	
 	/**
@@ -1911,9 +1923,9 @@ class wfUtils {
 	 * @return mixed
 	 */
 	public static function substr_count($haystack, $needle, $offset = 0, $length = null) {
-		$haystack = self::substr($haystack, $offset, $length);
+		if ($length === null) { $length = self::strlen($haystack); }
 		return self::callMBSafeStrFunction('substr_count', array(
-			$haystack, $needle,
+			$haystack, $needle, $offset, $length
 		));
 	}
 	

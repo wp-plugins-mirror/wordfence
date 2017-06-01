@@ -191,6 +191,9 @@ class wordfenceScanner {
 			$this->lastStatusTime = microtime(true);
 		}
 		
+		//The site's own URL is checked in an earlier scan stage so we exclude it here.
+		$hooverExclusions = wordfenceURLHoover::standardExcludedHosts();
+		
 		$lastCount = 'whatever';
 		$excludePattern = self::getExcludeFilePattern(self::EXCLUSION_PATTERNS_USER | self::EXCLUSION_PATTERNS_MALWARE); 
 		while (true) {
@@ -433,7 +436,7 @@ class wordfenceScanner {
 					}
 					
 					if (!$dontScanForURLs) {
-						$this->urlHoover->hoover($file, $data);
+						$this->urlHoover->hoover($file, $data, $hooverExclusions);
 					}
 					
 					if ($totalRead > 2 * 1024 * 1024) {
@@ -459,8 +462,7 @@ class wordfenceScanner {
 			return false;
 		}
 		$this->urlHoover->cleanup();
-		$siteURL = get_site_url();
-		$siteHost = parse_url($siteURL, PHP_URL_HOST);
+		
 		foreach($hooverResults as $file => $hresults){
 			$record = wordfenceMalwareScanFile::fileForPath($file);
 			$dataForFile = $this->dataForFile($file, $this->path . $file);
@@ -472,11 +474,6 @@ class wordfenceScanner {
 				
 				if (empty($result['URL'])) {
 					continue; 
-				}
-				$url = $result['URL'];
-				$urlHost = parse_url($url, PHP_URL_HOST);
-				if (strcasecmp($siteHost, $urlHost) === 0) {
-					continue;
 				}
 				
 				if ($result['badList'] == 'goog-malware-shavar') {

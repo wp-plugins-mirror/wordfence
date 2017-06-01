@@ -347,10 +347,10 @@ SQL
 			wfWAFIPBlocksController::synchronizeConfigSettings();
 		} 
 	}
-	public static function get($key, $default = false) {
+	public static function get($key, $default = false, $allowCached = true) {
 		global $wpdb;
 		
-		if (self::hasCachedOption($key)) {
+		if ($allowCached && self::hasCachedOption($key)) {
 			return self::getCachedOption($key);
 		}
 		

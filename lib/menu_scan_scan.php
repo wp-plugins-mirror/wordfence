@@ -95,8 +95,8 @@
 </div>
 <div id="wfScanIssuesWrapper" style="margin-top: 20px;">
 	<div id="wfTabs">
-		<a href="#" id="wfNewIssuesTab" class="wfTab2 wfTabSwitch selected" onclick="wordfenceAdmin.switchIssuesTab(this, 'new'); return false;">New Issues</a>
-		<a href="#" class="wfTab2 wfTabSwitch" onclick="wordfenceAdmin.switchIssuesTab(this, 'ignored'); return false;">Ignored Issues</a>
+		<a href="#" id="wfNewIssuesTab" class="wfTab2 wfTabSwitch selected" onclick="wordfenceAdmin.switchIssuesTab(this, 'new'); return false;">New Issues<span class="wfIssuesCount"></span></a>
+		<a href="#" id="wfIgnoredIssuesTab" class="wfTab2 wfTabSwitch" onclick="wordfenceAdmin.switchIssuesTab(this, 'ignored'); return false;">Ignored Issues<span class="wfIssuesCount"></span></a>
 	</div>
 	<div class="wfTabsContainer wfScanIssuesTabs">
 		<div id="wfIssues_new" class="wfIssuesContainer">

@@ -116,6 +116,7 @@
 <script type="text/x-jquery-template" id="wfBlockedIPsWrapperTmpl">
 	<div>
 		<p><a class="wf-btn wf-btn-default" href="#" onclick="WFAD.permanentlyBlockAllIPs('blocked'); return false;"><span class="wf-visible-xs">Block All Temporary</span><span class="wf-hidden-xs">Permanently block all temporarily blocked IP addresses</span></a></p>
+		<p><a class="wf-btn wf-btn-default" href="<?php echo wfUtils::siteURLRelative(); ?>?_wfsf=blockedIPs&amp;nonce=<?php echo wp_create_nonce('wp-ajax'); ?>"><span class="wf-visible-xs">Export</span><span class="wf-hidden-xs">Export all blocked IP addresses</span></a></p>
 		<div style="border-top: 1px solid #CCC; padding-top: 10px; margin-top: 10px;">
 			<table border="0" style="width: 100%" id="wfBlockedIPsWrapper">
 			</table>

@@ -329,7 +329,7 @@ $title = 'Wordfence Activity for the week of ' . date_i18n(get_option('date_form
 				</table>
 
 				<p>
-					<a class="button" href="<?php echo network_admin_url('admin.php?page=WordfenceWAF#top#blockedips') ?>">Update Blocked IPs</a>
+					<a class="button" href="<?php echo network_admin_url('admin.php?page=WordfenceBlocking#top#blockedips') ?>">Update Blocked IPs</a>
 				</p>
 
 				<?php wfHelperString::cycle(); ?>
@@ -364,7 +364,7 @@ $title = 'Wordfence Activity for the week of ' . date_i18n(get_option('date_form
 				</table>
 
 				<p>
-					<a class="button" href="<?php echo network_admin_url('admin.php?page=WordfenceWAF#top#countryblocking') ?>">Update Blocked Countries</a>
+					<a class="button" href="<?php echo network_admin_url('admin.php?page=WordfenceBlocking#top#countryblocking') ?>">Update Blocked Countries</a>
 				</p>
 
 				<?php wfHelperString::cycle(); ?>
