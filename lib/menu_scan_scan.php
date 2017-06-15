@@ -1,4 +1,8 @@
 <div class="wordfenceModeElem" id="wordfenceMode_scan"></div>
+<div class="wf-alert wf-alert-danger" id="wf-scan-failed" style="display: none;">
+	<h4>Scan Failed</h4>
+	<p>The current scan looks like it has failed. Its last status update was <span id="wf-scan-failed-time-ago"></span> ago. You may continue to wait in case it resumes or cancel and restart the scan. Some sites may need adjustments to run scans reliably. <a href="https://docs.wordfence.com/en/My_scans_don%27t_finish._What_would_cause_that%3F" target="_blank">Click here for steps you can try.</a></p>
+</div> 
 <div class="wordfenceScanButton wf-center">
 	<a href="#" id="wfStartScanButton1" class="wfStartScanButton button button-primary" onclick="wordfenceAdmin.startScan(); return false;">Start a Wordfence Scan</a><br />
 	<a href="#" onclick="WFAD.killScan(); return false;" style="font-size: 10px; color: #AAA;">Click to kill the current scan.</a>

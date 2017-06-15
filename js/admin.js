@@ -551,6 +551,14 @@
 					if (res.signatureUpdateTime) {
 						this.updateSignaturesTimestamp(res.signatureUpdateTime);
 					}
+					
+					if (res.scanFailed) {
+						jQuery('#wf-scan-failed-time-ago').text(res.scanFailedTiming);
+						jQuery('#wf-scan-failed').show();
+					}
+					else {
+						jQuery('#wf-scan-failed').hide();
+					}
 				}
 				this.activityLogUpdatePending = false;
 			},

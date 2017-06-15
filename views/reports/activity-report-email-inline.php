@@ -5,8 +5,8 @@
 
 $start_time = wfActivityReport::getReportDateFrom();
 $end_time = time();
-$report_start = date_i18n(get_option('date_format'), $start_time);
-$report_end = date_i18n(get_option('date_format'), $end_time);
+$report_start = wfUtils::formatLocalTime(get_option('date_format'), $start_time);
+$report_end = wfUtils::formatLocalTime(get_option('date_format'), $end_time);
 $title = sprintf('Wordfence activity from <br><strong>%s</strong> to <strong>%s</strong>', $report_start, $report_end);
 $bg_colors = array(
 	'even' => 'background-color: #eeeeee;',
@@ -351,7 +351,7 @@ h6 a:visited { color: purple !important; }
 							$newVersion = ($plugin['newVersion'] == 'Unknown' ? $plugin['newVersion'] : "v{$plugin['newVersion']}");
 						?>
 							<li style="font-size: 100%; vertical-align: baseline; margin: 0; padding: 0; border: 0;">
-								A new version of the plugin "<?php echo esc_html("{$plugin['Name']} ({$newVersion})") ?>" is available.<?php if (isset($plugin['vulnerabilityPatched']) && $plugin['vulnerabilityPatched']) { echo " <strong>This update includes security-related fixes.</strong>"; } ?>
+								A new version of the plugin "<?php echo esc_html("{$plugin['Name']} ({$newVersion})") ?>" is available.<?php if (isset($plugin['vulnerable']) && $plugin['vulnerable']) { echo " <strong>This update includes security-related fixes.</strong>"; } ?>
 							</li>
 						<?php endforeach ?>
 					</ul>
@@ -364,7 +364,7 @@ h6 a:visited { color: purple !important; }
 							$newVersion = ($theme['newVersion'] == 'Unknown' ? $theme['newVersion'] : "v{$theme['newVersion']}");
 						?>
 							<li style="font-size: 100%; vertical-align: baseline; margin: 0; padding: 0; border: 0;">
-								A new version of the theme "<?php echo esc_html("{$theme['name']} ({$newVersion})") ?>" is available.<?php if (isset($theme['vulnerabilityPatched']) && $theme['vulnerabilityPatched']) { echo " <strong>This update includes security-related fixes.</strong>"; } ?>
+								A new version of the theme "<?php echo esc_html("{$theme['name']} ({$newVersion})") ?>" is available.<?php if (isset($theme['vulnerable']) && $theme['vulnerable']) { echo " <strong>This update includes security-related fixes.</strong>"; } ?>
 							</li>
 						<?php endforeach ?>
 					</ul>

@@ -1877,17 +1877,24 @@ class wfLiveTrafficQuery {
 				$wheres[] = $filtersSQL;
 			}
 		}
-		$where = join(' AND ', $wheres);
 
 		$orderBy = 'ORDER BY h.ctime DESC';
-		$select = '';
+		$select = ', l.username';
 		$groupBySQL = '';
 		if ($groupBy && $groupBy->validate()) {
 			$groupBySQL = "GROUP BY {$groupBy->getParam()}";
 			$orderBy = 'ORDER BY hitCount DESC';
-			$select .= ', COUNT(h.id) as hitCount';
+			$select .= ', COUNT(h.id) as hitCount, MAX(h.ctime) AS lastHit, u.user_login AS username';
+			
+			if ($groupBy->getParam() == 'user_login') {
+				$wheres[] = 'user_login IS NOT NULL';
+			}
+			else if ($groupBy->getParam() == 'action') {
+				$wheres[] = '(statusCode = 403 OR statusCode = 503)';
+			}
 		}
-
+		
+		$where = join(' AND ', $wheres);
 		if ($where) {
 			$where = 'WHERE ' . $where;
 		}
@@ -1897,7 +1904,7 @@ class wfLiveTrafficQuery {
 		$limitSQL = $wpdb->prepare('LIMIT %d, %d', $offset, $limit);
 
 		$sql = <<<SQL
-SELECT h.*, u.display_name, l.username{$select} FROM {$this->getTableName()} h
+SELECT h.*, u.display_name{$select} FROM {$this->getTableName()} h
 LEFT JOIN {$wpdb->users} u on h.userID = u.ID
 LEFT JOIN {$wpdb->base_prefix}wfLogins l on h.id = l.hitID
 $where
@@ -2119,6 +2126,8 @@ class wfLiveTrafficQueryFilter {
 		'!=',
 		'contains',
 		'match',
+		'hregexp',
+		'hnotregexp',
 	);
 
 	/**
@@ -2163,6 +2172,14 @@ class wfLiveTrafficQueryFilter {
 
 				case 'match':
 					$sql = $wpdb->prepare("$param LIKE %s", $value);
+					break;
+				
+				case 'hregexp':
+					$sql = $wpdb->prepare("HEX($param) REGEXP %s", $value);
+					break;
+				
+				case 'hnotregexp':
+					$sql = $wpdb->prepare("HEX($param) NOT REGEXP %s", $value);
 					break;
 
 				default:

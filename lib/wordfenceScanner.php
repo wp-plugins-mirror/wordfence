@@ -400,8 +400,6 @@ class wordfenceScanner {
 								$record->updateStoppedOn($rule[0], $currentPosition);
 								fclose($fh);
 								
-								wfScanEngine::checkForKill();
-								$forkObj->checkForDurationLimit();
 								wordfence::status(4, 'info', "Forking during malware scan ({$rule[0]}) to ensure continuity.");
 								$forkObj->fork(); //exits
 							}

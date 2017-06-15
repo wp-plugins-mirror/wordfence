@@ -148,6 +148,7 @@
 								<div class="wf-filtered-traffic" data-bind="foreach: listings">
 									<div>
 										<div>
+											<!-- ko if: $root.groupBy().param() == 'ip' -->
 											<div data-bind="if: loc()">
 												<img data-bind="attr: { src: '<?php echo wfUtils::getBaseURL() . 'images/flags/'; ?>' + loc().countryCode.toLowerCase() + '.png',
 															alt: loc().countryName, title: loc().countryName }" width="16" height="11"
@@ -175,10 +176,38 @@
 												</span>
 											</div>
 											<div>
-												&nbsp;<span class="wfReverseLookup"><span data-bind="text: IP" style="display:none;"></span></span>
-											</div>
+												<span class="wfReverseLookup"><span data-bind="text: IP" style="display:none;"></span></span>
+											</div> 
+											<!-- /ko -->
+											<!-- ko if: $root.groupBy().param() == 'type' -->
 											<div>
-												<span
+												<strong>Type:</strong>
+												<span data-bind="if: jsRun() == '1'">Human</span>
+												<span data-bind="if: jsRun() == '0'">Bot</span>
+											</div>
+											<!-- /ko -->
+											<!-- ko if: $root.groupBy().param() == 'user_login' -->
+											<div>
+												<strong>Username:</strong> <span data-bind="text: username()"></span>
+											</div>
+											<!-- /ko -->
+											<!-- ko if: $root.groupBy().param() == 'statusCode' -->
+											<div>
+												<strong>HTTP Response Code:</strong> <span data-bind="text: statusCode()"></span>
+											</div>
+											<!-- /ko -->
+											<!-- ko if: $root.groupBy().param() == 'action' -->
+											<div>
+												<strong>Firewall Response:</strong> <span data-bind="text: firewallAction()"></span>
+											</div>
+											<!-- /ko -->
+											<!-- ko if: $root.groupBy().param() == 'url' -->
+											<div>
+												<strong>URL:</strong> <span data-bind="text: displayURL()"></span>
+											</div>
+											<!-- /ko -->
+											<div>
+												<strong>Last Hit:</strong> <span
 													data-bind="attr: { 'data-timestamp': ctime, text: 'Last hit was ' + ctime() + ' ago.' }"
 													class="wfTimeAgo wfTimeAgo-timestamp"></span>
 											</div>

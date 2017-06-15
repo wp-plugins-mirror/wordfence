@@ -2658,7 +2658,7 @@ SQL
 			}
 		}
 	}
-	private static function scheduleSingleScan($futureTime){
+	public static function scheduleSingleScan($futureTime){
 		// Removed ability to activate on network site in v5.3.12
 		if (is_main_site()) {
 			wp_schedule_single_event($futureTime, 'wordfence_start_scheduled_scan');
@@ -3506,7 +3506,7 @@ HTACCESS;
 		if ($log->isWhitelisted($IP, $forcedWhitelistEntry)) {
 			$message = "The IP address " . wp_kses($IP, array()) . " is whitelisted and can't be blocked. You can remove this IP from the whitelist on the Wordfence options page.";
 			if ($forcedWhitelistEntry) {
-				$message = "The IP address " . wp_kses($IP, array()) . " is in a range of internal IP addresses that Wordfence does not block.";
+				$message = "The IP address " . wp_kses($IP, array()) . " is in a range of IP addresses that Wordfence does not block. The IP range may be internal or belong to a service safe to allow access for.";
 			}
 			return array('err' => 1, 'errorMsg' => $message);
 		}
@@ -3631,11 +3631,26 @@ HTACCESS;
 	}
 	public static function ajax_activityLogUpdate_callback(){
 		$issues = new wfIssues();
+		$scanFailed = $issues->hasScanFailed();
+		$scanFailedSeconds = time() - $scanFailed;
+		$scanFailedTiming = wfUtils::makeTimeAgo($scanFailedSeconds);
+		
+		$timeLimit = intval(wfConfig::get('scan_maxDuration'));
+		if ($timeLimit < 1) {
+			$timeLimit = WORDFENCE_DEFAULT_MAX_SCAN_TIME;
+		}
+		if ($scanFailedSeconds > $timeLimit) {
+			$scanFailedTiming = 'more than ' . wfUtils::makeTimeAgo($timeLimit);
+		}
+		
+		wfUtils::doNotCache();
 		return array(
 			'ok'                  => 1,
 			'items'               => self::getLog()->getStatusEvents($_POST['lastctime']),
 			'currentScanID'       => $issues->getScanTime(),
 			'signatureUpdateTime' => wfConfig::get('signatureUpdateTime'),
+			'scanFailed' 		  => ($scanFailed !== false && wfUtils::isScanRunning()),
+			'scanFailedTiming'	  => $scanFailedTiming,
 		);
 	}
 	public static function ajax_updateAlertEmail_callback(){
@@ -6584,7 +6599,76 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 							$value = strtolower($value) === 'human' ? 1 : 0;
 							break;
 						case 'ip':
-							$value = wfUtils::inet_pton($value);
+							$ip = $value;
+							
+							if (strpos($ip, '*') !== false && ($operator == '=' || $operator == '!=')) { //If the IP contains a *, treat it as a wildcard for that segment and silently adjust the rule
+								if (preg_match('/^(?:(?:\d{1,3}|\*)(?:\.|$)){2,4}/', $ip)) { //IPv4
+									$value = array('00', '00', '00', '00', '00', '00', '00', '00', '00', '00', 'FF', 'FF');
+									$octets = explode('.', $ip);
+									foreach ($octets as $o)
+									{
+										if (strpos($o, '*') !== false) {
+											$value[] = '..';
+										}
+										else {
+											$value[] = strtoupper(str_pad(dechex($o), 2, '0', STR_PAD_LEFT));
+										}
+									}
+									$value = '^' . implode('', array_pad($value, 16, '..')) . '$';
+									$operator = ($operator == '=' ? 'hregexp' : 'hnotregexp');
+								}
+								else if (!empty($ip) && preg_match('/^((?:[\da-f*]{1,4}(?::|)){0,8})(::)?((?:[\da-f*]{1,4}(?::|)){0,8})$/i', $ip)) { //IPv6
+									if ($ip === '::') {
+										$value = '^' . str_repeat('00', 16) . '$';
+									}
+									else {
+										$colon_count = substr_count($ip, ':');
+										$dbl_colon_pos = strpos($ip, '::');
+										if ($dbl_colon_pos !== false) {
+											$ip = str_replace('::', str_repeat(':0000', (($dbl_colon_pos === 0 || $dbl_colon_pos === strlen($ip) - 2) ? 9 : 8) - $colon_count) . ':', $ip);
+											$ip = trim($ip, ':');
+										}
+
+										$ip_groups = explode(':', $ip);
+										$value = array();
+										foreach ($ip_groups as $ip_group) {
+											if (strpos($ip_group, '*') !== false) {
+												$value[] = '..';
+												$value[] = '..';
+											}
+											else {
+												$ip_group = strtoupper(str_pad($ip_group, 4, '0', STR_PAD_LEFT));
+												$value[] = substr($ip_group, 0, 2);
+												$value[] = substr($ip_group, -2);
+											}
+										}
+
+										$value = '^' . implode('', array_pad($value, 16, '..')) . '$';
+									}
+									$operator = ($operator == '=' ? 'hregexp' : 'hnotregexp');
+								}
+								else if (preg_match('/^((?:0{1,4}(?::|)){0,5})(::)?ffff:((?:\d{1,3}(?:\.|$)){4})$/i', $ip, $matches)) { //IPv4 mapped IPv6
+									$value = array('00', '00', '00', '00', '00', '00', '00', '00', '00', '00', 'FF', 'FF');
+									$octets = explode('.', $matches[3]);
+									foreach ($octets as $o)
+									{
+										if (strpos($o, '*') !== false) {
+											$value[] = '..';
+										}
+										else {
+											$value[] = strtoupper(str_pad(dechex($o), 2, '0', STR_PAD_LEFT));
+										}
+									}
+									$value = '^' . implode('', array_pad($value, 16, '.')) . '$';
+									$operator = ($operator == '=' ? 'hregexp' : 'hnotregexp');
+								}
+								else {
+									$value = false;
+								}
+							}
+							else {
+								$value = wfUtils::inet_pton($ip);
+							}
 							break;
 						case 'userid':
 							$value = absint($value);
@@ -6600,9 +6684,9 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 
 		try {
 			$return['data'] = $query->execute();
-			if (defined('WP_DEBUG') && WP_DEBUG) {
+			/*if (defined('WP_DEBUG') && WP_DEBUG) {
 				$return['sql'] = $query->buildQuery();
-			}
+			}*/
 		} catch (wfLiveTrafficQueryException $e) {
 			$return['data'] = array();
 			$return['sql'] = $e->getMessage();

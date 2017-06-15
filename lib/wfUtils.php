@@ -15,22 +15,54 @@ class wfUtils {
 		if($secs < 1){
 			return "a moment";
 		}
-		$months = floor($secs / (86400 * 30));
-		$days = floor($secs / 86400);
-		$hours = floor($secs / 3600);
-		$minutes = floor($secs / 60);
-		if($months) {
-			$days -= $months * 30;
+		
+		if (function_exists('date_diff')) {
+			$now = new DateTime();
+			$utc = new DateTimeZone('UTC');
+			$dtStr = gmdate("c", $now->getTimestamp() + $secs); //Have to do it this way because of PHP 5.2
+			$then = new DateTime($dtStr, $utc);
+			
+			$diff = $then->diff($now);
+			$years = $diff->y;
+			$months = $diff->m;
+			$days = $diff->d;
+			$hours = $diff->h;
+			$minutes = $diff->i;
+		}
+		else {
+			$years = 0;
+			$months = floor($secs / (86400 * 30));
+			$days = floor($secs / 86400);
+			$hours = floor($secs / 3600);
+			$minutes = floor($secs / 60);
+			
+			if ($months) {
+				$days -= $months * 30;
+			}
+			else if ($days) {
+				$hours -= $days * 24;
+			}
+			else if ($hours) {
+				$minutes -= $hours * 60;
+			}
+		}
+		
+		if ($years) {
+			return self::pluralize($years, 'year', $months, 'month');
+		}
+		else if ($months) {
 			return self::pluralize($months, 'month', $days, 'day');
-		} else if($days) {
-			$hours -= $days * 24;
+		}
+		else if ($days) {
 			return self::pluralize($days, 'day', $hours, 'hour');
-		} else if($hours) {
-			$minutes -= $hours * 60;
+		}
+		else if ($hours) {
 			return self::pluralize($hours, 'hour', $minutes, 'min');
-		} else if($minutes) {
+		}
+		else if ($minutes) {
 			return self::pluralize($minutes, 'min');
-		} else {
+		}
+		else {
 			if($noSeconds){
 				return "less than a minute";
 			} else {
@@ -809,7 +841,12 @@ class wfUtils {
 		$c2 = array_shift($trace);
 		error_log("Caller for " . $caller['file'] . " line " . $caller['line'] . " is " . $c2['file'] . ' line ' . $c2['line']);
 	}
-	public static function getWPVersion(){
+	public static function getWPVersion($forceRecheck = false){
+		if ($forceRecheck) {
+			require(ABSPATH . 'wp-includes/version.php'); //defines $wp_version
+			return $wp_version;
+		}
+		
 		if(wordfence::$wordfence_wp_version){
 			return wordfence::$wordfence_wp_version;
 		} else {
@@ -957,6 +994,7 @@ class wfUtils {
 		$wfdb->truncate($wpdb->base_prefix . 'wfHoover');
 
 		wfConfig::set('wf_scanRunning', '');
+		wfIssues::updateScanStillRunning(false);
 	}
 	public static function isScanRunning(){
 		$scanRunning = wfConfig::get('wf_scanRunning');
@@ -1980,6 +2018,34 @@ class wfUtils {
 			if ($offset === false) { $offset = 0; }
 		}
 		return time() + $offset;
+	}
+	
+	/**
+	 * Formats and returns the given timestamp using the time zone set for the WordPress installation.
+	 * 
+	 * @param string $format See the PHP docs on DateTime for the format options. 
+	 * @param int|null $timestamp Assumed to be in UTC. If null, defaults to the current timestamp.
+	 * @return string
+	 */
+	public static function formatLocalTime($format, $timestamp = null) {
+		if ($timestamp === null) {
+			$timestamp = time();
+		}
+		
+		$utc = new DateTimeZone('UTC');
+		$dtStr = gmdate("c", $timestamp); //Have to do it this way because of PHP 5.2
+		$dt = new DateTime($dtStr, $utc);
+		$tz = get_option('timezone_string');
+		if (!empty($tz)) {
+			$dt->setTimezone(new DateTimeZone($tz));
+		}
+		else {
+			$gmt = get_option('gmt_offset');
+			if (!empty($gmt)) {
+				$dt->setTimezone(new DateTimeZone('Etc/GMT' . ($gmt < 0 ? '+' : '-') . abs($gmt))); //The Etc/GMT timezones have the +- signs flipped
+			}
+		}
+		return $dt->format($format);
 	}
 }
 

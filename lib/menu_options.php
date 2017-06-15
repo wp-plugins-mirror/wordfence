@@ -450,7 +450,7 @@ $w = new wfConfig();
 							),
 							array(
 								'id' 		=> 'scansEnabled_oldVersions',
-								'label'		=> 'Scan for out of date plugins, themes and WordPress versions <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_out_of_date_plugins.2C_themes_and_WordPress_versions" target="_blank" class="wfhelp"></a>',
+								'label'		=> 'Scan for out of date, abandoned, and vulnerable plugins, themes, and WordPress versions <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_for_out_of_date_plugins.2C_themes_and_WordPress_versions" target="_blank" class="wfhelp"></a>',
 							),
 							array(
 								'id' 		=> 'scansEnabled_suspiciousAdminUsers',

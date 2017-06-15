@@ -357,8 +357,16 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 			</tbody>
 		</table>
 		<?php
+		global $wpdb;
 		$wfdb = new wfDB();
-		$q = $wfdb->querySelect("show table status");
+		//This must be done this way because MySQL with InnoDB tables does a full regeneration of all metadata if we don't. That takes a long time with a large table count.
+		$tables = $wfdb->querySelect('SELECT SQL_CALC_FOUND_ROWS TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME ASC LIMIT 250');
+		$total = $wfdb->querySingle('SELECT FOUND_ROWS()');
+		foreach ($tables as &$t) {
+			$t = "'" . esc_sql($t['TABLE_NAME']) . "'";
+		}
+		unset($t);
+		$q = $wfdb->querySelect("SHOW TABLE STATUS WHERE Name IN (" . implode(',', $tables) . ')');
 		if ($q):
 			$databaseCols = count($q[0]);
 			?>
@@ -399,7 +407,7 @@ if (!isset($sendingDiagnosticEmail)) { $sendingDiagnosticEmail = false; }
 						if ($count >= 250) {
 							?>
 						<tr>
-							<td colspan="<?php echo $databaseCols; ?>">and <?php echo count($q) - $count; ?> more</td>
+							<td colspan="<?php echo $databaseCols; ?>">and <?php echo $total - $count; ?> more</td>
 						</tr>
 							<?php
 							break;

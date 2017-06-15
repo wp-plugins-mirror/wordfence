@@ -724,14 +724,14 @@ class wfActivityReportView extends wfView {
 		if ($unix_time === null) {
 			$unix_time = time();
 		}
-		return date_i18n('F j, Y g:ia', $unix_time);
+		return wfUtils::formatLocalTime('F j, Y g:ia', $unix_time);
 	}
 	
 	public function attackTime($unix_time = null) {
 		if ($unix_time === null) {
 			$unix_time = time();
 		}
-		return date_i18n('F j, Y', $unix_time) . "<br>" . date_i18n('g:ia', $unix_time);
+		return wfUtils::formatLocalTime('F j, Y', $unix_time) . "<br>" . wfUtils::formatLocalTime('g:ia', $unix_time);
 	}
 	
 	public function displayIP($binaryIP) {

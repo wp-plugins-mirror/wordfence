@@ -74,8 +74,7 @@ class wordfenceHash {
 		$this->db->truncate($this->db->prefix() . "wfPendingIssues");
 		$fetchCoreHashesStatus = wfIssues::statusStart("Fetching core, theme and plugin file signatures from Wordfence");
 		try {
-			$this->knownFiles = $this->engine->getKnownFilesLoader()
-				->getKnownFiles();
+			$this->knownFiles = $this->engine->getKnownFilesLoader()->getKnownFiles();
 		} catch (wfScanKnownFilesException $e) {
 			wfIssues::statusEndErr();
 			throw $e;
@@ -128,6 +127,23 @@ class wordfenceHash {
 		if($this->pluginsEnabled){ $this->status['plugins'] = wfIssues::statusStart("Comparing plugins against WordPress.org originals"); } else { wfIssues::statusDisabled("Skipping plugin scan"); }
 		if($this->malwareEnabled){ $this->status['malware'] = wfIssues::statusStart("Scanning for known malware files"); } else { wfIssues::statusDisabled("Skipping malware scan"); }
 		if($this->coreUnknownEnabled){ $this->status['coreUnknown'] = wfIssues::statusStart("Scanning for unknown files in wp-admin and wp-includes"); } else { wfIssues::statusDisabled("Skipping unknown core file scan"); }
+		
+		if ($this->coreUnknownEnabled && !$this->alertedOnUnknownWordPressVersion && empty($this->knownFiles['core'])) {
+			require(ABSPATH . 'wp-includes/version.php'); //defines $wp_version
+			$this->alertedOnUnknownWordPressVersion = true;
+			$added = $this->engine->addIssue(
+				'coreUnknown',
+				2,
+				'coreUnknown' . $wp_version,
+				'coreUnknown' . $wp_version,
+				'Unknown WordPress core version: ' . $wp_version,
+				"The core files scan will not be run because this version of WordPress is not currently indexed by Wordfence. This may be due to using a prerelease version or because the servers are still indexing a new release. If you are using an official WordPress release, this issue will automatically dismiss once the version is indexed and another scan is run.",
+				array()
+			);
+			
+			if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $this->haveIssues['coreUnknown'] = wfIssues::STATUS_PROBLEM; }
+			else if ($this->haveIssues['coreUnknown'] != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $this->haveIssues['coreUnknown'] = wfIssues::STATUS_IGNORED; }
+		}
 	}
 	public function __sleep(){
 		return array('striplen', 'totalFiles', 'totalDirs', 'totalData', 'stoppedOnFile', 'coreEnabled', 'pluginsEnabled', 'themesEnabled', 'malwareEnabled', 'coreUnknownEnabled', 'knownFiles', 'haveIssues', 'status', 'possibleMalware', 'path', 'only', 'totalForks', 'alertedOnUnknownWordPressVersion', 'foldersProcessed', 'suspectedFiles', 'indexed', 'indexSize', 'currentIndex', 'foldersEntered');
@@ -340,10 +356,8 @@ class wordfenceHash {
 		return ABSPATH . $file;
 	}
 	private function _checkForTimeout($path, $indexQueue = false) {
-		$this->engine->checkForKill();
-		$this->engine->checkForDurationLimit();
 		$file = substr($path, $this->striplen);
-		if ((!$this->stoppedOnFile) && microtime(true) - $this->startTime > $this->engine->maxExecTime) { //max X seconds but don't allow fork if we're looking for the file we stopped on. Search mode is VERY fast.
+		if ((!$this->stoppedOnFile) && $this->engine->shouldFork()) { //max X seconds but don't allow fork if we're looking for the file we stopped on. Search mode is VERY fast.
 			if ($indexQueue !== false) {
 				$this->_serviceIndexQueue($indexQueue, true);
 				$this->stoppedOnFile = $file;
@@ -409,23 +423,6 @@ class wordfenceHash {
 
 			if ($allowKnownFileScan)
 			{
-				if ($this->coreUnknownEnabled && !$this->alertedOnUnknownWordPressVersion && empty($this->knownFiles['core'])) {
-					require(ABSPATH . 'wp-includes/version.php'); //defines $wp_version
-					$this->alertedOnUnknownWordPressVersion = true;
-					$added = $this->engine->addIssue(
-						'coreUnknown',
-						2,
-						'coreUnknown' . $wp_version,
-						'coreUnknown' . $wp_version,
-						'Unknown WordPress core version: ' . $wp_version,
-						"The core files scan will not be run because this version of WordPress is not currently indexed by Wordfence. This may be due to using a prerelease version or because the servers are still indexing a new release. If you are using an official WordPress release, this issue will automatically dismiss once the version is indexed and another scan is run.",
-						array()
-					);
-					
-					if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $this->haveIssues['coreUnknown'] = wfIssues::STATUS_PROBLEM; }
-					else if ($this->haveIssues['coreUnknown'] != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $this->haveIssues['coreUnknown'] = wfIssues::STATUS_IGNORED; }
-				}
-				
 				if (isset($this->knownFiles['core'][$file]))
 				{
 					if (strtoupper($this->knownFiles['core'][$file]) == $shac)
@@ -673,6 +670,16 @@ class wordfenceHash {
 		$excludePattern = wordfenceScanner::getExcludeFilePattern(wordfenceScanner::EXCLUSION_PATTERNS_USER | wordfenceScanner::EXCLUSION_PATTERNS_MALWARE); 
 		if ($excludePattern && preg_match($excludePattern, $file)) {
 			return false;
+		}
+		
+		//Unknown file in a core location
+		if ($this->coreUnknownEnabled && !$this->alertedOnUnknownWordPressVersion) {
+			$restrictedWordPressFolders = array(ABSPATH . 'wp-admin/', ABSPATH . WPINC . '/');
+			foreach ($restrictedWordPressFolders as $path) {
+				if (strpos($fullPath, $path) === 0) {
+					return true;
+				}
+			}
 		}
 		
 		//Determine treatment

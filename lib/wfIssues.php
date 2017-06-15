@@ -38,6 +38,7 @@ class wfIssues {
 	public static function statusPrep(){
 		wfConfig::set_ser('wfStatusStartMsgs', array());
 		wordfence::status(10, 'info', "SUM_PREP:Preparing a new scan.");
+		wfIssues::updateScanStillRunning();
 	}
 	
 	public static function statusStart($message) {
@@ -45,6 +46,7 @@ class wfIssues {
 		$statusStartMsgs[] = $message;
 		wfConfig::set_ser('wfStatusStartMsgs', $statusStartMsgs);
 		wordfence::status(10, 'info', 'SUM_START:' . $message);
+		wfIssues::updateScanStillRunning();
 		return count($statusStartMsgs) - 1;
 	}
 	
@@ -68,6 +70,7 @@ class wfIssues {
 		else if ($state == self::STATUS_SUCCESS) {
 			wordfence::status(10, 'info', 'SUM_ENDSUCCESS:' . $statusStartMsgs[$index]);
 		}
+		wfIssues::updateScanStillRunning();
 		$statusStartMsgs[$index] = '';
 		wfConfig::set_ser('wfStatusStartMsgs', $statusStartMsgs);
 	}
@@ -80,14 +83,39 @@ class wfIssues {
 				$statusStartMsgs[$i] = '';
 			}
 		}
+		wfIssues::updateScanStillRunning();
 	}
 	
 	public static function statusPaidOnly($message) {
 		wordfence::status(10, 'info', "SUM_PAIDONLY:" . $message);
+		wfIssues::updateScanStillRunning();
 	}
 	
 	public static function statusDisabled($message) {
 		wordfence::status(10, 'info', "SUM_DISABLED:" . $message);
+		wfIssues::updateScanStillRunning();
+	}
+	
+	public static function updateScanStillRunning($running = true) {
+		$timestamp = time();
+		if (!$running) {
+			$timestamp = 0;
+		}
+		wfConfig::set('wf_scanLastStatusTime', $timestamp);
+	}
+	
+	/**
+	 * Returns false if the scan has not been detected as failing. If it has, it returns the timestamp of the last status update.
+	 * 
+	 * @return bool|int
+	 */
+	public static function hasScanFailed() {
+		if (wfConfig::get('wf_scanLastStatusTime', 0) === 0) {
+			return false;
+		}
+		
+		$threshold = WORDFENCE_SCAN_FAILURE_THRESHOLD;
+		return (time() > wfConfig::get('wf_scanLastStatusTime', 0) + $threshold) ? wfConfig::get('wf_scanLastStatusTime', 0) : false;
 	}
 	
 	public function __sleep(){ //Same order here as vars above

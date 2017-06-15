@@ -277,7 +277,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 		</td></tr>
 		</table>
 	</p>
-	{{if data.vulnerabilityPatched}}<p><strong>Update includes security-related fixes.</strong></p>{{/if}}
+	{{if data.vulnerable}}<p><strong>Update includes security-related fixes.</strong></p>{{/if}}
 	<p>
 		{{html longMsg}}
 		<a href="<?php echo get_admin_url() . 'update-core.php'; ?>">Click here to update now</a>.
@@ -318,7 +318,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 		</td></tr>
 		</table>
 	</p>
-	{{if data.vulnerabilityPatched}}<p><strong>Update includes security-related fixes.</strong></p>{{/if}}
+	{{if data.vulnerable}}<p><strong>Update includes security-related fixes.</strong></p>{{/if}}
 	<p>
 		{{html longMsg}}
 		<a href="<?php echo get_admin_url() . 'update-core.php'; ?>">Click here to update now</a>.
@@ -339,6 +339,121 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 	</div>
 </div>
 </div>
+</script>
+
+<script type="text/x-jquery-template" id="issueTmpl_wfPluginRemoved">
+	<div>
+		<div class="wfIssue">
+			<h2>${shortMsg}</h2>
+			<p>
+			<table border="0" class="wfIssue" cellspacing="0" cellpadding="0">
+				<tr><th><span class="wf-hidden-xs">Plugin </span>Name:</th><td>${data.Name}</td></tr>
+				{{if data.PluginURI}}<tr><th><span class="wf-hidden-xs">Plugin </span>Website:</th><td><a href="${data.PluginURI}" target="_blank"><span class="wf-hidden-xs wf-split-word">${data.PluginURI}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
+				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.Version}</td></tr>
+				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				<tr><th>Status</th><td>
+						{{if status == 'new' }}New{{/if}}
+						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
+					</td></tr>
+			</table>
+			</p>
+			<p>
+				{{html longMsg}}
+			</p>
+			<div class="wfIssueOptions">
+				{{if status == 'new'}}
+				<ul>
+					<li><h3>Resolve:</h3></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">I have fixed this issue</a></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'ignoreC'); return false;">Ignore this issue</a></li>
+				</ul>
+				{{/if}}
+				{{if status == 'ignoreC' || status == 'ignoreP'}}
+				<ul>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">Stop ignoring this issue</a></li>
+				</ul>
+				{{/if}}
+			</div>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-jquery-template" id="issueTmpl_wfPluginAbandoned">
+	<div>
+		<div class="wfIssue">
+			<h2>${shortMsg}</h2>
+			<p>
+			<table border="0" class="wfIssue" cellspacing="0" cellpadding="0">
+				<tr><th><span class="wf-hidden-xs">Plugin </span>Name:</th><td>${data.name}</td></tr>
+				{{if data.homepage}}<tr><th><span class="wf-hidden-xs">Plugin </span>Website:</th><td><a href="${data.homepage}" target="_blank"><span class="wf-hidden-xs wf-split-word">${data.homepage}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
+				{{if data.wpURL}}<tr><th>Repository<span class="wf-hidden-xs"> Link</span>:</th><td><a href="${data.wpURL}" target="_blank"><span class="wf-hidden-xs wf-split-word">${data.wpURL}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
+				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.version}</td></tr>
+				<tr><th>Last Updated:</th><td>${data.dateUpdated}</td></tr>
+				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				<tr><th>Status</th><td>
+						{{if status == 'new' }}New{{/if}}
+						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
+					</td></tr>
+			</table>
+			</p>
+			{{if data.vulnerable}}<p><strong>Plugin has unpatched security issues.</strong></p>{{/if}}
+			<p>
+				{{html longMsg}}
+			</p>
+			<div class="wfIssueOptions">
+				{{if status == 'new'}}
+				<ul>
+					<li><h3>Resolve:</h3></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">I have fixed this issue</a></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'ignoreC'); return false;">Ignore this issue</a></li>
+				</ul>
+				{{/if}}
+				{{if status == 'ignoreC' || status == 'ignoreP'}}
+				<ul>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">Stop ignoring this issue</a></li>
+				</ul>
+				{{/if}}
+			</div>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-jquery-template" id="issueTmpl_wfPluginVulnerable">
+	<div>
+		<div class="wfIssue">
+			<h2>${shortMsg}</h2>
+			<p>
+			<table border="0" class="wfIssue" cellspacing="0" cellpadding="0">
+				<tr><th><span class="wf-hidden-xs">Plugin </span>Name:</th><td>${data.Name}</td></tr>
+				{{if data.PluginURI}}<tr><th><span class="wf-hidden-xs">Plugin </span>Website:</th><td><a href="${data.PluginURI}" target="_blank"><span class="wf-hidden-xs wf-split-word">${data.PluginURI}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
+				{{if data.wpURL}}<tr><th>Repository<span class="wf-hidden-xs"> Link</span>:</th><td><a href="${data.wpURL}" target="_blank"><span class="wf-hidden-xs wf-split-word">${data.wpURL}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
+				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.Version}</td></tr>
+				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				<tr><th>Status</th><td>
+						{{if status == 'new' }}New{{/if}}
+						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
+					</td></tr>
+			</table>
+			</p>
+			<p>
+				{{html longMsg}}
+			</p>
+			<div class="wfIssueOptions">
+				{{if status == 'new'}}
+				<ul>
+					<li><h3>Resolve:</h3></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">I have fixed this issue</a></li>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'ignoreC'); return false;">Ignore this issue</a></li>
+				</ul>
+				{{/if}}
+				{{if status == 'ignoreC' || status == 'ignoreP'}}
+				<ul>
+					<li><a href="#" onclick="WFAD.updateIssueStatus('${id}', 'delete'); return false;">Stop ignoring this issue</a></li>
+				</ul>
+				{{/if}}
+			</div>
+		</div>
+	</div>
 </script>
 
 <script type="text/x-jquery-template" id="issueTmpl_wfUpgrade">

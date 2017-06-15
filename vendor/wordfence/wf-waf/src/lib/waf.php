@@ -967,8 +967,18 @@ HTML
 				$template = '403';
 			}
 		}
+		try {
+			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
+			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL');
+		}
+		catch (Exception $e) {
+			//Do nothing
+		}
+		
 		return wfWAFView::create($template, array(
 			'waf' => $this,
+			'homeURL' => $homeURL,
+			'siteURL' => $siteURL,
 		))->render();
 	}
 	
@@ -979,6 +989,7 @@ HTML
 		if ($template === null) { $template = '503'; }
 		try {
 			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
+			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL');
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -988,6 +999,7 @@ HTML
 			'waf' => $this,
 			'reason' => $reason,
 			'homeURL' => $homeURL,
+			'siteURL' => $siteURL,
 		))->render();
 	}
 
