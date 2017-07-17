@@ -130,7 +130,7 @@ class wfConfig {
 			'howGetIPs_trusted_proxies' => '',
 		)
 	);
-	public static $serializedOptions = array('lastAdminLogin', 'scanSched', 'emailedIssuesList', 'wf_summaryItems', 'adminUserList', 'twoFactorUsers', 'alertFreqTrack', 'wfStatusStartMsgs', 'vulnerabilities_plugin', 'vulnerabilities_theme', 'dashboardData', 'malwarePrefixes');
+	public static $serializedOptions = array('lastAdminLogin', 'scanSched', 'emailedIssuesList', 'wf_summaryItems', 'adminUserList', 'twoFactorUsers', 'alertFreqTrack', 'wfStatusStartMsgs', 'vulnerabilities_plugin', 'vulnerabilities_theme', 'dashboardData', 'malwarePrefixes', 'noc1ScanSchedule', 'allScansScheduled');
 	public static function setDefaults() {
 		foreach (self::$defaultConfig['checkboxes'] as $key => $config) {
 			$val = $config['value'];

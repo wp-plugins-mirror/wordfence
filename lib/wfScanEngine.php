@@ -7,6 +7,9 @@ require_once('wfIssues.php');
 require_once('wfDB.php');
 require_once('wfUtils.php');
 class wfScanEngine {
+	const SCAN_MODE_FULL = 'full';
+	const SCAN_MODE_QUICK = 'quick';
+	
 	public $api = false;
 	private $dictWords = array();
 	private $forkRequested = false;
@@ -43,6 +46,8 @@ class wfScanEngine {
 	private $gsbMultisiteBlogOffset = 0;
 	private $updateCheck = false;
 	private $pluginRepoStatus = array();
+	private $malwarePrefixesHash;
+	private $scanMode = self::SCAN_MODE_FULL;
 
 	/**
 	 * @var wordfenceDBScanner
@@ -118,11 +123,43 @@ class wfScanEngine {
 			}
 		}
 	}
+	
+	/**
+	 * Returns an array of the jobs that are enabled for the given scan mode.
+	 * 
+	 * @param $scanMode
+	 * @return array
+	 */
+	public static function jobsForScanMode($scanMode) {
+		$jobs = array();
+		if ($scanMode == self::SCAN_MODE_FULL) {
+			$jobs[] = 'checkSpamvertized';
+			$jobs[] = 'checkSpamIP';
+			$jobs[] = 'checkGSB';
+			$jobs[] = 'checkHowGetIPs';
+			$jobs[] = 'knownFiles';
+			foreach (array('knownFiles', 'checkReadableConfig', 'fileContents', 'suspectedFiles',
+						 // 'wpscan_fullPathDisclosure', 'wpscan_directoryListingEnabled',
+						 'posts', 'comments', 'passwds', 'dns', 'diskSpace', 'oldVersions', 'suspiciousAdminUsers') as $job) {
+				if (wfConfig::get('scansEnabled_' . $job)) {
+					$jobs[] = $job;
+				}
+			}
+		}
+		else if ($scanMode == self::SCAN_MODE_QUICK) {
+			foreach (array('oldVersions') as $job) {
+				if (wfConfig::get('scansEnabled_' . $job)) {
+					$jobs[] = $job;
+				}
+			}
+		}
+		return $jobs;
+	}
 
 	public function __sleep(){ //Same order here as above for properties that are included in serialization
-		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics', 'checkHowGetIPsRequestTime', 'gsbMultisiteBlogOffset', 'updateCheck', 'pluginRepoStatus');
+		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics', 'checkHowGetIPsRequestTime', 'gsbMultisiteBlogOffset', 'updateCheck', 'pluginRepoStatus', 'malwarePrefixesHash', 'scanMode');
 	}
-	public function __construct(){
+	public function __construct($malwarePrefixesHash = '', $scanMode = self::SCAN_MODE_FULL) {
 		$this->startTime = time();
 		$this->recordMetric('scan', 'start', $this->startTime);
 		$this->maxExecTime = self::getMaxExecutionTime();
@@ -131,40 +168,40 @@ class wfScanEngine {
 		$this->wp_version = wfUtils::getWPVersion();
 		$this->apiKey = wfConfig::get('apiKey');
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
+		$this->malwarePrefixesHash = $malwarePrefixesHash;
 		include('wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
-		$this->jobList[] = 'checkSpamvertized';
-		$this->jobList[] = 'checkSpamIP';
-		$this->jobList[] = 'checkGSB_init';
-		$this->jobList[] = 'checkGSB_main';
-		$this->jobList[] = 'checkGSB_finish';
-		$this->jobList[] = 'checkHowGetIPs_init';
-		$this->jobList[] = 'checkHowGetIPs_main';
-		$this->jobList[] = 'knownFiles_init';
-		$this->jobList[] = 'knownFiles_main';
-		$this->jobList[] = 'knownFiles_finish';
-		foreach (array('knownFiles', 'checkReadableConfig', 'fileContents', 'suspectedFiles',
-			         // 'wpscan_fullPathDisclosure', 'wpscan_directoryListingEnabled',
-			         'posts', 'comments', 'passwds', 'dns', 'diskSpace', 'oldVersions', 'suspiciousAdminUsers') as $scanType) {
-			if (wfConfig::get('scansEnabled_' . $scanType)) {
-				if (method_exists($this, 'scan_' . $scanType . '_init')) {
-					foreach (array('init', 'main', 'finish') as $op) {
-						$this->jobList[] = $scanType . '_' . $op;
-					};
-				} else if (method_exists($this, 'scan_' . $scanType)) {
-					$this->jobList[] = $scanType;
+		$this->scanMode = $scanMode;
+		
+		$jobs = self::jobsForScanMode($this->scanMode);
+		foreach ($jobs as $job) {
+			if (method_exists($this, 'scan_' . $job . '_init')) {
+				foreach (array('init', 'main', 'finish') as $op) {
+					$this->jobList[] = $job . '_' . $op;
 				}
+			}
+			else if (method_exists($this, 'scan_' . $job)) {
+				$this->jobList[] = $job;
 			}
 		}
 	}
-	public function deleteNewIssues(){
-		$this->i->deleteNew();
+	
+	/**
+	 * Deletes all new issues. To only delete specific types, provide an array of issue types.
+	 * 
+	 * @param null|array $types
+	 */
+	public function deleteNewIssues($types = null) {
+		$this->i->deleteNew($types);
 	}
 	public function __wakeup(){
 		$this->cycleStartTime = time();
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
 		include('wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
+	}
+	public function isFullScan() {
+		return $this->scanMode == self::SCAN_MODE_FULL;
 	}
 	public function go(){
 		try {
@@ -177,9 +214,11 @@ class wfScanEngine {
 			$this->i->setScanTimeNow();
 			//scan ID only incremented at end of scan to make UI load new results
 			$this->emailNewIssues();
-			$this->recordMetric('scan', 'duration', (time() - $this->startTime));
-			$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0, false));
-			$this->submitMetrics();
+			if ($this->isFullScan()) {
+				$this->recordMetric('scan', 'duration', (time() - $this->startTime));
+				$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0, false));
+				$this->submitMetrics();
+			}
 			
 			wfScanEngine::refreshScanNotification($this->i);
 		}
@@ -283,7 +322,7 @@ class wfScanEngine {
 		wordfence::status(4, 'info', "Entered fork()");
 		if(wfConfig::set_ser('wfsd_engine', $this, true, wfConfig::DONT_AUTOLOAD)){
 			wordfence::status(4, 'info', "Calling startScan(true)");
-			self::startScan(true);
+			self::startScan(true, $this->scanMode);
 		} //Otherwise there was an error so don't start another scan.
 		exit(0);
 	}
@@ -322,7 +361,12 @@ class wfScanEngine {
 		}
 		$summary = $this->i->getSummaryItems();
 		$this->status(1, 'info', '-------------------');
-		$this->status(1, 'info', "Scan Complete. Scanned " . $summary['totalFiles'] . " files, " . $summary['totalPlugins'] . " plugins, " . $summary['totalThemes'] . " themes, " . ($summary['totalPages'] + $summary['totalPosts']) . " pages, " . $summary['totalComments'] . " comments and " . $summary['totalRows'] . " records in " . wfUtils::makeDuration(time() - $this->startTime, true) . ".");
+		if ($this->isFullScan()) {
+			$this->status(1, 'info', "Scan Complete. Scanned " . $summary['totalFiles'] . " files, " . $summary['totalPlugins'] . " plugins, " . $summary['totalThemes'] . " themes, " . ($summary['totalPages'] + $summary['totalPosts']) . " pages, " . $summary['totalComments'] . " comments and " . $summary['totalRows'] . " records in " . wfUtils::makeDuration(time() - $this->startTime, true) . ".");
+		}
+		else {
+			$this->status(1, 'info', "Quick Scan Complete. Scanned in " . wfUtils::makeDuration(time() - $this->startTime, true) . ".");
+		}
 		
 		$ignoredText = '';
 		if ($this->i->totalIgnoredIssues > 0) {
@@ -552,6 +596,10 @@ class wfScanEngine {
 			wfIssues::statusEnd($this->statusIDX['checkHowGetIPs'], $haveIssues);
 		}
 	}
+	
+	private function scan_checkHowGetIPs_finish() {
+		/* Do nothing */
+	}
 
 	private function scan_checkReadableConfig() {
 		$haveIssues = wfIssues::STATUS_SECURE;
@@ -699,8 +747,6 @@ class wfScanEngine {
 		}
 	}
 	private function scan_knownFiles_init(){
-		$this->status(1, 'info', "Contacting Wordfence to initiate scan");
-		$response = $this->api->call('log_scan', array(), array());
 		$baseWPStuff = array( '.htaccess', 'index.php', 'license.txt', 'readme.html', 'wp-activate.php', 'wp-admin', 'wp-app.php', 'wp-blog-header.php', 'wp-comments-post.php', 'wp-config-sample.php', 'wp-content', 'wp-cron.php', 'wp-includes', 'wp-links-opml.php', 'wp-load.php', 'wp-login.php', 'wp-mail.php', 'wp-pass.php', 'wp-register.php', 'wp-settings.php', 'wp-signup.php', 'wp-trackback.php', 'xmlrpc.php');
 		$baseContents = scandir(ABSPATH);
 		if(! is_array($baseContents)){
@@ -733,8 +779,7 @@ class wfScanEngine {
 		$this->status(2, 'info', "Found " . sizeof($knownFilesThemes) . " themes");
 		$this->i->updateSummaryItem('totalThemes', sizeof($knownFilesThemes));
 
-		$malwarePrefixesHash = (isset($response['malwarePrefixes']) ? wfUtils::hex2bin($response['malwarePrefixes']) : '');
-		$this->hasher = new wordfenceHash(strlen(ABSPATH), ABSPATH, $includeInKnownFilesScan, $knownFilesThemes, $knownFilesPlugins, $this, $malwarePrefixesHash);
+		$this->hasher = new wordfenceHash(strlen(ABSPATH), ABSPATH, $includeInKnownFilesScan, $knownFilesThemes, $knownFilesPlugins, $this, wfUtils::hex2bin($this->malwarePrefixesHash));
 	}
 	private function scan_knownFiles_main(){
 		$this->hasher->run($this); //Include this so we can call addIssue and ->api->
@@ -1418,8 +1463,13 @@ class wfScanEngine {
 		$this->statusIDX['oldVersions'] = wfIssues::statusStart("Scanning for old themes, plugins and core files");
 		
 		$this->updateCheck = new wfUpdateCheck();
-		$this->updateCheck->checkAllUpdates(false);
-		$this->updateCheck->checkAllVulnerabilities();
+		if ($this->isFullScan()) {
+			$this->updateCheck->checkAllUpdates(false);
+			$this->updateCheck->checkAllVulnerabilities();
+		}
+		else {
+			$this->updateCheck->checkAllUpdates();
+		}
 		
 		foreach ($this->updateCheck->getPluginSlugs() as $slug) {
 			$this->pluginRepoStatus[$slug] = false;
@@ -1436,6 +1486,10 @@ class wfScanEngine {
 	}
 	
 	private function scan_oldVersions_main() {
+		if (!$this->isFullScan()) {
+			return;
+		}
+		
 		if (!function_exists('plugins_api')) {
 			require_once(ABSPATH . 'wp-admin/includes/plugin-install.php');
 		}
@@ -1480,6 +1534,10 @@ class wfScanEngine {
 
 	private function scan_oldVersions_finish() {
 		$haveIssues = wfIssues::STATUS_SECURE;
+		
+		if (!$this->isFullScan()) {
+			$this->deleteNewIssues(array('wfUpgrade', 'wfPluginUpgrade', 'wfThemeUpgrade'));
+		}
 
 		// WordPress core updates needed
 		if ($this->updateCheck->needsCoreUpdate()) {
@@ -1531,95 +1589,112 @@ class wfScanEngine {
 			}
 		}
 		
-		//Abandoned plugins
-		foreach ($this->pluginRepoStatus as $slug => $status) {
-			if ($status !== false && !is_wp_error($status) && property_exists($status, 'last_updated')) {
-				$lastUpdateTimestamp = strtotime($status->last_updated);
-				if ($lastUpdateTimestamp > 0 && (time() - $lastUpdateTimestamp) > 63072000 /* ~2 years */) {
-					$statusArray = (array) $status;
-					$statusArray['dateUpdated'] = wfUtils::formatLocalTime(get_option('date_format'), $lastUpdateTimestamp);
-					$severity = 2; //Warning
-					$statusArray['abandoned'] = true;
-					$statusArray['vulnerable'] = false;
-					if ($this->updateCheck->isPluginVulnerable($slug, $statusArray['version'])) {
-						$severity = 1; //Critical 
-						$statusArray['vulnerable'] = true;
-					}
-					
-					if (isset($allPlugins[$slug])) {
-						$statusArray['wpURL'] = $allPlugins[$slug]['wpURL'];
-					}
-					
-					$key = "wfPluginAbandoned {$slug} {$statusArray['version']}";
-					$shortMsg = 'The Plugin "' . $statusArray['name'] . '" appears to be abandoned.';
-					$longMsg = 'It was last updated ' . wfUtils::makeTimeAgo(time() - $lastUpdateTimestamp) . ' ago.';
-					if ($statusArray['vulnerable']) {
-						$longMsg .= ' It has unpatched security issues and may have compatibility problems with the current version of WordPress.';
-					}
-					else {
-						$longMsg .= ' It may have compatibility problems with the current version of WordPress or unknown security issues.';
-					}
-					$longMsg .= ' <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_appears_to_be_abandoned" target="_blank" rel="noopener noreferrer">Get more information.</a>';
-					$added = $this->addIssue('wfPluginAbandoned', $severity, $key, $key, $shortMsg, $longMsg, $statusArray);
-					if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
-					else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
-					
-					unset($allPlugins[$slug]);
-				}
-			}
-			else if ($status !== false && is_wp_error($status) && isset($status->error_data['plugins_api_failed']) && $status->error_data['plugins_api_failed'] == 'N;') { //The plugin does not exist in the wp.org repo
-				$knownFiles = $this->getKnownFilesLoader()->getKnownFiles();
-				$requestedPlugins = $this->getPlugins();
-				foreach ($requestedPlugins as $key => $data) {
-					$testKey = trailingslashit($data['FullDir']) . '.';
-					if ($data['ShortDir'] == $slug && isset($knownFiles['plugins'][$testKey])) { //It existed in the repo at some point and was removed
-						$pluginFile = wfUtils::getPluginBaseDir() . $key;
-						$pluginData = get_plugin_data($pluginFile);
-						$pluginData['wpRemoved'] = true;
-						$pluginData['vulnerable'] = false;
-						if ($this->updateCheck->isPluginVulnerable($slug, $pluginData['Version'])) {
-							$pluginData['vulnerable'] = true;
+		if ($this->isFullScan()) {
+			//Abandoned plugins
+			foreach ($this->pluginRepoStatus as $slug => $status) {
+				if ($status !== false && !is_wp_error($status) && property_exists($status, 'last_updated')) {
+					$lastUpdateTimestamp = strtotime($status->last_updated);
+					if ($lastUpdateTimestamp > 0 && (time() - $lastUpdateTimestamp) > 63072000 /* ~2 years */) {
+						$statusArray = (array) $status;
+						$statusArray['dateUpdated'] = wfUtils::formatLocalTime(get_option('date_format'), $lastUpdateTimestamp);
+						$severity = 2; //Warning
+						$statusArray['abandoned'] = true;
+						$statusArray['vulnerable'] = false;
+						$vulnerable = $this->updateCheck->isPluginVulnerable($slug, $statusArray['version']);
+						if ($vulnerable) {
+							$severity = 1; //Critical 
+							$statusArray['vulnerable'] = true;
+							if (is_string($vulnerable)) {
+								$statusArray['vulnerabilityLink'] = $vulnerable;
+							}
 						}
 						
-						$key = "wfPluginRemoved {$slug} {$pluginData['Version']}";
-						$shortMsg = 'The Plugin "' . $pluginData['Name'] . '" has been removed from wordpress.org.';
-						if ($pluginData['vulnerable']) {
-							$longMsg = 'It has unpatched security issues and may have compatibility problems with the current version of WordPress.';
+						if (isset($allPlugins[$slug])) {
+							$statusArray['wpURL'] = $allPlugins[$slug]['wpURL'];
+						}
+						
+						$testedShort = '';
+						$testedLong = '';
+						if (isset($statusArray['tested'])) {
+							$testedShort = ', tested to WP ' . $statusArray['tested'];
+							$testedLong = ' and tested up to WordPress ' . esc_html($statusArray['tested']);
+						}
+						
+						$key = "wfPluginAbandoned {$slug} {$statusArray['version']}";
+						$shortMsg = 'The Plugin "' . $statusArray['name'] . '" appears to be abandoned (updated ' . wfUtils::formatLocalTime(get_option('date_format'), $lastUpdateTimestamp) . "{$testedShort}).";
+						$longMsg = 'It was last updated ' . wfUtils::makeTimeAgo(time() - $lastUpdateTimestamp) . " ago{$testedLong}.";
+						if ($statusArray['vulnerable']) {
+							$longMsg .= ' It has unpatched security issues and may have compatibility problems with the current version of WordPress.';
 						}
 						else {
-							$longMsg = 'It may have compatibility problems with the current version of WordPress or unknown security issues.';
+							$longMsg .= ' It may have compatibility problems with the current version of WordPress or unknown security issues.';
 						}
-						$longMsg .= ' <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_has_been_removed_from_wordpress.org" target="_blank" rel="noopener noreferrer">Get more information.</a>';
-						$added = $this->addIssue('wfPluginRemoved', 1, $key, $key, $shortMsg, $longMsg, $pluginData);
+						$longMsg .= ' <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_appears_to_be_abandoned" target="_blank" rel="noopener noreferrer">Get more information.</a>';
+						$added = $this->addIssue('wfPluginAbandoned', $severity, $key, $key, $shortMsg, $longMsg, $statusArray);
 						if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
 						else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
 						
 						unset($allPlugins[$slug]);
 					}
 				}
+				else if ($status !== false && is_wp_error($status) && isset($status->error_data['plugins_api_failed']) && $status->error_data['plugins_api_failed'] == 'N;') { //The plugin does not exist in the wp.org repo
+					$knownFiles = $this->getKnownFilesLoader()->getKnownFiles();
+					$requestedPlugins = $this->getPlugins();
+					foreach ($requestedPlugins as $key => $data) {
+						$testKey = trailingslashit($data['FullDir']) . '.';
+						if ($data['ShortDir'] == $slug && isset($knownFiles['plugins'][$testKey])) { //It existed in the repo at some point and was removed
+							$pluginFile = wfUtils::getPluginBaseDir() . $key;
+							$pluginData = get_plugin_data($pluginFile);
+							$pluginData['wpRemoved'] = true;
+							$pluginData['vulnerable'] = false;
+							$vulnerable = $this->updateCheck->isPluginVulnerable($slug, $pluginData['Version']);
+							if ($vulnerable) {
+								$pluginData['vulnerable'] = true;
+								if (is_string($vulnerable)) {
+									$pluginData['vulnerabilityLink'] = $vulnerable;
+								}
+							}
+							
+							$key = "wfPluginRemoved {$slug} {$pluginData['Version']}";
+							$shortMsg = 'The Plugin "' . $pluginData['Name'] . '" has been removed from wordpress.org.';
+							if ($pluginData['vulnerable']) {
+								$longMsg = 'It has unpatched security issues and may have compatibility problems with the current version of WordPress.';
+							}
+							else {
+								$longMsg = 'It may have compatibility problems with the current version of WordPress or unknown security issues.';
+							}
+							$longMsg .= ' <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_has_been_removed_from_wordpress.org" target="_blank" rel="noopener noreferrer">Get more information.</a>';
+							$added = $this->addIssue('wfPluginRemoved', 1, $key, $key, $shortMsg, $longMsg, $pluginData);
+							if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
+							else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
+							
+							unset($allPlugins[$slug]);
+						}
+					}
+				}
 			}
+			
+			//Other vulnerable plugins
+			//Disabled until we improve the data source to weed out false positives
+			/*if (count($allPlugins) > 0) {
+				foreach ($allPlugins as $plugin) {
+					if (!isset($plugin['vulnerable']) || !$plugin['vulnerable']) {
+						continue;
+					}
+					
+					$key = 'wfPluginVulnerable' . ' ' . $plugin['pluginFile'] . ' ' . $plugin['Version'];
+					$shortMsg = "The Plugin \"" . $plugin['Name'] . "\" has an unpatched security vulnerability.";
+					$longMsg = 'To protect your site from this vulnerability, the safest option is to deactivate and completely remove ' . esc_html($plugin['Name']) . ' until the developer releases a security fix. <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_has_an_unpatched_security_vulnerability" target="_blank" rel="noopener noreferrer">Get more information.</a>';
+					$added = $this->addIssue('wfPluginVulnerable', 1, $key, $key, $shortMsg, $longMsg, $plugin);
+					if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
+					else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
+					
+					if (isset($plugin['slug'])) {
+						unset($allPlugins[$plugin['slug']]);
+					}
+				}
+			}*/
 		}
-		
-		//Other vulnerable plugins
-		//Disabled until we improve the data source to weed out false positives
-		/*if (count($allPlugins) > 0) {
-			foreach ($allPlugins as $plugin) {
-				if (!isset($plugin['vulnerable']) || !$plugin['vulnerable']) {
-					continue;
-				}
-				
-				$key = 'wfPluginVulnerable' . ' ' . $plugin['pluginFile'] . ' ' . $plugin['Version'];
-				$shortMsg = "The Plugin \"" . $plugin['Name'] . "\" has an unpatched security vulnerability.";
-				$longMsg = 'To protect your site from this vulnerability, the safest option is to deactivate and completely remove ' . esc_html($plugin['Name']) . ' until the developer releases a security fix. <a href="https://docs.wordfence.com/en/Understanding_scan_results#Plugin_has_an_unpatched_security_vulnerability" target="_blank" rel="noopener noreferrer">Get more information.</a>';
-				$added = $this->addIssue('wfPluginVulnerable', 1, $key, $key, $shortMsg, $longMsg, $plugin);
-				if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
-				else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
-				
-				if (isset($plugin['slug'])) {
-					unset($allPlugins[$plugin['slug']]);
-				}
-			}
-		}*/
 		
 		$this->updateCheck = false;
 		$this->pluginRepoStatus = array();
@@ -1679,7 +1754,7 @@ class wfScanEngine {
 			throw new Exception("Scan was killed on administrator request.");
 		}
 	}
-	public static function startScan($isFork = false){
+	public static function startScan($isFork = false, $scanMode = self::SCAN_MODE_FULL){
 		if(! $isFork){ //beginning of scan
 			wfConfig::inc('totalScansRun');	
 			wfConfig::set('wfKillRequested', 0, wfConfig::DONT_AUTOLOAD); 
@@ -1705,7 +1780,7 @@ class wfScanEngine {
 		wfConfig::set('currentCronKey', time() . ',' . $cronKey);
 		if( (! wfConfig::get('startScansRemotely', false)) && (! is_wp_error($testResult)) && (is_array($testResult) || $testResult instanceof ArrayAccess) && strstr($testResult['body'], 'WFSCANTESTOK') !== false){
 			//ajax requests can be sent by the server to itself
-			$cronURL = 'admin-ajax.php?action=wordfence_doScan&isFork=' . ($isFork ? '1' : '0') . '&cronKey=' . $cronKey;
+			$cronURL = 'admin-ajax.php?action=wordfence_doScan&isFork=' . ($isFork ? '1' : '0') . '&scanMode=' . $scanMode . '&cronKey=' . $cronKey;
 			$cronURL = admin_url($cronURL);
 			$headers = array('Referer' => false/*, 'Cookie' => 'XDEBUG_SESSION=1'*/);
 			wordfence::status(4, 'info', "Starting cron with normal ajax at URL $cronURL");
@@ -1719,7 +1794,7 @@ class wfScanEngine {
 		} else {
 			$cronURL = admin_url('admin-ajax.php');
 			$cronURL = preg_replace('/^(https?:\/\/)/i', '$1noc1.wordfence.com/scanp/', $cronURL);
-			$cronURL .= '?action=wordfence_doScan&isFork=' . ($isFork ? '1' : '0') . '&cronKey=' . $cronKey;
+			$cronURL .= '?action=wordfence_doScan&isFork=' . ($isFork ? '1' : '0') . '&scanMode=' . $scanMode . '&cronKey=' . $cronKey;
 			$headers = array();
 			wordfence::status(4, 'info', "Starting cron via proxy at URL $cronURL");
 

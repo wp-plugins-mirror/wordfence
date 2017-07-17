@@ -14,24 +14,23 @@
 	<p class="center"><a class="wf-btn wf-btn-primary wf-btn-callout" href="https://www.wordfence.com/gnl1scanSched1/wordfence-signup/" target="_blank" rel="noopener noreferrer">Get Premium</a></p>
 </div>
 <?php } ?>
-<?php $schedMode = wfConfig::get('isPaid') ? wfConfig::get('schedMode', 'auto') : 'auto'; ?>
 <div class="wf-container-fluid">
 	<div class="wf-row">
 		<div class="wf-col-xs-12">
-			<div class="wf-card wf-card-left<?php echo ($schedMode == 'auto' ? ' active' : ''); ?>" data-mode="auto">
+			<div class="wf-card wf-card-left<?php echo (wfScan::isAutoScanSchedule() ? ' active' : ''); ?>" data-mode="auto">
 				<div class="wf-card-inner">
 					<div class="wf-card-content">
 						<div class="wf-card-title">
 							Let Wordfence automatically schedule scans (recommended)
 						</div>
 						<div class="wf-card-subtitle">
-							<?php if ($schedMode == 'auto') : ?>
+							<?php if (wfScan::isAutoScanSchedule()) : ?>
 								<?php echo wordfence::getNextScanStartTime(); ?>
 							<?php endif; ?>
 						</div>
 					</div>
 					<div class="wf-card-action"> 
-						<div class="wf-card-action-checkbox<?php echo ($schedMode == 'auto' ? ' checked' : ''); ?>"></div>
+						<div class="wf-card-action-checkbox<?php echo (wfScan::isAutoScanSchedule() ? ' checked' : ''); ?>"></div>
 					</div>
 				</div>
 			</div>
@@ -39,20 +38,20 @@
 	</div>
 	<div class="wf-row">
 		<div class="wf-col-xs-12">
-			<div class="wf-card wf-card-left<?php echo ($schedMode == 'manual' ? ' active' : ''); ?><?php if (!wfConfig::get('isPaid')) { echo ' disabled'; } ?>" data-mode="manual">
+			<div class="wf-card wf-card-left<?php echo (wfScan::isManualScanSchedule() ? ' active' : ''); ?><?php if (!wfConfig::get('isPaid')) { echo ' disabled'; } ?>" data-mode="manual">
 				<div class="wf-card-inner">
 					<div class="wf-card-content">
 						<div class="wf-card-title">
 							Manually schedule scans<?php if (!wfConfig::get('isPaid')) { echo ' (Premium Members Only)'; } ?>
 						</div>
 						<div class="wf-card-subtitle">
-							<?php if ($schedMode == 'manual') : ?>
+							<?php if (wfScan::isManualScanSchedule()) : ?>
 								<?php echo wordfence::getNextScanStartTime(); ?>
 							<?php endif; ?>
 						</div>
 					</div>
 					<div class="wf-card-action">
-						<div class="wf-card-action-checkbox<?php echo ($schedMode == 'manual' ? ' checked' : ''); ?>"></div>
+						<div class="wf-card-action-checkbox<?php echo (wfScan::isManualScanSchedule() ? ' checked' : ''); ?>"></div>
 					</div>
 				</div>
 				<div class="wf-card-extra">

@@ -233,8 +233,15 @@ class wfIssues {
 	public function deleteIgnored(){
 		$this->getDB()->queryWrite("delete from " . $this->issuesTable . " where status='ignoreP' or status='ignoreC'");
 	}
-	public function deleteNew(){
-		$this->getDB()->queryWrite("delete from " . $this->issuesTable . " where status='new'");
+	public function deleteNew($types = null) {
+		if (!is_array($types)) {
+			$this->getDB()->queryWrite("DELETE FROM {$this->issuesTable} WHERE status = 'new'");
+		}
+		else {
+			$query = "DELETE FROM {$this->issuesTable} WHERE status = 'new' AND type IN (" . implode(',', array_fill(0, count($types), "'%s'")) . ")";
+			array_unshift($types, $query);
+			call_user_func_array(array($this->getDB(), 'queryWrite'), $types);
+		}
 	}
 	public function ignoreAllNew(){
 		$this->getDB()->queryWrite("update " . $this->issuesTable . " set status='ignoreC' where status='new'");

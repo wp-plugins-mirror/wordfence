@@ -19,7 +19,7 @@ class wfUtils {
 		if (function_exists('date_diff')) {
 			$now = new DateTime();
 			$utc = new DateTimeZone('UTC');
-			$dtStr = gmdate("c", $now->getTimestamp() + $secs); //Have to do it this way because of PHP 5.2
+			$dtStr = gmdate("c", (int) ($now->getTimestamp() + $secs)); //Have to do it this way because of PHP 5.2
 			$then = new DateTime($dtStr, $utc);
 			
 			$diff = $then->diff($now);
@@ -101,6 +101,10 @@ class wfUtils {
 		}
 		if ($secs) {
 			$components[] = self::pluralize($secs, 'second');
+		}
+		
+		if (empty($components)) {
+			$components[] = 'less than 1 second';
 		}
 		
 		return implode(' ', $components);
@@ -793,7 +797,7 @@ class wfUtils {
 			return null;
 		}
 		$prefix = 'http';
-		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) {
+		if (is_ssl()) {
 			$prefix = 'https';
 		}
 		return $prefix . '://' . $host . $_SERVER['REQUEST_URI'];
@@ -1502,7 +1506,7 @@ class wfUtils {
 	 * @param bool $inline
 	 * @return string
 	 */
-	public static function potentialBinaryStringToHTML($string, $inline = false) {
+	public static function potentialBinaryStringToHTML($string, $inline = false, $allowmb4 = false) {
 		$output = '';
 		
 		if (!defined('ENT_SUBSTITUTE')) {
@@ -1521,7 +1525,7 @@ class wfUtils {
 				$output .= $span . '\x' . str_pad(dechex($b), 2, '0', STR_PAD_LEFT) . '</span>';
 			}
 			else if ($b < 0x80) {
-				$output .= htmlspecialchars($c, ENT_QUOTES, 'UTF-8');
+				$output .= htmlspecialchars($c, ENT_QUOTES, 'ISO-8859-1');
 			}
 			else { //Assume multi-byte UTF-8
 				$bytes = 0;
@@ -1545,6 +1549,37 @@ class wfUtils {
 					}
 				}
 				
+				if (!$brokenUTF8) { //Ensure the byte sequences are within the accepted ranges: https://tools.ietf.org/html/rfc3629
+					/*
+					 * UTF8-octets = *( UTF8-char )
+   					 * UTF8-char   = UTF8-1 / UTF8-2 / UTF8-3 / UTF8-4
+   					 * UTF8-1      = %x00-7F
+   					 * UTF8-2      = %xC2-DF UTF8-tail
+   					 * UTF8-3      = %xE0 %xA0-BF UTF8-tail / %xE1-EC 2( UTF8-tail ) /
+   					 *               %xED %x80-9F UTF8-tail / %xEE-EF 2( UTF8-tail )
+   					 * UTF8-4      = %xF0 %x90-BF 2( UTF8-tail ) / %xF1-F3 3( UTF8-tail ) /
+   					 *               %xF4 %x80-8F 2( UTF8-tail )
+   					 * UTF8-tail   = %x80-BF
+					 */
+					
+					$testString = wfUtils::substr($string, $i, $bytes);
+					$regex = '/^(?:' .
+						'[\xc2-\xdf][\x80-\xbf]' . //UTF8-2
+						'|' . '\xe0[\xa0-\xbf][\x80-\xbf]' . //UTF8-3
+						'|' . '[\xe1-\xec][\x80-\xbf]{2}' .
+						'|' . '\xed[\x80-\x9f][\x80-\xbf]' .
+						'|' . '[\xee-\xef][\x80-\xbf]{2}';
+					if ($allowmb4) {
+						$regex .= '|' . '\xf0[\x90-\xbf][\x80-\xbf]{2}' . //UTF8-4
+							'|' . '[\xf1-\xf3][\x80-\xbf]{3}' .
+							'|' . '\xf4[\x80-\x8f][\x80-\xbf]{2}';
+					}
+					$regex  .= ')$/';
+					if (!preg_match($regex, $testString)) {
+						$brokenUTF8 = true;
+					}
+				}
+				
 				if ($brokenUTF8) {
 					$bytes = min($bytes, strlen($string) - $i);
 					for ($n = 0; $n < $bytes; $n++) {
@@ -1555,7 +1590,7 @@ class wfUtils {
 					$i += ($bytes - 1);
 				}
 				else {
-					$output .= htmlspecialchars(substr($string, $i, $bytes), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+					$output .= htmlspecialchars(wfUtils::substr($string, $i, $bytes), ENT_QUOTES | ENT_SUBSTITUTE, 'ISO-8859-1');
 					$i += ($bytes - 1);
 				}
 			}
@@ -2011,13 +2046,32 @@ class wfUtils {
 	 *
 	 * @return int
 	 */
-	public static function normalizedTime() {
+	public static function normalizedTime($base = false) {
+		if ($base === false) {
+			$base = time();
+		}
+		
 		$offset = wfConfig::get('timeoffset_ntp', false);
 		if ($offset === false) {
 			$offset = wfConfig::get('timeoffset_wf', false);
 			if ($offset === false) { $offset = 0; }
 		}
-		return time() + $offset;
+		return $base + $offset;
+	}
+	
+	/**
+	 * Returns what we consider a true timestamp, adjusted as needed to match the local server's drift. We use this
+	 * because a significant number of servers are using a drastically incorrect time.
+	 *
+	 * @return int
+	 */
+	public static function denormalizedTime($base) {
+		$offset = wfConfig::get('timeoffset_ntp', false);
+		if ($offset === false) {
+			$offset = wfConfig::get('timeoffset_wf', false);
+			if ($offset === false) { $offset = 0; }
+		}
+		return $base - $offset;
 	}
 	
 	/**
@@ -2033,7 +2087,7 @@ class wfUtils {
 		}
 		
 		$utc = new DateTimeZone('UTC');
-		$dtStr = gmdate("c", $timestamp); //Have to do it this way because of PHP 5.2
+		$dtStr = gmdate("c", (int) $timestamp); //Have to do it this way because of PHP 5.2
 		$dt = new DateTime($dtStr, $utc);
 		$tz = get_option('timezone_string');
 		if (!empty($tz)) {
@@ -2043,7 +2097,7 @@ class wfUtils {
 			$gmt = get_option('gmt_offset');
 			if (!empty($gmt)) {
 				if (PHP_VERSION_ID < 50510) {
-					$dtStr = gmdate("c", $timestamp + $gmt * 3600); //Have to do it this way because of < PHP 5.5.10
+					$dtStr = gmdate("c", (int) ($timestamp + $gmt * 3600)); //Have to do it this way because of < PHP 5.5.10
 					$dt = new DateTime($dtStr, $utc);
 				}
 				else {

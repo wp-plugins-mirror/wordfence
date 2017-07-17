@@ -25,18 +25,29 @@
 <?php
 	if ((isset($i['tmplData']['wpRemoved']) && $i['tmplData']['wpRemoved']) || (isset($i['tmplData']['abandoned']) && $i['tmplData']['abandoned'])) {
 		if (isset($i['tmplData']['vulnerable']) && $i['tmplData']['vulnerable']) {
-			echo '<p><strong>Plugin contains an unpatched security vulnerability.</strong></p>';
+			echo '<p><strong>Plugin contains an unpatched security vulnerability.</strong>';
+			if (isset($i['tmplData']['vulnerabilityLink'])) {
+				echo ' <a href="' . $i['tmplData']['vulnerabilityLink'] . '" target="_blank" rel="nofollow noreferer noopener">Vulnerability Information</a>';
+			}
+			echo '</p>';
 		}
 	}
 	else if (isset($i['tmplData']['wpURL'])) {
 		echo '<p>';
 		if (isset($i['tmplData']['vulnerable']) && $i['tmplData']['vulnerable']) {
 			echo '<strong>Update includes security-related fixes.</strong> ';
+			if (isset($i['tmplData']['vulnerabilityLink'])) {
+				echo '<a href="' . $i['tmplData']['vulnerabilityLink'] . '" target="_blank" rel="nofollow noreferer noopener">Vulnerability Information</a> ';
+			}
 		}
 		echo $i['tmplData']['wpURL'] . '/#developers</p>';
 	}
 	else if (isset($i['tmplData']['vulnerable']) && $i['tmplData']['vulnerable']) {
-		echo '<p><strong>Update includes security-related fixes.</strong></p>';
+		echo '<p><strong>Update includes security-related fixes.</strong>';
+		if (isset($i['tmplData']['vulnerabilityLink'])) {
+			echo ' <a href="' . $i['tmplData']['vulnerabilityLink'] . '" target="_blank" rel="nofollow noreferer noopener">Vulnerability Information</a>';
+		}
+		echo '</p>';
 	}
 ?>
 <?php if (!empty($i['tmplData']['badURL'])): ?>

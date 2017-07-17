@@ -271,6 +271,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 		<tr><th>New <span class="wf-hidden-xs">Theme </span>Version:</th><td>${data.newVersion}</td></tr>
 		<tr><th><span class="wf-hidden-xs">Theme </span>URL:</th><td><a href="${data.URL}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.URL}</span><span class="wf-visible-xs">View</span></a></td></tr>
 		<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+		{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 		<tr><th>Status</th><td>
 			{{if status == 'new' }}New{{/if}}
 			{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
@@ -312,6 +313,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 		<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.Version}</td></tr>
 		<tr><th>New <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.newVersion}</td></tr>
 		<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+		{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 		<tr><th>Status</th><td>
 			{{if status == 'new' }}New{{/if}}
 			{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
@@ -351,6 +353,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 				{{if data.PluginURI}}<tr><th><span class="wf-hidden-xs">Plugin </span>Website:</th><td><a href="${data.PluginURI}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.PluginURI}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.Version}</td></tr>
 				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 				<tr><th>Status</th><td>
 						{{if status == 'new' }}New{{/if}}
 						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
@@ -390,6 +393,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.version}</td></tr>
 				<tr><th>Last Updated:</th><td>${data.dateUpdated}</td></tr>
 				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 				<tr><th>Status</th><td>
 						{{if status == 'new' }}New{{/if}}
 						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
@@ -429,6 +433,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 				{{if data.wpURL}}<tr><th>Repository<span class="wf-hidden-xs"> Link</span>:</th><td><a href="${data.wpURL}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.wpURL}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 				<tr><th>Current <span class="wf-hidden-xs">Plugin </span>Version:</th><td>${data.Version}</td></tr>
 				<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+				{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 				<tr><th>Status</th><td>
 						{{if status == 'new' }}New{{/if}}
 						{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
@@ -465,6 +470,7 @@ $sigUpdateTime = wfConfig::get('signatureUpdateTime');
 		<tr><th>Current <span class="wf-hidden-xs">WordPress </span>Version:</th><td>${data.currentVersion}</td></tr>
 		<tr><th>New <span class="wf-hidden-xs">WordPress </span>Version:</th><td>${data.newVersion}</td></tr>
 		<tr><th>Severity:</th><td>{{if severity == '1'}}Critical{{else}}Warning{{/if}}</td></tr>
+		{{if data.vulnerabilityLink}}<tr><th>Vulnerability <span class="wf-hidden-xs">Information</span>:</th><td><a href="${data.vulnerabilityLink}" target="_blank" rel="noopener noreferrer"><span class="wf-hidden-xs wf-split-word">${data.vulnerabilityLink}</span><span class="wf-visible-xs">View</span></a></td></tr>{{/if}}
 		<tr><th>Status</th><td>
 			{{if status == 'new' }}New{{/if}}
 			{{if status == 'ignoreP' || status == 'ignoreC' }}Ignored{{/if}}
