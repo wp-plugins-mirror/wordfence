@@ -8,19 +8,6 @@ $w = new wfConfig();
 	$pageTitle      = "Wordfence Options";
 	$wantsLiveActivity = true;
 	include( 'pageTitle.php' ); ?>
-	<!-- <div class="wordfenceLive">
-		<table border="0" cellpadding="0" cellspacing="0" class="wordfenceLiveActivity">
-			<tr>
-				<td><h2>Wordfence Live Activity:</h2></td>
-				<td id="wfLiveStatus"></td>
-			</tr>
-		</table>
-		<table border="0" cellpadding="0" cellspacing="0" class="wordfenceLiveStateMessage">
-			<tr>
-				<td>Live Updates Paused &mdash; Click inside window to resume</td>
-			</tr>
-		</table>
-	</div> -->
 	
 	<div class="wf-container-fluid">
 		<div class="wf-row">
@@ -106,6 +93,13 @@ $w = new wfConfig();
 						<div class="wf-col-sm-7">
 							<div class="wf-checkbox"><input type="checkbox" id="advancedCommentScanning" class="wfConfigElem" name="advancedCommentScanning" value="1" <?php $w->cbp( 'advancedCommentScanning' ); if (!wfConfig::get('isPaid')) { ?>onclick="alert('This is a paid feature because it places significant additional load on our servers.'); jQuery('#advancedCommentScanning').attr('checked', false); return false;" <?php } ?>></div>
 							<span class="wf-help-block"><span style="color: #F00;">Premium Feature</span> In addition to free comment filtering (see below) this option filters comments against several additional real-time lists of known spammers and infected hosts.</span>
+						</div>
+					</div>
+					<div class="wf-form-group">
+						<label for="scansEnabled_checkGSB" class="wf-col-sm-5 wf-control-label">Check if this website is on a domain blacklist <a href="http://docs.wordfence.com/en/Wordfence_options#Check_if_this_website_is_on_a_domain_blacklist" target="_blank" rel="noopener noreferrer" class="wfhelp"></a></label>
+						<div class="wf-col-sm-7">
+							<div class="wf-checkbox"><input type="checkbox" id="scansEnabled_checkGSB" class="wfConfigElem" name="scansEnabled_checkGSB" value="1" <?php $w->cbp( 'scansEnabled_checkGSB' ); if (!wfConfig::get('isPaid')) { ?>onclick="alert('This is a paid feature because it places significant additional load on our servers.'); jQuery('#scansEnabled_checkGSB').attr('checked', false); return false;" <?php } ?>></div>
+							<span class="wf-help-block"><span style="color: #F00;">Premium Feature</span> When doing a scan, Wordfence will check with multiple domain blacklists to see if your site is listed.</span>
 						</div>
 					</div>
 					<div class="wf-form-group">
@@ -439,6 +433,10 @@ $w = new wfConfig();
 '
 									),
 								),
+							),
+							array(
+								'id' 		=> 'scansEnabled_fileContentsGSB',
+								'label'		=> 'Scan file contents for malicious URLs <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_file_contents_for_malicious_URLs" target="_blank" rel="noopener noreferrer" class="wfhelp"></a>',
 							),
 							array(
 								'id' 		=> 'scansEnabled_posts',

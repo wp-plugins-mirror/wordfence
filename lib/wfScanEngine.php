@@ -138,22 +138,21 @@ class wfScanEngine {
 			$jobs[] = 'checkGSB';
 			$jobs[] = 'checkHowGetIPs';
 			$jobs[] = 'knownFiles';
-			foreach (array('knownFiles', 'checkReadableConfig', 'fileContents', 'suspectedFiles',
-						 // 'wpscan_fullPathDisclosure', 'wpscan_directoryListingEnabled',
-						 'posts', 'comments', 'passwds', 'dns', 'diskSpace', 'oldVersions', 'suspiciousAdminUsers') as $job) {
-				if (wfConfig::get('scansEnabled_' . $job)) {
-					$jobs[] = $job;
-				}
-			}
+			self::_enqueueJobs(array('knownFiles', 'checkReadableConfig'), $jobs);
+			$jobs[] = 'fileContents';
+			self::_enqueueJobs(array('suspectedFiles', 'posts', 'comments', 'passwds', 'dns', 'diskSpace', 'oldVersions', 'suspiciousAdminUsers'), $jobs);
 		}
 		else if ($scanMode == self::SCAN_MODE_QUICK) {
-			foreach (array('oldVersions') as $job) {
-				if (wfConfig::get('scansEnabled_' . $job)) {
-					$jobs[] = $job;
-				}
-			}
+			self::_enqueueJobs(array('oldVersions'), $jobs);
 		}
 		return $jobs;
+	}
+	private static function _enqueueJobs($possibleJobs, &$jobs) {
+		foreach ($possibleJobs as $job) {
+			if (wfConfig::get('scansEnabled_' . $job)) {
+				$jobs[] = $job;
+			}
+		}
 	}
 
 	public function __sleep(){ //Same order here as above for properties that are included in serialization
@@ -411,14 +410,23 @@ class wfScanEngine {
 	
 	private function scan_checkGSB_init() {
 		if (wfConfig::get('isPaid')) {
-			$this->statusIDX['checkGSB'] = wfIssues::statusStart("Checking if your site is on a domain blacklist");
-			$h = new wordfenceURLHoover($this->apiKey, $this->wp_version);
-			$h->cleanup();
+			if (wfConfig::get('scansEnabled_checkGSB')) {
+				$this->statusIDX['checkGSB'] = wfIssues::statusStart("Checking if your site is on a domain blacklist");
+				$h = new wordfenceURLHoover($this->apiKey, $this->wp_version);
+				$h->cleanup();
+			}
+			else {
+				wfIssues::statusDisabled("Skipping check if your site is on a domain blacklist");
+			}
+		}
+		else {
+			wfIssues::statusPaidOnly("Checking if your site is on a domain blacklist is for paid members only");
+			sleep(2);
 		}
 	}
 	
 	private function scan_checkGSB_main() {
-		if (wfConfig::get('isPaid')) {
+		if (wfConfig::get('isPaid') && wfConfig::get('scansEnabled_checkGSB')) {
 			if (is_multisite()) {
 				global $wpdb;
 				$h = new wordfenceURLHoover($this->apiKey, $this->wp_version, false, true);
@@ -441,7 +449,7 @@ class wfScanEngine {
 	}
 	
 	private function scan_checkGSB_finish() {
-		if (wfConfig::get('isPaid')) {
+		if (wfConfig::get('isPaid') && wfConfig::get('scansEnabled_checkGSB')) {
 			if (is_multisite()) {
 				$h = new wordfenceURLHoover($this->apiKey, $this->wp_version, false, true);
 				$badURLs = $h->getBaddies();
@@ -531,9 +539,6 @@ class wfScanEngine {
 			}
 			
 			wfIssues::statusEnd($this->statusIDX['checkGSB'], $haveIssues);
-		} else {
-			wfIssues::statusPaidOnly("Checking if your site is on a domain blacklist is for paid members only");
-			sleep(2);
 		}
 	}
 	
@@ -792,38 +797,65 @@ class wfScanEngine {
 	private function scan_knownFiles_finish(){
 	}
 	private function scan_fileContents_init(){
-		$this->statusIDX['infect'] = wfIssues::statusStart('Scanning file contents for infections and vulnerabilities');
-		$this->statusIDX['GSB'] = wfIssues::statusStart('Scanning files for URLs on a domain blacklist');
-		$this->scanner = new wordfenceScanner($this->apiKey, $this->wp_version, ABSPATH);
-		$this->status(2, 'info', "Starting scan of file contents");
+		if (wfConfig::get('scansEnabled_fileContents')) {
+			$this->statusIDX['infect'] = wfIssues::statusStart('Scanning file contents for infections and vulnerabilities');
+		}
+		else {
+			wfIssues::statusDisabled("Skipping scan of file contents for infections and vulnerabilities");
+		}
+		
+		if (wfConfig::get('scansEnabled_fileContentsGSB')) {
+			$this->statusIDX['GSB'] = wfIssues::statusStart('Scanning file contents for URLs on a domain blacklist');
+		}
+		else {
+			wfIssues::statusDisabled("Skipping scan of file contents for URLs on a domain blacklist");
+		}
+		
+		if (wfConfig::get('scansEnabled_fileContents') || wfConfig::get('scansEnabled_fileContentsGSB')) {
+			$this->scanner = new wordfenceScanner($this->apiKey, $this->wp_version, ABSPATH);
+			$this->status(2, 'info', "Starting scan of file contents");
+		}
+		else {
+			$this->scanner = false;
+		}
 	}
 	private function scan_fileContents_main(){
-		$this->fileContentsResults = $this->scanner->scan($this);
+		if (wfConfig::get('scansEnabled_fileContents') || wfConfig::get('scansEnabled_fileContentsGSB')) {
+			$this->fileContentsResults = $this->scanner->scan($this);
+		}
 	}
 	private function scan_fileContents_finish(){
-		$this->status(2, 'info', "Done file contents scan");
-		if($this->scanner->errorMsg){
-			throw new Exception($this->scanner->errorMsg);
-		}
-		$this->scanner = null;
-		$haveIssues = wfIssues::STATUS_SECURE;
-		$haveIssuesGSB = wfIssues::STATUS_SECURE;
-		foreach($this->fileContentsResults as $issue){
-			$this->status(2, 'info', "Adding issue: " . $issue['shortMsg']);
-			$added = $this->addIssue($issue['type'], $issue['severity'], $issue['ignoreP'], $issue['ignoreC'], $issue['shortMsg'], $issue['longMsg'], $issue['data']);
+		if (wfConfig::get('scansEnabled_fileContents') || wfConfig::get('scansEnabled_fileContentsGSB')) {
+			$this->status(2, 'info', "Done file contents scan");
+			if($this->scanner->errorMsg){
+				throw new Exception($this->scanner->errorMsg);
+			}
+			$this->scanner = null;
+			$haveIssues = wfIssues::STATUS_SECURE;
+			$haveIssuesGSB = wfIssues::STATUS_SECURE;
+			foreach($this->fileContentsResults as $issue){
+				$this->status(2, 'info', "Adding issue: " . $issue['shortMsg']);
+				$added = $this->addIssue($issue['type'], $issue['severity'], $issue['ignoreP'], $issue['ignoreC'], $issue['shortMsg'], $issue['longMsg'], $issue['data']);
+				
+				if (isset($issue['data']['gsb'])) {
+					if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssuesGSB = wfIssues::STATUS_PROBLEM; }
+					else if ($haveIssuesGSB != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssuesGSB = wfIssues::STATUS_IGNORED; }
+				}
+				else {
+					if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
+					else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
+				}
+			}
+			$this->fileContentsResults = null;
 			
-			if (isset($issue['data']['gsb'])) {
-				if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssuesGSB = wfIssues::STATUS_PROBLEM; }
-				else if ($haveIssuesGSB != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssuesGSB = wfIssues::STATUS_IGNORED; }
+			if (wfConfig::get('scansEnabled_fileContents')) {
+				wfIssues::statusEnd($this->statusIDX['infect'], $haveIssues);
 			}
-			else {
-				if ($added == wfIssues::ISSUE_ADDED || $added == wfIssues::ISSUE_UPDATED) { $haveIssues = wfIssues::STATUS_PROBLEM; }
-				else if ($haveIssues != wfIssues::STATUS_PROBLEM && ($added == wfIssues::ISSUE_IGNOREP || $added == wfIssues::ISSUE_IGNOREC)) { $haveIssues = wfIssues::STATUS_IGNORED; }
+			
+			if (wfConfig::get('scansEnabled_fileContentsGSB')) {
+				wfIssues::statusEnd($this->statusIDX['GSB'], $haveIssuesGSB);
 			}
 		}
-		$this->fileContentsResults = null;
-		wfIssues::statusEnd($this->statusIDX['infect'], $haveIssues);
-		wfIssues::statusEnd($this->statusIDX['GSB'], $haveIssuesGSB);
 	}
 
 	private function scan_suspectedFiles() {

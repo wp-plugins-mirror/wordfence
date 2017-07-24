@@ -725,6 +725,15 @@ SQL
 			$wpdb->query("ALTER TABLE {$hooverTable} CHANGE `hostKey` `hostKey` VARBINARY(124) NULL DEFAULT NULL");
 		}
 		
+		//6.3.15
+		$scanFileContents = wfConfig::get('scansEnabled_fileContents', false);
+		if (!wfConfig::get('fileContentsGSB6315Migration', false)) {
+			if (!$scanFileContents) {
+				wfConfig::set('scansEnabled_fileContentsGSB', false);
+			}
+			wfConfig::set('fileContentsGSB6315Migration', 1);
+		}
+		
 		
 		//Check the How does Wordfence get IPs setting
 		wfUtils::requestDetectProxyCallback();
@@ -5532,7 +5541,7 @@ document.location.href=$adminURL;
 						array("cgi", 'Apache + CGI/FastCGI', $serverInfo->isApache() &&
 							!$serverInfo->isApacheSuPHP() &&
 							($serverInfo->isCGI() || $serverInfo->isFastCGI())),
-						array("litespeed", 'LiteSpeed', $serverInfo->isLiteSpeed()),
+						array("litespeed", 'LiteSpeed/lsapi', $serverInfo->isLiteSpeed()),
 						array("nginx", 'NGINX', $serverInfo->isNGINX()),
 						array("iis", 'Windows (IIS)', $serverInfo->isIIS()),
 					);
@@ -5666,7 +5675,7 @@ vulnerable code runs. This PHP setting currently refers to the Wordfence file at
 								array("cgi", 'Apache + CGI/FastCGI', $serverInfo->isApache() &&
 									!$serverInfo->isApacheSuPHP() &&
 									($serverInfo->isCGI() || $serverInfo->isFastCGI())),
-								array("litespeed", 'LiteSpeed', $serverInfo->isLiteSpeed()),
+								array("litespeed", 'LiteSpeed/lsapi', $serverInfo->isLiteSpeed()),
 								array("nginx", 'NGINX', $serverInfo->isNGINX()),
 								array("iis", 'Windows (IIS)', $serverInfo->isIIS()),
 							);
@@ -7644,13 +7653,17 @@ $userIniHtaccessDirectives
 				break;
 
 			case 'litespeed':
+				$escapedBootstrapPath = addcslashes($bootstrapPath, "'");
 				$autoPrependDirective = sprintf("# Wordfence WAF
 <IfModule LiteSpeed>
 php_value auto_prepend_file '%s'
 </IfModule>
+<IfModule lsapi_module>
+php_value auto_prepend_file '%s'
+</IfModule>
 $userIniHtaccessDirectives
 # END Wordfence WAF
-", addcslashes($bootstrapPath, "'"));
+", $escapedBootstrapPath, $escapedBootstrapPath);
 				break;
 
 			case 'apache-suphp':

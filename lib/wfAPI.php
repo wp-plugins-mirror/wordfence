@@ -122,8 +122,8 @@ class wfAPI {
 			throw new Exception("The Wordfence scanning servers are currently unavailable. This may be for maintenance or a temporary outage. If this still occurs in an hour, please contact support. [$this->lastHTTPStatus]");
 		}
 
-		$this->curlContent = wp_remote_retrieve_body($response);
-		return $this->curlContent;
+		$content = wp_remote_retrieve_body($response);
+		return $content;
 	}
 
 	public function binCall($func, $postData) {

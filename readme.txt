@@ -2,8 +2,8 @@
 Contributors: mmaunder 
 Tags: security, secure, security plugin, wordpress security, login security, firewall, malware, antivirus, web application firewall, block hackers, country blocking
 Requires at least: 3.9
-Tested up to: 4.8.0
-Stable tag: 6.3.14
+Tested up to: 4.8.1
+Stable tag: 6.3.15
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -159,6 +159,13 @@ Secure your website with Wordfence.
 7. The Advanced Options page allows technically-minded users fine-tune their security settings.
 
 == Changelog ==
+
+= 6.3.15 =
+* Improvement: Reduced memory usage on scan forking and during the known files scan stage.
+* Improvement: Added additional scan options to allow for disabling the blacklist checks while still allowing malware scanning to be enabled.
+* Improvement: Added a Wordfence Application Firewall code block for the lsapi variant of LiteSpeed.
+* Improvement: Updated the bundled GeoIP database.
+* Fix: Added a validation check to IP range whitelisting to avoid log warnings if they're malformed.
 
 = 6.3.14 =
 * Improvement: Introduced smart scan distribution. Scan times are now distributed intelligently across servers to provide consistent server performance. 

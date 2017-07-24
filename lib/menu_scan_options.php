@@ -56,6 +56,10 @@ $w = new wfConfig();
 			),
 		),
 		array(
+			'id' 		=> 'scansEnabled_fileContentsGSB',
+			'label'		=> 'Scan file contents for malicious URLs <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_file_contents_for_malicious_URLs" target="_blank" rel="noopener noreferrer" class="wfhelp"></a>',
+		),
+		array(
 			'id' 		=> 'scansEnabled_posts',
 			'label'		=> 'Scan posts for known dangerous URLs and suspicious content <a href="http://docs.wordfence.com/en/Wordfence_options#Scan_posts_for_known_dangerous_URLs_and_suspicious_content" target="_blank" rel="noopener noreferrer" class="wfhelp"></a>',
 		),
