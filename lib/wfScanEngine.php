@@ -630,13 +630,13 @@ class wfScanEngine {
 			wfCommonBackupFileTest::createFromRootPath('wp-config.txt'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.original'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.orig'),
-			wfCommonBackupFileTest::createFromRootPath('searchreplacedb2.php'),
 			new wfCommonBackupFileTest(content_url('/debug.log'), WP_CONTENT_DIR . '/debug.log', array(
 				'headers' => array(
 					'Range' => 'bytes=0-700',
 				),
 			)),
 		);
+		$backupFileTests = array_merge($backupFileTests, wfCommonBackupFileTest::createAllForFile('searchreplacedb2.php', wfCommonBackupFileTest::MATCH_REGEX, '/<title>Search and replace DB/i'));
 //		$userIniFilename = ini_get('user_ini.filename');
 //		if ($userIniFilename && $userIniFilename !== '.user.ini') {
 //			$backupFileTests[] = wfCommonBackupFileTest::createFromRootPath($userIniFilename);
@@ -650,13 +650,13 @@ class wfScanEngine {
 				$key = "configReadable" . bin2hex($test->getUrl());
 				$added = $this->addIssue(
 					'configReadable',
-					2,
+					1,
 					$key,
 					$key,
 					'Publicly accessible config, backup, or log file found: ' . esc_html($pathFromRoot),
 					'<a href="' . $test->getUrl() . '" target="_blank" rel="noopener noreferrer">' . $test->getUrl() . '</a> is publicly
-					accessible and may expose sensitive information about your site. Files such as this one are commonly
-					checked for by scanners such as WPScan and should be removed or made inaccessible.',
+					accessible and may expose sensitive information about your site or allow administrative functions to be performed by anyone. Files such as this one are commonly
+					checked for by both attackers and scanners such as WPScan and should be removed or made inaccessible.',
 					array(
 						'url'       => $test->getUrl(),
 						'file'      => $pathFromRoot,
@@ -1891,6 +1891,7 @@ class wfScanEngine {
 		}
 	}
 	public static function startScan($isFork = false, $scanMode = self::SCAN_MODE_FULL){
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		if(! $isFork){ //beginning of scan
 			wfConfig::inc('totalScansRun');	
 			wfConfig::set('wfKillRequested', 0, wfConfig::DONT_AUTOLOAD); 
@@ -2239,13 +2240,37 @@ class wfScanKnownFilesException extends Exception {
 }
 
 class wfCommonBackupFileTest {
-
+	const MATCH_EXACT = 'exact';
+	const MATCH_REGEX = 'regex';
+	
 	/**
 	 * @param string $path
+	 * @param string $mode
+	 * @param bool|string $matcher If $mode is MATCH_REGEX, this will be the regex pattern.
 	 * @return wfCommonBackupFileTest
 	 */
-	public static function createFromRootPath($path) {
-		return new self(site_url($path), ABSPATH . $path); 
+	public static function createFromRootPath($path, $mode = self::MATCH_EXACT, $matcher = false) {
+		return new self(site_url($path), ABSPATH . $path, array(), $mode, $matcher); 
+	}
+	
+	/**
+	 * Identical to createFromRootPath except it returns an entry for each file in the index that matches $name
+	 * 
+	 * @param $name
+	 * @param string $mode
+	 * @param bool|string $matcher
+	 * @return array
+	 */
+	public static function createAllForFile($file, $mode = self::MATCH_EXACT, $matcher = false) {
+		global $wpdb;
+		$escapedFile = esc_sql(preg_quote($file));
+		$files = $wpdb->get_col("SELECT path FROM {$wpdb->base_prefix}wfKnownFileList WHERE path REGEXP '(^|/){$escapedFile}$'");
+		$tests = array();
+		foreach ($files as $f) {
+			$tests[] = new self(site_url($f), ABSPATH . $f, array(), $mode, $matcher);
+		}
+		
+		return $tests;
 	}
 
 	private $url;
@@ -2254,6 +2279,8 @@ class wfCommonBackupFileTest {
 	 * @var array
 	 */
 	private $requestArgs;
+	private $mode;
+	private $matcher;
 	private $response;
 
 
@@ -2262,9 +2289,11 @@ class wfCommonBackupFileTest {
 	 * @param string $path
 	 * @param array $requestArgs
 	 */
-	public function __construct($url, $path, $requestArgs = array()) {
+	public function __construct($url, $path, $requestArgs = array(), $mode = self::MATCH_EXACT, $matcher = false) {
 		$this->url = $url;
 		$this->path = $path;
+		$this->mode = $mode;
+		$this->matcher = $matcher;
 		$this->requestArgs = $requestArgs;
 	}
 
@@ -2286,6 +2315,10 @@ class wfCommonBackupFileTest {
 				$contents = fread($handle, 700);
 				fclose($handle);
 				$remoteContents = substr(wp_remote_retrieve_body($this->response), 0, 700);
+				if ($this->mode == self::MATCH_REGEX) {
+					return preg_match($this->matcher, $remoteContents);
+				}
+				//else MATCH_EXACT
 				return $contents === $remoteContents;
 			}
 		}

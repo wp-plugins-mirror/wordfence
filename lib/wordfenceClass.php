@@ -376,6 +376,7 @@ class wordfence {
 		if (function_exists('ignore_user_abort')) {
 			ignore_user_abort(true);
 		}
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$previous_version = ((is_multisite() && function_exists('get_network_option')) ? get_network_option(null, 'wordfence_version', '0.0.0') : get_option('wordfence_version', '0.0.0'));
 		if (is_multisite() && function_exists('update_network_option')) {
 			update_network_option(null, 'wordfence_version', WORDFENCE_VERSION); //In case we have a fatal error we don't want to keep running install.	
@@ -1034,6 +1035,7 @@ SQL
 	public static function ajax_doScan_callback(){
 		ignore_user_abort(true);
 		self::$wordfence_wp_version = false;
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		//This is messy, but not sure of a better way to do this without guaranteeing we get $wp_version
 		require(ABSPATH . 'wp-includes/version.php');
 		self::$wordfence_wp_version = $wp_version;
@@ -1992,6 +1994,7 @@ SQL
 		return $authUser;
 	}
 	public static function wfsnBatchReportBlockedAttempts() {
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$threshold = wfConfig::get('lastBruteForceDataSendTime', 0);;
 		
 		$wfdb = new wfDB();
@@ -2053,6 +2056,7 @@ SQL
 		}
 	}
 	private static function wfsnScheduleBatchReportBlockedAttempts($timeToSend = null) {
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		if ($timeToSend === null) {
 			$timeToSend = time() + 30;
 		}
@@ -2069,11 +2073,13 @@ SQL
 		}
 	}
 	public static function wfsnReportBlockedAttempt($IP, $type){
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		self::wfsnScheduleBatchReportBlockedAttempts();
 		$endpointType = self::wfsnEndpointType();
 		self::getLog()->getCurrentRequest()->actionData = wfRequestModel::serializeActionData(array('type' => $endpointType));
 	}
 	public static function wfsnBatchReportFailedAttempts() {
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$threshold = time();
 		
 		$wfdb = new wfDB();
@@ -2125,6 +2131,7 @@ SQL
 		}
 	}
 	private static function wfsnScheduleBatchReportFailedAttempts($timeToSend = null) {
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		if ($timeToSend === null) {
 			$timeToSend = time() + 30;
 		}
@@ -2141,6 +2148,7 @@ SQL
 		}
 	}
 	public static function wfsnIsBlocked($IP, $hitType){
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$wfdb = new wfDB();
 		global $wpdb;
 		$p = $wpdb->base_prefix;
@@ -6913,6 +6921,8 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 	 */
 	public static function processAttackData() {
 		global $wpdb;
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
+		
 		$waf = wfWAF::getInstance();
 		if ($waf->getStorageEngine()->getConfig('attackDataKey', false) === false) {
 			$waf->getStorageEngine()->setConfig('attackDataKey', mt_rand(0, 0xfff));
@@ -7112,6 +7122,7 @@ LIMIT %d", $lastSendTime, $limit));
 
 	public static function syncAttackData($exit = true) {
 		global $wpdb;
+		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$waf = wfWAF::getInstance();
 		$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$wpdb->base_prefix}wfHits");
 		if ($waf->getStorageEngine()->hasNewerAttackData($lastAttackMicroseconds)) {
