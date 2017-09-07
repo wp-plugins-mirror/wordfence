@@ -385,6 +385,8 @@ class wordfence {
 			update_option('wordfence_version', WORDFENCE_VERSION); //In case we have a fatal error we don't want to keep running install.
 		}
 		
+		wordfence::status(4, 'info', 'runInstall called with previous version = ' . $previous_version);
+		
 		//EVERYTHING HERE MUST BE IDEMPOTENT
 
 		//Remove old legacy cron job if exists
@@ -541,6 +543,17 @@ SQL
 					}
 				}
 			}
+			
+			$ip_results = $wpdb->get_results("SELECT countryCode, IP FROM `{$prefix}wfBlockedCommentLog` GROUP BY IP");
+			if ($ip_results) {
+				foreach ($ip_results as $ip_row) {
+					$country = wfUtils::IP2Country(wfUtils::inet_ntop($ip_row->IP));
+					if ($country != $ip_row->countryCode) {
+						$wpdb->query($wpdb->prepare("UPDATE `{$prefix}wfBlockedCommentLog` SET countryCode = %s WHERE IP = %s", $country, $ip_row->IP));
+					}
+				}
+			}
+			
 			wfConfig::set('geoIPVersionHash', $geoIPVersionHash);
 		}
 
@@ -4880,7 +4893,7 @@ HTML;
 			wp_enqueue_script('json2');
 			wp_enqueue_script('jquery.wftmpl', wfUtils::getBaseURL() . 'js/jquery.tmpl.min.js', array('jquery'), WORDFENCE_VERSION);
 			wp_enqueue_script('jquery.wfcolorbox', wfUtils::getBaseURL() . 'js/jquery.colorbox-min.js', array('jquery'), WORDFENCE_VERSION);
-			wp_enqueue_script('jquery.wfdataTables', wfUtils::getBaseURL() . 'js/jquery.dataTables.js', array('jquery'), WORDFENCE_VERSION);
+			wp_enqueue_script('jquery.wfdataTables', wfUtils::getBaseURL() . 'js/jquery.dataTables.min.js', array('jquery'), WORDFENCE_VERSION);
 			wp_enqueue_script('jquery.qrcode', wfUtils::getBaseURL() . 'js/jquery.qrcode.min.js', array('jquery'), WORDFENCE_VERSION);
 			//wp_enqueue_script('jquery.tools', wfUtils::getBaseURL() . 'js/jquery.tools.min.js', array('jquery'));
 			wp_enqueue_script('wordfenceAdminjs', wfUtils::getBaseURL() . 'js/admin.js', array('jquery'), WORDFENCE_VERSION);
@@ -6021,6 +6034,7 @@ HTML
 			$user = get_user_by('email', trim($cData['comment_author_email']));
 			if($user){
 				wfConfig::inc('totalSpamStopped');
+				wfActivityReport::logBlockedComment(wfUtils::getIP(), 'anon');
 				return 0; //hold for moderation if the user is not signed in but used a members email
 			}
 		}
@@ -6030,6 +6044,7 @@ HTML
 			try {
 				if($wf->isBadComment($cData['comment_author'], $cData['comment_author_email'], $cData['comment_author_url'],  $cData['comment_author_IP'], $cData['comment_content'])){
 					wfConfig::inc('totalSpamStopped');
+					wfActivityReport::logBlockedComment(wfUtils::getIP(), 'gsb');
 					return 'spam';
 				}
 			} catch(Exception $e){
@@ -6057,6 +6072,7 @@ HTML
 					));
 				if(is_array($res) && isset($res['spam']) && $res['spam'] == 1){
 					wfConfig::inc('totalSpamStopped');
+					wfActivityReport::logBlockedComment(wfUtils::getIP(), 'reputation');
 					return 'spam';
 				}
 			} catch(Exception $e){
