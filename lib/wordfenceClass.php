@@ -2013,7 +2013,7 @@ SQL
 		$wfdb = new wfDB();
 		global $wpdb;
 		$p = $wpdb->base_prefix;
-		$rawBlocks = $wfdb->querySelect("SELECT SQL_CALC_FOUND_ROWS IP, ctime, actionData FROM {$p}wfHits WHERE ctime > %.6f AND action = 'blocked:wfsnrepeat' ORDER BY ctime ASC LIMIT 100", $threshold);
+		$rawBlocks = $wfdb->querySelect("SELECT SQL_CALC_FOUND_ROWS IP, ctime, actionData FROM {$p}wfHits WHERE ctime > %f AND action = 'blocked:wfsnrepeat' ORDER BY ctime ASC LIMIT 100", sprintf('%.6f', $threshold));
 		$totalRows = $wpdb->get_var('SELECT FOUND_ROWS()');
 		$ipCounts = array();
 		$maxctime = 0;
@@ -6968,9 +6968,9 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 			$attackData = $wpdb->get_results($wpdb->prepare("SELECT SQL_CALC_FOUND_ROWS * FROM {$wpdb->base_prefix}wfHits
 	WHERE action = 'blocked:waf' " .
 	(count($wafAlertWhitelist) ? "AND HEX(IP) NOT IN (" . implode(", ", array_fill(0, count($wafAlertWhitelist), '%s')) . ")" : "") 
-	. "AND attackLogTime > %.6f
+	. "AND attackLogTime > %f
 	ORDER BY attackLogTime DESC
-	LIMIT 10", array_merge($wafAlertWhitelist, array($cutoffTime))));
+	LIMIT 10", array_merge($wafAlertWhitelist, array(sprintf('%.6f', $cutoffTime)))));
 			$attackCount = $wpdb->get_var('SELECT FOUND_ROWS()');
 			$threshold = (int) wfConfig::get('wafAlertThreshold');
 			if ($threshold < 1) {
@@ -7044,8 +7044,8 @@ ALERTMSG;
 		$lastSendTime = wfConfig::get('lastAttackDataSendTime');
 		$attackData = $wpdb->get_results($wpdb->prepare("SELECT SQL_CALC_FOUND_ROWS * FROM {$wpdb->base_prefix}wfHits
 WHERE action in ('blocked:waf', 'learned:waf', 'logged:waf', 'blocked:waf-always')
-AND attackLogTime > %.6f
-LIMIT %d", $lastSendTime, $limit));
+AND attackLogTime > %f
+LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 		$totalRows = $wpdb->get_var('SELECT FOUND_ROWS()');
 
 		if ($attackData && wfConfig::get('other_WFNet', true)) {
