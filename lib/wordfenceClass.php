@@ -165,7 +165,14 @@ class wordfence {
 	private static function keyAlert($msg){
 		self::alert($msg, $msg . " To ensure uninterrupted Premium Wordfence protection on your site,\nplease renew your API key by visiting http://www.wordfence.com/ Sign in, go to your dashboard,\nselect the key about to expire and click the button to renew that API key.", false);
 	}
-	public static function dailyCron(){
+	public static function dailyCron() {
+		$lastDailyCron = (int) wfConfig::get('lastDailyCron', 0);
+		if (($lastDailyCron + 43200) > time()) { //Run no more frequently than every 12 hours
+			return;
+		}
+		
+		wfConfig::set('lastDailyCron', time());
+		
 		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
 		try {
 			$keyData = $api->call('ping_api_key');
@@ -748,6 +755,12 @@ SQL
 			wfConfig::set('fileContentsGSB6315Migration', 1);
 		}
 		
+		//6.3.20
+		$lastBlockAggregation = wfConfig::get('lastBlockAggregation', 0);
+		if ($lastBlockAggregation == 0) {
+			wfConfig::set('lastBlockAggregation', time());
+		}
+		
 		
 		//Check the How does Wordfence get IPs setting
 		wfUtils::requestDetectProxyCallback();
@@ -818,13 +831,13 @@ SQL
 			if($blog_id == 1 && get_option('wordfenceActivated') != 1){ return; } //Because the plugin is active once installed, even before it's network activated, for site 1 (WordPress team, why?!)
 		}
 		//User may be logged in or not, so register both handlers
-		add_action('wp_ajax_nopriv_wordfence_logHuman', 'wordfence::ajax_logHuman_callback');
+		add_action('wp_ajax_nopriv_wordfence_lh', 'wordfence::ajax_lh_callback');
 		add_action('wp_ajax_nopriv_wordfence_doScan', 'wordfence::ajax_doScan_callback');
 		add_action('wp_ajax_nopriv_wordfence_testAjax', 'wordfence::ajax_testAjax_callback');
 		add_action('wp_ajax_nopriv_wordfence_perfLog', 'wordfence::ajax_perfLog_callback');
 		if(wfUtils::hasLoginCookie()){ //may be logged in. Fast way to check. These aren't secure functions, this is just a perf optimization, along with every other use of hasLoginCookie()
 			add_action('wp_ajax_wordfence_perfLog', 'wordfence::ajax_perfLog_callback');
-			add_action('wp_ajax_wordfence_logHuman', 'wordfence::ajax_logHuman_callback');
+			add_action('wp_ajax_wordfence_lh', 'wordfence::ajax_lh_callback');
 			add_action('wp_ajax_wordfence_doScan', 'wordfence::ajax_doScan_callback');
 			add_action('wp_ajax_wordfence_testAjax', 'wordfence::ajax_testAjax_callback');
 
@@ -1069,7 +1082,7 @@ SQL
 		$wfLog->logPerf(wfUtils::getIP(), $UA, $URL, $data);
 		die(json_encode(array('ok' => 1)));
 	}
-	public static function ajax_logHuman_callback(){
+	public static function ajax_lh_callback(){
 		self::getLog()->canLogHit = false;
 		$UA = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
 		$isCrawler = false;
@@ -4388,8 +4401,8 @@ HTACCESS;
 		wfScanEngine::startScan();
 	}
 	public static function templateRedir(){
-		if (!empty($_GET['wordfence_logHuman'])) {
-			self::ajax_logHuman_callback();
+		if (!empty($_GET['wordfence_lh'])) {
+			self::ajax_lh_callback();
 			exit;
 		}
 
@@ -4557,7 +4570,7 @@ EOL;
 		
 		self::$hitID = self::getLog()->logHit();
 		if (self::$hitID) {
-			$URL = home_url('/?wordfence_logHuman=1&hid=' . wfUtils::encrypt(self::$hitID));
+			$URL = home_url('/?wordfence_lh=1&hid=' . wfUtils::encrypt(self::$hitID));
 			$URL = addslashes(preg_replace('/^https?:/i', '', $URL));
 			#Load as external script async so we don't slow page down.
 			echo <<<HTML
@@ -6906,13 +6919,47 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 		global $wpdb;
 		$p = $wpdb->base_prefix;
 		$wfdb = new wfDB();
+		$lastAggregation = wfConfig::get('lastBlockAggregation', 0);
 		$count = $wfdb->querySingle("select count(*) as cnt from $p"."wfHits");
 		$liveTrafficMaxRows = absint(wfConfig::get('liveTraf_maxRows', 2000));
 		if ($count > $liveTrafficMaxRows * 10) {
+			self::_aggregateBlockStats($lastAggregation);
 			$wfdb->truncate($p . "wfHits"); //So we don't slow down sites that have very large wfHits tables
-		} else if ($count > $liveTrafficMaxRows) {
+		}
+		else if ($count > $liveTrafficMaxRows) {
+			self::_aggregateBlockStats($lastAggregation);
 			$wfdb->queryWrite("delete from $p" . "wfHits order by id asc limit %d", ($count - $liveTrafficMaxRows) + ($liveTrafficMaxRows * .2));
 		}
+		else if ($lastAggregation < (time() - 86400)) {
+			self::_aggregateBlockStats($lastAggregation);
+		}
+	}
+	
+	private static function _aggregateBlockStats($since = false) {
+		global $wpdb;
+		
+		if (!wfConfig::get('other_WFNet', true)) {
+			return;
+		}
+		
+		if ($since === false) {
+			$since = wfConfig::get('lastBlockAggregation', 0);
+		}
+		
+		$hitsTable = wfDB::networkPrefix() . 'wfHits';
+		$query = $wpdb->prepare("SELECT COUNT(*) AS cnt, CASE WHEN (jsRun = 1 OR userID > 0) THEN 1 ELSE 0 END AS isHuman, statusCode FROM {$hitsTable} WHERE ctime > %d GROUP BY isHuman, statusCode", $since);
+		$rows = $wpdb->get_results($query, ARRAY_A);
+		if (count($rows)) {
+			try {
+				$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
+				$api->call('aggregate_stats', array(), array('stats' => json_encode($rows)));
+			}
+			catch (Exception $e) {
+				// Do nothing
+			}
+		}
+		
+		wfConfig::set('lastBlockAggregation', time());
 	}
 
 	private static function scheduleSendAttackData($timeToSend = null) {
@@ -7139,6 +7186,7 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 	public static function syncAttackData($exit = true) {
 		global $wpdb;
 		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
+		$log = self::getLog();
 		$waf = wfWAF::getInstance();
 		$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$wpdb->base_prefix}wfHits");
 		if ($waf->getStorageEngine()->hasNewerAttackData($lastAttackMicroseconds)) {
@@ -7155,10 +7203,11 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 					if ($logTimeMicroseconds <= $lastAttackMicroseconds || $learningMode) {
 						continue;
 					}
+					
+					$statusCode = 403;
 
 					$hit = new wfRequestModel();
 					$hit->attackLogTime = $logTimeMicroseconds;
-					$hit->statusCode = 403;
 					$hit->ctime = $requestTime;
 					$hit->IP = wfUtils::inet_pton($ip);
 
@@ -7175,19 +7224,23 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 						$hit->URL = 'http' . ($ssl ? 's' : '') . '://' . trim($hostMatches[1]) . trim($uriMatches[1]);
 					}
 
+					$isHuman = false;
 					if (preg_match('/cookie:(.*?)\n/i', $requestString, $matches)) {
 						$hit->newVisit = strpos($matches[1], 'wfvt_' . crc32(site_url())) !== false ? 1 : 0;
 						$hasVerifiedHumanCookie = strpos($matches[1], 'wordfence_verifiedHuman') !== false;
 						if ($hasVerifiedHumanCookie && preg_match('/wordfence_verifiedHuman=(.*?);/', $matches[1], $cookieMatches)) {
-							$hit->jsRun = (int) wp_verify_nonce($cookieMatches[1], 'wordfence_verifiedHuman' . $hit->UA . $ip);
+							$hit->jsRun = (int) $log->validateVerifiedHumanCookie($cookieMatches[1], $hit->UA, $ip);
+							$isHuman = !!$hit->jsRun;
 						}
 
-						$hasLoginCookie = strpos($matches[1], $ssl ? SECURE_AUTH_COOKIE : AUTH_COOKIE) !== false;
-						if ($hasLoginCookie && preg_match('/' . ($ssl ? SECURE_AUTH_COOKIE : AUTH_COOKIE) . '=(.*?);/', $matches[1], $cookieMatches)) {
+						$authCookieName = $waf->getAuthCookieName();
+						$hasLoginCookie = strpos($matches[1], $authCookieName) !== false;
+						if ($hasLoginCookie && preg_match('/' . preg_quote($authCookieName) . '=(.*?);/', $matches[1], $cookieMatches)) {
 							$authCookie = rawurldecode($cookieMatches[1]);
-							$authID = $ssl ? wp_validate_auth_cookie($authCookie, 'secure_auth') : wp_validate_auth_cookie($authCookie, 'auth');
-							if ($authID) {
-								$hit->userID = $authID;
+							$decodedAuthCookie = $waf->parseAuthCookie($authCookie);
+							if ($decodedAuthCookie !== false) {
+								$hit->userID = $decodedAuthCookie['userID'];
+								$isHuman = true;
 							}
 						}
 					}
@@ -7278,9 +7331,11 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 									//Do nothing
 								}
 							}
+							$statusCode = 503;
 							$hit->actionDescription = $actionDescription;
 						}
 						else if ($failedRules == 'logged') {
+							$statusCode = 200;
 							$hit->action = 'logged:waf';
 						}
 						else { // Blocked by the WAF but would've been blocked anyway by the plugin settings so that message takes priority
@@ -7290,6 +7345,7 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 					}
 					else {
 						if ($failedRules == 'logged') {
+							$statusCode = 200;
 							$hit->action = 'logged:waf';
 						}
 						else {
@@ -7337,6 +7393,7 @@ LIMIT %d", sprintf('%.6f', $lastSendTime), $limit));
 					}
 
 					$hit->actionData = wfRequestModel::serializeActionData($actionData);
+					$hit->statusCode = $statusCode;
 					$hit->save();
 
 					self::scheduleSendAttackData();

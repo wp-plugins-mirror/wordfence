@@ -611,7 +611,7 @@ class wfScanEngine {
 		$status = wfIssues::statusStart("Check for publicly accessible configuration files, backup files and logs");
 
 		$backupFileTests = array(
-//			wfCommonBackupFileTest::createFromRootPath('.user.ini'),
+			wfCommonBackupFileTest::createFromRootPath('.user.ini'),
 //			wfCommonBackupFileTest::createFromRootPath('.htaccess'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.php.bak'),
 			wfCommonBackupFileTest::createFromRootPath('wp-config.php.swo'),
@@ -637,15 +637,17 @@ class wfScanEngine {
 			)),
 		);
 		$backupFileTests = array_merge($backupFileTests, wfCommonBackupFileTest::createAllForFile('searchreplacedb2.php', wfCommonBackupFileTest::MATCH_REGEX, '/<title>Search and replace DB/i'));
-//		$userIniFilename = ini_get('user_ini.filename');
-//		if ($userIniFilename && $userIniFilename !== '.user.ini') {
-//			$backupFileTests[] = wfCommonBackupFileTest::createFromRootPath($userIniFilename);
-//		}
+		
+		$userIniFilename = ini_get('user_ini.filename');
+		if ($userIniFilename && $userIniFilename !== '.user.ini') {
+		  $backupFileTests[] = wfCommonBackupFileTest::createFromRootPath('.user.ini');
+		}
 
 
 		/** @var wfCommonBackupFileTest $test */
 		foreach ($backupFileTests as $test) {
 			$pathFromRoot = (strpos($test->getPath(), ABSPATH) === 0) ? substr($test->getPath(), strlen(ABSPATH)) : $test->getPath();
+		  wordfence::status(4, 'info', "Testing {$pathFromRoot}");
 			if ($test->fileExists() && $test->isPubliclyAccessible()) {
 				$key = "configReadable" . bin2hex($test->getUrl());
 				$added = $this->addIssue(
@@ -654,9 +656,7 @@ class wfScanEngine {
 					$key,
 					$key,
 					'Publicly accessible config, backup, or log file found: ' . esc_html($pathFromRoot),
-					'<a href="' . $test->getUrl() . '" target="_blank" rel="noopener noreferrer">' . $test->getUrl() . '</a> is publicly
-					accessible and may expose sensitive information about your site or allow administrative functions to be performed by anyone. Files such as this one are commonly
-					checked for by both attackers and scanners such as WPScan and should be removed or made inaccessible.',
+					'<a href="' . $test->getUrl() . '" target="_blank" rel="noopener noreferrer">' . $test->getUrl() . '</a> is publicly accessible and may expose source code or sensitive information about your site. Files such as this one are commonly checked for by scanners and should be made inaccessible. Alternately, some can be removed if you are certain your site does not need them. Sites using the nginx web server may need manual configuration changes to protect such files. <a href="https://docs.wordfence.com/en/Understanding_scan_results#Publicly_accessible_config_backup_or_log_file_found" target="_blank" rel="noopener noreferrer">Learn more</a>',
 					array(
 						'url'       => $test->getUrl(),
 						'file'      => $pathFromRoot,
@@ -874,9 +874,7 @@ class wfScanEngine {
 						$key,
 						$key,
 						'Publicly accessible quarantined file found: ' . esc_html($file),
-						'<a href="' . $test->getUrl() . '" target="_blank" rel="noopener noreferrer">' . $test->getUrl() . '</a> is publicly
-					accessible and may expose source code or sensitive information about your site. Files such as this one are commonly
-					checked for by scanners and should be removed or made inaccessible.',
+						'<a href="' . $test->getUrl() . '" target="_blank" rel="noopener noreferrer">' . $test->getUrl() . '</a> is publicly accessible and may expose source code or sensitive information about your site. Files such as this one are commonly checked for by scanners and should be removed or made inaccessible.',
 						array(
 							'url'       => $test->getUrl(),
 							'file'      => $file,
