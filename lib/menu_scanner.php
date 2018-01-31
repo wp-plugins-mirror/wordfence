@@ -175,6 +175,14 @@ if (wfOnboardingController::shouldShowAttempt3()) {
 			  ?>
             </div>
         </div>
+		<div class="wf-row">
+			<div class="wf-col-xs-12">
+				<?php
+				echo wfView::create('scanner/site-cleaning-bottom', array(
+				))->render();
+				?>
+			</div>
+		</div>
 	</div> <!-- end container -->
 </div>
 <script type="application/javascript">

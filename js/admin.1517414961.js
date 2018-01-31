@@ -47,6 +47,7 @@
 			basePageName: '',
 			pendingChanges: {},
 			scanFailed: false,
+			siteCleaningIssueTypes: ['file', 'checkGSB', 'checkSpamIP', 'commentBadURL', 'dnsChange', 'knownfile', 'optionBadURL', 'postBadTitle', 'postBadURL', 'spamvertizeCheck', 'suspiciousAdminUsers'],
 
 			init: function() {
 				this.isSmallScreen = window.matchMedia("only screen and (max-width: 500px)").matches;
@@ -1651,9 +1652,22 @@
 
 						var typeA = $(a).data('issueType');
 						var typeB = $(b).data('issueType');
-						if (typeA == 'file') { return -1; }
-						else if (typeB == 'file') { return 1; }
-						else if (typeA < typeB) { return -1; }
+						
+						var typeAIndex = WFAD.siteCleaningIssueTypes.indexOf(typeA);
+						var typeBIndex = WFAD.siteCleaningIssueTypes.indexOf(typeB);
+						if (typeAIndex > -1 && typeBIndex > -1) {
+							if (typeAIndex < typeBIndex) { return -1; }
+							else if (typeAIndex > typeBIndex) { return 1; }
+							return 0;
+						}
+						else if (typeAIndex > -1) {
+							return -1;
+						}
+						else if (typeBIndex > -1) {
+							return 1;
+						}
+						
+						if (typeA < typeB) { return -1; }
 						else if (typeA > typeB) { return 1; }
 
 						return 0;
@@ -1694,12 +1708,17 @@
 			},
 			repositionSiteCleaningCallout: function() {
 				$('.wf-issue-site-cleaning').remove();
-				if ($('#wf-scan-results-new .wf-issue-file').length) {
-					if (!!$('#wf-scan-results-new .wf-issue-file').data('highSensitivity')) {
-						$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningHighSenseTmpl').tmpl());
-					}
-					else {
-						$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningTmpl').tmpl());
+				
+				var issueTypes = WFAD.siteCleaningIssueTypes;
+				for (var i = 0; i < issueTypes.length; i++) {
+					if ($('#wf-scan-results-new .wf-issue-' + issueTypes[i]).length) {
+						if (!!$('#wf-scan-results-new .wf-issue-' + issueTypes[i]).data('highSensitivity')) {
+							$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningHighSenseTmpl').tmpl());
+						}
+						else {
+							$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningTmpl').tmpl());
+						}
+						return;
 					}
 				}
 			},

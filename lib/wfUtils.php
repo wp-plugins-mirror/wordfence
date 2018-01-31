@@ -11,6 +11,16 @@ class wfUtils {
 		$pattern = str_replace(' ', '\s', $pattern);
 		return $sep . '^' . str_replace('\*', '.*', $pattern) . '$' . $sep . $mod;
 	}
+	public static function versionedAsset($subpath) {
+		$version = WORDFENCE_BUILD_NUMBER;
+		if ($version != 'WORDFENCE_BUILD_NUMBER' && preg_match('/^(.+?)(\.[^\.]+)$/', $subpath, $matches)) {
+			$prefix = $matches[1];
+			$suffix = $matches[2];
+			return $prefix . '.' . $version . $suffix;
+		}
+		
+		return $subpath;
+	}
 	public static function makeTimeAgo($secs, $noSeconds = false) {
 		if($secs < 1){
 			return "a moment";
@@ -297,7 +307,7 @@ class wfUtils {
 		if (strlen($ip) == 16 && substr($ip, 0, 12) == "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff") {
 			$ip = substr($ip, 12, 4);
 		}
-		return self::hasIPv6Support() ? inet_ntop($ip) : self::_inet_ntop($ip);
+		return self::hasIPv6Support() ? @inet_ntop($ip) : self::_inet_ntop($ip);
 	}
 
 	/**
@@ -308,7 +318,7 @@ class wfUtils {
 	 */
 	public static function inet_pton($ip) {
 		// convert the 4 char IPv4 to IPv6 mapped version.
-		$pton = str_pad(self::hasIPv6Support() ? inet_pton($ip) : self::_inet_pton($ip), 16,
+		$pton = str_pad(self::hasIPv6Support() ? @inet_pton($ip) : self::_inet_pton($ip), 16,
 			"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00", STR_PAD_LEFT);
 		return $pton;
 	}

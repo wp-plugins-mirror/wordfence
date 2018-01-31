@@ -169,6 +169,11 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 
 						var editType = $(this).data('editType');
 						$('#wf-block-type > li > a[data-value="' + editType + '"]').trigger('click');
+						if ($('#wf-block-parameters-title').offset().top < $(window).scrollTop()) {
+							$("body,html").animate({
+								scrollTop: $('#wf-block-parameters-title').offset().top
+							}, 800);
+						}
 					});
 					
 					var existing = table.find('tbody tr[data-id="' + payload['blocks'][i]['id'] + '"]');
@@ -181,7 +186,8 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 				}
 			}
 			
-			$('#wf-blocks-wrapper').data('hasCountryBlock', !!payload.hasCountryBlock ? 1 : 0);
+			var hasCountryBlock = $('#wf-blocks-wrapper').data('hasCountryBlock') === 1;
+			$('#wf-blocks-wrapper').data('hasCountryBlock', (hasCountryBlock || !!payload.hasCountryBlock) ? 1 : 0);
 
 			$(window).trigger('wordfenceUpdateBlockButtons');
 		});

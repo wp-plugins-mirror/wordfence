@@ -628,12 +628,15 @@ class wfBlock {
 			$columns = '*';
 		}
 		
-		$query = "SELECT {$columns} FROM `{$blocksTable}` WHERE ";
+		$query = "SELECT {$columns}, CASE 
+WHEN `type` = " . self::TYPE_COUNTRY . " THEN 0
+ELSE 9999
+END AS `sortOrder` FROM `{$blocksTable}` WHERE ";
 		if (!empty($ofTypes)) {
 			$sanitizedTypes = array_map('intval', $ofTypes);
 			$query .= "`type` IN (" . implode(', ', $sanitizedTypes) . ') AND ';
 		}
-		$query .= '(`expiration` = ' . self::DURATION_FOREVER . ' OR `expiration` > UNIX_TIMESTAMP()) ORDER BY `blockedTime` DESC';
+		$query .= '(`expiration` = ' . self::DURATION_FOREVER . ' OR `expiration` > UNIX_TIMESTAMP()) ORDER BY `sortOrder` ASC, `blockedTime` DESC';
 		
 		if ($limit > -1) {
 			$offset = (int) $offset;
@@ -815,8 +818,16 @@ class wfBlock {
 		$blocksTable = wfBlock::blocksTable();
 		
 		//TODO: revise this if we support user-customizable durations
+		$supportedTypes = array(
+			self::TYPE_WFSN_TEMPORARY,
+			self::TYPE_RATE_BLOCK,
+			self::TYPE_RATE_THROTTLE,
+			self::TYPE_LOCKOUT,
+			self::TYPE_IP_AUTOMATIC_TEMPORARY,
+		);
+		
 		$blockIDs = array_map('intval', $blockIDs);
-		$query = $wpdb->prepare("UPDATE `{$blocksTable}` SET `expiration` = %d, `type` = %d WHERE `id` IN (" . implode(', ', $blockIDs) . ") AND (`expiration` = %d OR `expiration` > UNIX_TIMESTAMP())", self::DURATION_FOREVER, self::TYPE_IP_AUTOMATIC_PERMANENT, self::DURATION_FOREVER);
+		$query = $wpdb->prepare("UPDATE `{$blocksTable}` SET `expiration` = %d, `type` = %d WHERE `id` IN (" . implode(', ', $blockIDs) . ") AND `type` IN (" . implode(', ', $supportedTypes) . ") AND (`expiration` > UNIX_TIMESTAMP())", self::DURATION_FOREVER, self::TYPE_IP_AUTOMATIC_PERMANENT);
 		$wpdb->query($query);
 	}
 	

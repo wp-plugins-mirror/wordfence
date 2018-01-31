@@ -7,6 +7,7 @@ class wfSupportController {
 	
 	const ITEM_CHANGELOG = 'changelog';
 	
+	const ITEM_NOTICE_WAF_INACCESSIBLE_CONFIG = 'notice-waf-inaccessible-config';
 	const ITEM_NOTICE_WAF_READ_ONLY_WARNING = 'notice-waf-read-only-warning';
 	const ITEM_NOTICE_MISCONFIGURED_HOW_GET_IPS = 'notice-misconfigured-how-get-ips';
 	
@@ -162,6 +163,7 @@ class wfSupportController {
 			
 			//These all fall through to the query format
 				
+			case self::ITEM_NOTICE_WAF_INACCESSIBLE_CONFIG:
 			case self::ITEM_NOTICE_WAF_READ_ONLY_WARNING:
 			case self::ITEM_NOTICE_MISCONFIGURED_HOW_GET_IPS:
 				

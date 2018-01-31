@@ -62,13 +62,16 @@ $w = new wfConfig();
 				<ul class="wf-block-list">
 					<li>
 						<?php
-						echo wfView::create('options/option-toggled', array(
-							'optionName'    => 'liveTrafficEnabled',
-							'enabledValue'  => 1,
-							'disabledValue' => 0,
-							'value'         => wfConfig::get('liveTrafficEnabled') ? 1 : 0,
-							'title'         => __('This option enables live traffic logging.', 'wordfence'),
-							'helpLink'      => wfSupportController::supportURL(wfSupportController::ITEM_TOOLS_LIVE_TRAFFIC_OPTION_ENABLE),
+						echo wfView::create('options/option-switch', array(
+							'optionName' => 'liveTrafficEnabled',
+							'value' => wfConfig::get('liveTrafficEnabled') ? '1': '0',
+							'title' => __('Enable live traffic logging', 'wordfence'),
+							'states' => array(
+								array('value' => '0', 'label' => __('Off', 'wordfence')),
+								array('value' => '1', 'label' => __('On', 'wordfence')),
+							),
+							'helpLink' => wfSupportController::supportURL(wfSupportController::ITEM_TOOLS_LIVE_TRAFFIC_OPTION_ENABLE),
+							'alignment' => 'wf-right',
 						))->render();
 						?>
 					</li>
@@ -365,15 +368,15 @@ $w = new wfConfig();
 													<span data-bind="attr: { 'class': cssClasses }"></span>
 												</td>
 												<td>
-													<span data-bind="if: loc()">
+													<span class="wf-flex-horizontal" data-bind="if: loc()">
 														<img data-bind="attr: { src: '<?php echo wfUtils::getBaseURL() . 'images/flags/'; ?>' + loc().countryCode.toLowerCase() + '.png',
 															alt: loc().countryName, title: loc().countryName }" width="16"
 																height="11"
 																class="wfFlag"/>
-														<span data-bind="text: (loc().city ? loc().city + ', ' : '') + loc().countryName"></span>
+														<span class="wf-padding-add-left-small" data-bind="text: (loc().city ? loc().city + ', ' : '') + loc().countryName"></span>
 													</span>
-													<span data-bind="if: !loc()">
-														<img src="<?php echo wfUtils::getBaseURL(); ?>images/flags/country-missing.svg" width="16" height="16" alt="" class="wfFlag"> Unspecified
+													<span class="wf-flex-horizontal" data-bind="if: !loc()">
+														<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64.22 64.37" class="wfFlag wf-flag-unspecified"><path d="M64,28.21a30.32,30.32,0,0,0-5.8-14.73A31.6,31.6,0,0,0,37.43.56C35.7.26,33.94.18,32.2,0h-.35C30.22.18,28.58.3,27,.55A32.14,32.14,0,0,0,.2,35.61,31.4,31.4,0,0,0,10.4,55.87a31.24,31.24,0,0,0,25,8.33,30.5,30.5,0,0,0,18.94-8.79C62,47.94,65.15,38.8,64,28.21ZM57.21,44.68a23.94,23.94,0,0,1-2.3-5.08c-.66-2.45-2.27-.08-2.4,1.52s-1.2,2.8-3.33.4-2.54-1.87-3.2-1.87-1.87,1.6-1.6,9.07c.19,5.33,2.29,6.18,3.67,6.56a27.16,27.16,0,0,1-8.78,4A27.55,27.55,0,0,1,7.85,45.13C2.27,34.4,5,22.26,10.67,15.57c.15,1.21.3,2.29.43,3.37a27.63,27.63,0,0,1-.52,8.79,4.39,4.39,0,0,0,.08,1.94,1.3,1.3,0,0,0,.94.76c.27,0,.75-.41.86-.73a8.27,8.27,0,0,0,.27-1.86c0-.44,0-.89.07-1.58a10.67,10.67,0,0,1,1.06.86c.7.7,1.4,1.4,2,2.15a2.11,2.11,0,0,1,.56,1.21,3.44,3.44,0,0,0,.83,2.13,12.21,12.21,0,0,1,1.07,2.57c.14.37.17.78.33,1.13a2,2,0,0,0,1.8,1.32c1,.07,1.32.44,1.46,1.43l-.74.08c-1.17.11-1.75.65-1.71,1.83a8.43,8.43,0,0,0,2.69,6c.48.45,1,.87,1.46,1.33a3.35,3.35,0,0,1,.92,3.75,12.18,12.18,0,0,0-.69,2.09,6,6,0,0,0,.06,2.23c.18.75.1,2.37.86,2.24,1.36-.24,2.14,0,2.25-1.49a1.22,1.22,0,0,0-.08-.6c-.4-1.42,1.42-5.47,2.52-6.2a27.11,27.11,0,0,0,2.73-2,3.6,3.6,0,0,0,1.26-4,3.22,3.22,0,0,1,1.14-3.59,4.54,4.54,0,0,0,1.71-3.65c-.08-1.53-1.07-2.63-2.37-2.47a9.21,9.21,0,0,0-1.87.59,20.62,20.62,0,0,1-2.72.9c-1.31.23-2.11-.62-2.69-1.66-.47-.83-.63-.9-1.44-.38s-1.37.89-2.08,1.28S22,35.58,21.45,35a5.79,5.79,0,0,0-1.24-.88c-.31-.19-.73-.24-1-.48s-.8-.8-.75-1.15a1.69,1.69,0,0,1,.95-1.1,14.36,14.36,0,0,1,2.29-.51,7.33,7.33,0,0,0,1.22-.33c.52-.21.5-.56.1-.89a3.26,3.26,0,0,0-.69-.37l-3.52-1.39a4.74,4.74,0,0,1-.84-.43c-.74-.49-.83-1-.16-1.61,2.64-2.33,5.72-3,8.45.08.84,1,1.42,2.16,2.22,3.16a12.5,12.5,0,0,0,2.15,2.15,1.62,1.62,0,0,0,1.44.09,1.15,1.15,0,0,0,.29-1.56,8.43,8.43,0,0,0-.86-1.41,5.16,5.16,0,0,1,1.59-7.52,4.38,4.38,0,0,0,2.53-2.58c-.58.16-1,.26-1.42.39-2.3.71-.7-1,.36-1.31.65-.18-.58-.67-.58-.67s.82-.28,1.69-.65a6.85,6.85,0,0,0,1.7-.94,3.79,3.79,0,0,0,.66-1.17l-.16-.18-1.83.24c-1,.11-1.27-.09-1.37-1.14a1,1,0,0,0-1.48-.73c-.45.25-.85.61-1.29.9-1,.66-1.78.39-2.19-.75-.23-.68-.57-.81-1.19-.42-.31.18-.58.47-.89.64a11.53,11.53,0,0,1-1.62.79c-.55.19-1.21.33-1.58-.27a1.25,1.25,0,0,1,.46-1.68A14.78,14.78,0,0,1,27,10c1-.56,2.07-1,3-1.65a1.78,1.78,0,0,0,.79-2.07.88.88,0,0,0-1.37-.65c-.56.28-1.06.72-1.63,1a2.81,2.81,0,0,1-1.41.08c-.17,0-.35-.49-.35-.76s.31-.43.51-.46c1.4-.22,2.81-.41,4.22-.57a.76.76,0,0,1,.58.25,6.84,6.84,0,0,0,3.6,2.15c1.15.34,1.31.18,1.47-1,1.48-.34,3-1,4.46-.09A14.4,14.4,0,0,1,43.14,8c.18.17.07.7,0,1s-.36.87-.48,1.33a1.2,1.2,0,0,0,1.26,1.56c.29,0,.57-.07.86-.08.85,0,1.14.28,1.07,1.13-.11,1.21.09,1.35,1.31,1.15a2.07,2.07,0,0,1,1.67.64c1.14.86,2,.54,2.33-.86,0-.16,0-.32.06-.47.14-.63.49-.79.92-.35.9,1,1.74,2,2.66,3a3,3,0,0,0-.8,3.07,5.19,5.19,0,0,1-.55,3.27A24.63,24.63,0,0,0,52.2,25.5c-.45,1.57.06,2.3,1.66,2.65s1.78.64,1.84,2.14a4.85,4.85,0,0,0,2.92,4.35c.4.19.82.34,1.23.51a25.22,25.22,0,0,1-2.64,9.53Z"/></svg> <span class="wf-padding-add-left-small">Unspecified</span>
 													</span>
 												</td>
 												<td>
@@ -512,7 +515,7 @@ $w = new wfConfig();
 																(browser().platform  && browser().platform != 'unknown' ? ' running on ' + browser().platform : '')
 																"></span>
 															</div>
-															<div data-bind="text: UA"></div>
+															<div class="wf-split-word" data-bind="text: UA"></div> 
 															<div class="wf-live-traffic-actions">
 																<span data-bind="if: blocked()">
 																	<a href="#" class="wf-btn wf-btn-default wf-btn-sm"
@@ -585,3 +588,65 @@ $w = new wfConfig();
 <script type="text/x-jquery-template" id="wf-live-traffic-hostname-template">
 	<span title="${ip}">${(ip && ip.length > 22) ? '...' + ip.substring(ip.length - 22) : ip}</span>
 </script>
+
+<?php if (wfOnboardingController::willShowNewTour(wfOnboardingController::TOUR_LIVE_TRAFFIC)): ?>
+	<script type="application/javascript">
+		(function($) {
+			$(function() {
+				WFAD.tour1 = function() {
+					WFAD.tour('wfNewTour1', 'wf-live-traffic', 'bottom', 'bottom', null, WFAD.tourComplete);
+				};
+				WFAD.tourComplete = function() { WFAD.tourFinish('<?php echo esc_attr(wfOnboardingController::TOUR_LIVE_TRAFFIC); ?>'); };
+				
+				<?php if (wfOnboardingController::shouldShowNewTour(wfOnboardingController::TOUR_LIVE_TRAFFIC)): ?>
+				if (!WFAD.isSmallScreen) { WFAD.tour1(); }
+				<?php endif; ?>
+			});
+		})(jQuery);
+	</script>
+
+	<script type="text/x-jquery-template" id="wfNewTour1">
+		<div>
+			<h3><?php _e('Live Traffic', 'wordfence'); ?></h3>
+			<p><?php _e('Live traffic defaults to a summary view. Details are viewable by clicking anywhere within the summary record. To switch to expanded view, simply enable the setting labeled <strong>Always display expanded Live Traffic records</strong> in the <strong>Live Traffic Options</strong> section at the top of the page.', 'wordfence'); ?></p>
+			<div class="wf-pointer-footer">
+				<ul class="wf-tour-pagination">
+					<li class="wf-active">&bullet;</li>
+				</ul>
+				<div id="wf-tour-continue"><a href="#" class="wf-onboarding-btn wf-onboarding-btn-primary"><?php _e('Got it', 'wordfence'); ?></a></div>
+			</div>
+			<div id="wf-tour-close"><a href="#"><i class="wf-fa wf-fa-times-circle" aria-hidden="true"></i></a></div>
+		</div>
+	</script>
+<?php endif; ?>
+
+<?php if (wfOnboardingController::willShowUpgradeTour(wfOnboardingController::TOUR_LIVE_TRAFFIC)): ?>
+	<script type="application/javascript">
+		(function($) {
+			$(function() {
+				WFAD.tour1 = function() {
+					WFAD.tour('wfUpgradeTour1', 'wf-live-traffic', 'bottom', 'bottom', null, WFAD.tourComplete);
+				};
+				WFAD.tourComplete = function() { WFAD.tourFinish('<?php echo esc_attr(wfOnboardingController::TOUR_LIVE_TRAFFIC); ?>'); };
+				
+				<?php if (wfOnboardingController::shouldShowUpgradeTour(wfOnboardingController::TOUR_LIVE_TRAFFIC)): ?>
+				if (!WFAD.isSmallScreen) { WFAD.tour1(); }
+				<?php endif; ?>
+			});
+		})(jQuery);
+	</script>
+
+	<script type="text/x-jquery-template" id="wfUpgradeTour1">
+		<div>
+			<h3><?php _e('Live Traffic', 'wordfence'); ?></h3>
+			<p><?php _e('Live traffic now defaults to a summary view. Details are viewable by clicking anywhere within the summary record. To switch to expanded view, simply enable the setting labeled <strong>Always display expanded Live Traffic records</strong> in the <strong>Live Traffic Options</strong> section at the top of the page.', 'wordfence'); ?></p>
+			<div class="wf-pointer-footer">
+				<ul class="wf-tour-pagination">
+					<li class="wf-active">&bullet;</li>
+				</ul>
+				<div id="wf-tour-continue"><a href="#" class="wf-onboarding-btn wf-onboarding-btn-primary"><?php _e('Got it', 'wordfence'); ?></a></div>
+			</div>
+			<div id="wf-tour-close"><a href="#"><i class="wf-fa wf-fa-times-circle" aria-hidden="true"></i></a></div>
+		</div>
+	</script>
+<?php endif; ?>

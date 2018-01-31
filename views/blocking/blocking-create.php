@@ -115,7 +115,7 @@ $wfBlockRange = filter_input(INPUT_GET, 'wfBlockRange', FILTER_DEFAULT, FILTER_R
 						echo $localizedDateJS;
 						?>
 					</script>
-					<script type="application/javascript" src="<?php echo esc_attr(wfUtils::getBaseURL() . 'js/date.js'); ?>"></script>
+					<?php if (false): ?><script type="application/javascript" src="<?php echo esc_attr(wfUtils::getBaseURL() . 'js/date.js'); ?>"></script><?php endif; ?>
 				</td>
 			</tr>
 		<?php if (wfConfig::get('isPaid')): ?>
@@ -367,8 +367,8 @@ $wfBlockRange = filter_input(INPUT_GET, 'wfBlockRange', FILTER_DEFAULT, FILTER_R
 	
 										var letter = $(this).find('a').data('letter');
 										var scrollTarget = $('.wf-blocked-countries[data-letter="' + letter + '"]');
-										$('.wf-country-selector-options').animate({
-											scrollTop: $('.wf-country-selector-options').scrollTop() + scrollTarget.offset().top - $('.wf-country-selector-options').offset().top
+										$('.wf-country-selector-inner-wrapper').animate({
+											scrollTop: $('.wf-country-selector-inner-wrapper').scrollTop() + scrollTarget.offset().top - $('.wf-country-selector-inner-wrapper').offset().top
 										}, 500);
 									});
 	

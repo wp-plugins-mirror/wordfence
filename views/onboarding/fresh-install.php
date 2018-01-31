@@ -51,12 +51,27 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 				var emails = wordfenceExt.parseEmails($('#wf-onboarding-alerts').val());
 				if (emails.length > 0) {
 					var subscribe = !!$('#wf-onboarding-email-list').is(':checked');
-					wordfenceExt.setOption('onboardingAttempt1', '<?php echo esc_attr(wfOnboardingController::ONBOARDING_FIRST_EMAILS); ?>');
 					wordfenceExt.onboardingProcessEmails(emails, subscribe);
 					
+					<?php if (wfConfig::get('isPaid')): ?>
+					$('#wf-onboarding-dismiss').trigger('click');
+					wordfenceExt.setOption('onboardingAttempt1', '<?php echo esc_attr(wfOnboardingController::ONBOARDING_FIRST_LICENSE); ?>');
+					$('#wf-onboarding-plugin-header').slideUp();
+					
+					var html = '<div class="wf-modal wf-modal-success"><div class="wf-model-success-wrapper"><div class="wf-modal-header"><div class="wf-modal-header-content"><div class="wf-modal-title"><?php _e('Configuration Complete', 'wordfence'); ?></div></div></div><div class="wf-modal-content"><?php _e('Congratulations! Configuration is complete and Wordfence Premium is active on your website.', 'wordfence'); ?></div></div><div class="wf-modal-footer"><ul class="wf-onboarding-flex-horizontal wf-onboarding-flex-align-right wf-onboarding-full-width"><li><a href="<?php echo esc_url(network_admin_url('admin.php?page=Wordfence')); ?>" class="wf-onboarding-btn wf-onboarding-btn-primary"><?php _e('Go To Dashboard', 'wordfence'); ?></a></li><li class="wf-padding-add-left-small"><a href="#" class="wf-onboarding-btn wf-onboarding-btn-default" onclick="jQuery.wfcolorbox.close(); return false;"><?php _e('Close', 'wordfence'); ?></a></li></ul></div></div>';
+					$.wfcolorbox({
+						width: (wordfenceExt.isSmallScreen ? '300px' : '500px'),
+						html: html,
+						overlayClose: true,
+						closeButton: false,
+						className: 'wf-modal'
+					});
+					<?php else: ?>
+					wordfenceExt.setOption('onboardingAttempt1', '<?php echo esc_attr(wfOnboardingController::ONBOARDING_FIRST_EMAILS); ?>');
 					$('#wf-onboarding-fresh-install-1').fadeOut(400, function() {
 						$('#wf-onboarding-fresh-install-2').fadeIn();
 					});
+					<?php endif; ?>
 				}
 			});
 

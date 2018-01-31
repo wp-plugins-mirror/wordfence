@@ -154,8 +154,13 @@ class wfScanner {
 	 * @return array
 	 */
 	public static function quickScanTypeOptions() {
+		$oldVersions = true;
+		if (wfConfig::get('scanType') == self::SCAN_TYPE_CUSTOM) { //Obey the setting in custom if that's the true scan type
+			$oldVersions = wfConfig::get('scansEnabled_oldVersions');
+		}
+		
 		return array_merge(self::_inactiveScanOptions(), array(
-			'scansEnabled_oldVersions' => true,
+			'scansEnabled_oldVersions' => $oldVersions,
 		));
 	}
 	

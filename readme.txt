@@ -2,8 +2,8 @@
 Contributors: mmaunder 
 Tags: security, firewall, malware scanner, web application firewall, antivirus, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
-Tested up to: 4.9.2
-Stable tag: 7.0.1
+Tested up to: 4.9.3
+Stable tag: 7.0.2
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -168,6 +168,28 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.0.2 =
+* Improvement: Added CSS/JS filename versioning to address caching plugins not refreshing for plugin updates.
+* Improvement: The premium key is no longer prompted for during installation if already present from an earlier version.
+* Improvement: Added a check and corresponding notice if the WAF config is unreadable or invalid.
+* Improvement: Improved live traffic sizing on smaller screens.
+* Improvement: Added tour coverage for live traffic.
+* Change: IPs blocked via live traffic now use the configurable how long is an IP blocked setting to match previous behavior.
+* Change: Changed the option to enable live traffic to match the wording and style of other options.
+* Change: Changed styling on the unknown country display in live traffic to match the common coloring.
+* Change: Statistics that do not depend on the WAF for their data now display when it is in learning mode.
+* Change: Scan issues that are indicative of a compromised site are moved to the top of the list.
+* Change: Changed styling on unselected checkboxes.
+* Fix: Quick scans no longer run daily if automatic scheduled scans are disabled.
+* Fix: The update check in a quick scan no longer runs if the update check has been turned off for regular scans.
+* Fix: Fixed the quick navigation letters in the country picker not scrolling.
+* Fix: Fixed editing the country block configuration when there are a large number of other blocks.
+* Fix: Addressed an issue where having the country block or a pattern block selected when clicking Make Permanent could break them.
+* Fix: Live traffic entries with long user agents no longer cause the table to stretch.
+* Fix: Fixed an issue where live traffic would stop loading new records if always display expanded records was on.
+* Fix: Suppressed warnings on IP conversion functions when processing potentially incomplete data.
+* Fix: Added a check in REST API hooks to avoid defining a constant twice.
 
 = 7.0.1 =
 * Comprehensive UI refresh.

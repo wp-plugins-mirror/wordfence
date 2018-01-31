@@ -856,7 +856,7 @@
 				placeholder.removeClass('sticky');
 			}
 
-			var firstRow = liveTrafficListings.children().first();
+			var firstRow = liveTrafficListings.children().filter(':visible').first();
 			if (firstRow.length > 0 && firstRow.offset().top + firstRow.height() < win.scrollTop() + adminBar.outerHeight() + 20) {
 				if (WFAD.mode != 'liveTraffic_paused') {
 					WFAD.mode = 'liveTraffic_paused';
