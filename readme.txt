@@ -169,6 +169,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.0.4 =
+* Fix: Re-added missing file to fix commit excluding it.
+
 = 7.0.3 =
 * Improvement: Added an "All Options" page to enable developers and others to more rapidly configure Wordfence.
 * Improvement: Improved messaging for when a page has been open for more than a day and the security token expires.
