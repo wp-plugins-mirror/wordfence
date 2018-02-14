@@ -1330,7 +1330,7 @@ class wfRequestModel extends wfModel {
 			return false;
 		}
 		
-		parent::save();
+		return parent::save();
 	}
 }
 

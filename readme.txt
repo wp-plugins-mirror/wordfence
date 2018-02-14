@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: security, firewall, malware scanner, web application firewall, antivirus, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Tested up to: 4.9.4
-Stable tag: 7.0.4
+Stable tag: 7.0.5
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -168,6 +168,10 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.0.5 =
+* Change: Live Traffic records are no longer created for hits initiated by WP-CLI (e.g., manually running cron).
+* Fix: Fixed an issue where the human/bot detection wasn't functioning.
 
 = 7.0.4 =
 * Fix: Re-added missing file to fix commit excluding it.
