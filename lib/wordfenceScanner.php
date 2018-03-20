@@ -330,6 +330,7 @@ class wordfenceScanner {
 									'file' => $file,
 									'shac' => $record->SHAC,
 									'highSense' => $options['scansEnabled_highSense'],
+									'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 								), $dataForFile),
 							));
 							break;
@@ -390,6 +391,7 @@ class wordfenceScanner {
 												'file' => $file,
 												'shac' => $record->SHAC,
 												'highSense' => $options['scansEnabled_highSense'],
+												'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 											), $dataForFile),
 										));
 									}
@@ -430,6 +432,7 @@ class wordfenceScanner {
 										'file' => $file,
 										'shac' => $record->SHAC,
 										'highSense' => $options['scansEnabled_highSense'],
+										'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 									), $dataForFile),
 								));
 								break;
@@ -494,6 +497,7 @@ class wordfenceScanner {
 								'badURL' => $result['URL'],
 								'gsb' => 'goog-malware-shavar',
 								'highSense' => $options['scansEnabled_highSense'],
+								'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 							), $dataForFile),
 						));
 					}
@@ -511,6 +515,7 @@ class wordfenceScanner {
 								'badURL' => $result['URL'],
 								'gsb' => 'googpub-phish-shavar',
 								'highSense' => $options['scansEnabled_highSense'],
+								'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 							), $dataForFile),
 						));
 					}
@@ -528,6 +533,7 @@ class wordfenceScanner {
 								'badURL' => $result['URL'],
 								'gsb' => 'wordfence-dbl',
 								'highSense' => $options['scansEnabled_highSense'],
+								'betaSigs' => wfConfig::get('betaThreatDefenseFeed'),
 							), $dataForFile),
 						));
 					}

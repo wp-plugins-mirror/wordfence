@@ -135,9 +135,8 @@ class wfIssues {
 		return array('updateCalled', 'issuesTable', 'pendingIssuesTable', 'maxIssues', 'newIssues', 'totalIssues', 'totalCriticalIssues', 'totalWarningIssues', 'totalIgnoredIssues');
 	}
 	public function __construct(){
-		global $wpdb;
-		$this->issuesTable = $wpdb->base_prefix . 'wfIssues';
-		$this->pendingIssuesTable = $wpdb->base_prefix . 'wfPendingIssues';
+		$this->issuesTable = wfDB::networkTable('wfIssues');
+		$this->pendingIssuesTable = wfDB::networkTable('wfPendingIssues');
 		$this->maxIssues = wfConfig::get('scan_maxIssues', 0);
 	}
 	public function __wakeup(){
@@ -398,8 +397,8 @@ class wfIssues {
 				if ($issueList[$i]['type'] == 'database') {
 					$issueList[$i]['data']['optionExists'] = false;
 					if (!empty($issueList[$i]['data']['site_id'])) {
-						$prefix = $wpdb->get_blog_prefix($issueList[$i]['data']['site_id']);
-						$issueList[$i]['data']['optionExists'] = $wpdb->get_var($wpdb->prepare("SELECT count(*) FROM {$prefix}options WHERE option_name = %s", $issueList[$i]['data']['option_name'])) > 0;
+						$table_options = wfDB::blogTable('options', $issueList[$i]['data']['site_id']);
+						$issueList[$i]['data']['optionExists'] = $wpdb->get_var($wpdb->prepare("SELECT count(*) FROM {$table_options} WHERE option_name = %s", $issueList[$i]['data']['option_name'])) > 0;
 					}
 				}
 				$issueList[$i]['issueIDX'] = $i;

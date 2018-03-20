@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: security, firewall, malware scanner, web application firewall, antivirus, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Tested up to: 4.9.4
-Stable tag: 7.1.0
+Stable tag: 7.1.1
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -68,7 +68,7 @@ The WordPress security plugin provides the best protection available for your we
 
 = What features does Wordfence Premium enable? =
 
-We offer a Premium API key that gives you real-time updates to the Threat Defense Feed which includes a real-time IP blacklist, firewall rules and malware signatures. Premium support, country blocking, more frequent scans, password auditing, two-factor authentication and spam and spamvertising checks are also included. [Click here to sign-up for Wordfence Premium now](http://www.wordfence.com/) or simply install Wordfence free and start protecting your website.
+We offer a Premium API key that gives you real-time updates to the Threat Defense Feed which includes a real-time IP blacklist, firewall rules and malware signatures. Premium support, country blocking, more frequent scans, two-factor authentication and spam and spamvertising checks are also included. [Click here to sign-up for Wordfence Premium now](http://www.wordfence.com/) or simply install Wordfence free and start protecting your website.
 
 = How does the Wordfence WordPress Firewall protect websites? =
 
@@ -166,6 +166,20 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.1.1 =
+* Improvement: Added the ability to sort the blocks table.
+* Improvement: Added short-term caching of breach check results.
+* Improvement: The check for passwords leaked in breaches now allows a login if the user has previously logged in from the same IP successfully and displays an admin notice suggesting changing the password.
+* Improvement: Switched the bundled select2 library to use to prefixed version to work around other plugins including older versions on our pages.
+* Improvement: The scan page now displays when beta signatures are enabled since they can produce false positives.
+* Improvement: Improved positioning of the "Wordfence is Working" message.
+* Improvement: Added a character limit to the reason on blocks and forced wrapping to avoid the layout stretching too much.
+* Fix: Fixed an issue with some table prefixing where multisite installations with rare configurations could result in unknown table warnings.
+* Fix: Removed an older behavior with live traffic buttons that could allow them to open in a new tab and show nothing.
+* Fix: Added a check for sites with inaccurate disk space function results to avoid showing an issue.
+* Fix: Added a secondary check to the email summary cron to avoid repeated sending if the cron list is corrupted.
+* Fix: Fixed a typo on the Advanced Comment Spam Filter page.
 
 = 7.1.0 =
 * Improvement: Added a new feature to prevent attackers from successfully logging in to admin accounts whose passwords have been in data breaches.

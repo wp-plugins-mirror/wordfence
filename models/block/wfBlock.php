@@ -618,9 +618,14 @@ class wfBlock {
 	 * 
 	 * @param bool $prefetch If true, the full data for the block is fetched rather than using lazy loading.
 	 * @param array $ofTypes An optional array of block types to restrict the returned array of blocks to.
+	 * @param int $offset The offset to start the result fetch at.
+	 * @param int $limit The maximum number of results to return. -1 for all.
+	 * @param string $sortColumn The column to sort by.
+	 * @param string $sortDirection The direction to sort.
+	 * @param string $filter An optional value to filter by.
 	 * @return wfBlock[]
 	 */
-	public static function allBlocks($prefetch = false, $ofTypes = array(), $offset = 0, $limit = -1) {
+	public static function allBlocks($prefetch = false, $ofTypes = array(), $offset = 0, $limit = -1, $sortColumn = 'type', $sortDirection = 'ascending', $filter = '') {
 		global $wpdb;
 		$blocksTable = wfBlock::blocksTable();
 		$columns = '`id`';
@@ -628,15 +633,105 @@ class wfBlock {
 			$columns = '*';
 		}
 		
+		$filter = trim($filter);
+		$filterClause = '';
+		if (!empty($filter)) {
+			if (wfUtils::isValidIP($filter)) { //e.g., 4.5.6.7, ffe0::, ::0
+				$filterClause = '(`IP` = \'' . esc_sql(wfUtils::inet_pton($filter)) . '\' OR `parameters` LIKE \'%' . esc_sql(wfUtils::inet_ntop(wfUtils::inet_pton($filter))) . '%\') AND ';
+			}
+			else if (strpos($filter, '*') !== false && preg_match('/^(?:\d+\.)(?:\d+\.|\*\.){1,2}(?:\d+|\*)?$/', $filter)) { //e.g., 4.5.*
+				$components = explode('.', $filter);
+				$regex = '^00000000000000000000FFFF';
+				for ($i = 0; $i < 4; $i++) {
+					if (isset($components[$i]) && $components[$i] != '*') {
+						$regex .= strtoupper(str_pad(dechex($components[$i]), 2, '0', STR_PAD_LEFT));
+					}
+					else {
+						$regex .= '..';
+					}
+				}
+				$regex .= '$';
+				$filterClause = 'HEX(`IP`) REGEXP \'' . $regex . '\' AND ';
+			}
+			else if (strpos($filter, '*') !== false && preg_match('/^(?:[0-9a-f]+:)(?:[0-9a-f]+:|\*:){1,2}(?:[0-9a-f]+|\*)?$/i', $filter)) { //e.g., ffe0:*
+				$components = explode(':', $filter);
+				$regex = '^';
+				for ($i = 0; $i < 4; $i++) {
+					if (isset($components[$i])) {
+						$regex .= strtoupper(str_pad(dechex($components[$i]), 4, '0', STR_PAD_LEFT));
+					}
+					else {
+						$regex .= '....';
+					}
+				}
+				$regex .= '$';
+				$filterClause = 'HEX(`IP`) REGEXP \'' . $regex . '\' AND ';
+			}
+			else {
+				$escapedFilter = esc_sql($filter);
+				$filterClause = '(`reason` LIKE \'%' . $escapedFilter . '%\' OR `parameters` LIKE \'%' . $escapedFilter . '%\') AND ';
+			}
+		}
+		
+		$sort = 'typeSort';
+		switch ($sortColumn) { //Match the display table column to the corresponding schema column
+			case 'type':
+				//Use default;
+				break;
+			case 'detail':
+				$sort = 'detailSort';
+				break;
+			case 'ruleAdded':
+				$sort = 'blockedTime';
+				break;
+			case 'reason':
+				$sort = 'reason';
+				break;
+			case 'expiration':
+				$sort = 'expiration';
+				break;
+			case 'blockCount':
+				$sort = 'blockedHits';
+				break;
+			case 'lastAttempt':
+				$sort = 'lastAttempt';
+				break;
+		}
+		
+		$order = 'ASC';
+		if ($sortDirection == 'descending') {
+			$order = 'DESC';
+		}
+		
 		$query = "SELECT {$columns}, CASE 
 WHEN `type` = " . self::TYPE_COUNTRY . " THEN 0
+WHEN `type` = " . self::TYPE_PATTERN . " THEN 1
+WHEN `type` = " . self::TYPE_IP_MANUAL . " THEN 2
+WHEN `type` = " . self::TYPE_IP_AUTOMATIC_PERMANENT . " THEN 3
+WHEN `type` = " . self::TYPE_RATE_BLOCK . " THEN 4
+WHEN `type` = " . self::TYPE_RATE_THROTTLE . " THEN 5
+WHEN `type` = " . self::TYPE_LOCKOUT . " THEN 6
+WHEN `type` = " . self::TYPE_WFSN_TEMPORARY . " THEN 7
+WHEN `type` = " . self::TYPE_IP_AUTOMATIC_TEMPORARY . " THEN 8
 ELSE 9999
-END AS `sortOrder` FROM `{$blocksTable}` WHERE ";
+END AS `typeSort`, CASE 
+WHEN `type` = " . self::TYPE_COUNTRY . " THEN `parameters`
+WHEN `type` = " . self::TYPE_PATTERN . " THEN `parameters`
+WHEN `type` = " . self::TYPE_IP_MANUAL . " THEN `IP`
+WHEN `type` = " . self::TYPE_IP_AUTOMATIC_PERMANENT . " THEN `IP`
+WHEN `type` = " . self::TYPE_RATE_BLOCK . " THEN `IP`
+WHEN `type` = " . self::TYPE_RATE_THROTTLE . " THEN `IP`
+WHEN `type` = " . self::TYPE_LOCKOUT . " THEN `IP`
+WHEN `type` = " . self::TYPE_WFSN_TEMPORARY . " THEN `IP`
+WHEN `type` = " . self::TYPE_IP_AUTOMATIC_TEMPORARY . " THEN `IP`
+ELSE 9999
+END AS `detailSort`
+ FROM `{$blocksTable}` WHERE {$filterClause}";
 		if (!empty($ofTypes)) {
 			$sanitizedTypes = array_map('intval', $ofTypes);
 			$query .= "`type` IN (" . implode(', ', $sanitizedTypes) . ') AND ';
 		}
-		$query .= '(`expiration` = ' . self::DURATION_FOREVER . ' OR `expiration` > UNIX_TIMESTAMP()) ORDER BY `sortOrder` ASC, `blockedTime` DESC';
+		$query .= '(`expiration` = ' . self::DURATION_FOREVER . " OR `expiration` > UNIX_TIMESTAMP()) ORDER BY `{$sort}` {$order}, `id` DESC";
 		
 		if ($limit > -1) {
 			$offset = (int) $offset;

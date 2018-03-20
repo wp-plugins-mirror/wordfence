@@ -59,10 +59,10 @@ class wordfenceHash {
 		$this->db = new wfDB();
 
 		//Doing a delete for now. Later we can optimize this to only scan modified files.
-		//$this->db->queryWrite("update " . $this->db->prefix() . "wfFileMods set oldMD5 = newMD5");			
-		$this->db->truncate($this->db->prefix() . "wfFileMods");
-		$this->db->truncate($this->db->prefix() . "wfKnownFileList");
-		$this->db->truncate($this->db->prefix() . "wfPendingIssues");
+		//$this->db->queryWrite("update " . wfDB::networkTable('wfFileMods') . " set oldMD5 = newMD5");
+		$this->db->truncate(wfDB::networkTable('wfFileMods'));
+		$this->db->truncate(wfDB::networkTable('wfKnownFileList'));
+		$this->db->truncate(wfDB::networkTable('wfPendingIssues'));
 		$fetchCoreHashesStatus = wfIssues::statusStart("Fetching core, theme and plugin file signatures from Wordfence");
 		try {
 			$this->knownFiles = $this->engine->getKnownFilesLoader()->getKnownFiles();
@@ -322,7 +322,8 @@ class wordfenceHash {
 		
 		if (count($payload) > 0) {
 			global $wpdb;
-			$query = substr("INSERT INTO {$wpdb->base_prefix}wfKnownFileList (path) VALUES " . str_repeat("('%s'), ", count($payload)), 0, -2);
+			$table_wfKnownFileList = wfDB::networkTable('wfKnownFileList');
+			$query = substr("INSERT INTO {$table_wfKnownFileList} (path) VALUES " . str_repeat("('%s'), ", count($payload)), 0, -2);
 			$wpdb->query($wpdb->prepare($query, $payload));
 			$this->indexSize += count($payload);
 			wordfence::status(2, 'info', "{$this->indexSize} files indexed");
@@ -332,7 +333,8 @@ class wordfenceHash {
 		static $files = array();
 		if (count($files) == 0) {
 			global $wpdb;
-			$files = $wpdb->get_col($wpdb->prepare("SELECT path FROM {$wpdb->base_prefix}wfKnownFileList WHERE id > %d ORDER BY id ASC LIMIT 500", $this->currentIndex));
+			$table_wfKnownFileList = wfDB::networkTable('wfKnownFileList');
+			$files = $wpdb->get_col($wpdb->prepare("SELECT path FROM {$table_wfKnownFileList} WHERE id > %d ORDER BY id ASC LIMIT 500", $this->currentIndex));
 		}
 		
 		$file = null;
@@ -565,7 +567,7 @@ class wordfenceHash {
 			// knownFile means that the file is both part of core or a known plugin or theme AND that we recognize the file's hash. 
 			// we could split this into files whose path we recognize and file's whose path we recognize AND who have a valid sig.
 			// But because we want to scan files whose sig we don't recognize, regardless of known path or not, we only need one "knownFile" field.
-			$fileModsTable = $this->db->prefix() . 'wfFileMods';
+			$fileModsTable = wfDB::networkTable('wfFileMods');
 			$this->db->queryWrite("INSERT INTO {$fileModsTable} (filename, filenameMD5, knownFile, oldMD5, newMD5, SHAC) VALUES ('%s', UNHEX(MD5('%s')), %d, '', UNHEX('%s'), UNHEX('%s')) ON DUPLICATE KEY UPDATE newMD5 = UNHEX('%s'), SHAC = UNHEX('%s'), knownFile = %d", $file, $file, $knownFile, $md5, $shac, $md5, $shac, $knownFile);
 
 			$this->totalFiles++;
@@ -579,7 +581,7 @@ class wordfenceHash {
 		wfUtils::endProcessingFile();
 	}
 	private function _processPendingIssues() {
-		$fileModsTable = $this->db->prefix() . 'wfFileMods';
+		$fileModsTable = wfDB::networkTable('wfFileMods');
 		
 		$count = $this->engine->getPendingIssueCount();
 		$offset = 0;

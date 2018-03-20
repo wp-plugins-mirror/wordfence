@@ -794,7 +794,7 @@
 	$(function() {
 
 		var liveTrafficWrapper = $('#wf-live-traffic');
-		$('#wf-lt-preset-filters').select2({
+		$('#wf-lt-preset-filters').wfselect2({
 			templateSelection: function(value) {
 				return $('<span><em>Filter Traffic</em>: ' + value.text + '</span>');
 			}
@@ -823,7 +823,7 @@
 			return false;
 		});
 
-		// liveTrafficWrapper.find('#wf-lt-advanced-filters select').select2({
+		// liveTrafficWrapper.find('#wf-lt-advanced-filters select').wfselect2({
 		//
 		// });
 

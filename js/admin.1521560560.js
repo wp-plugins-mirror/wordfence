@@ -434,7 +434,7 @@
 						width = $(this).data('preferredWidth');
 					}
 					
-					$(this).select2({
+					$(this).wfselect2({
 						minimumResultsForSearch: -1,
 						width: width
 					}).on('change', function () {
@@ -495,7 +495,7 @@
 				});
 
 				//Value entry token option
-				$('.wf-option.wf-option-token select').select2({
+				$('.wf-option.wf-option-token select').wfselect2({
 					tags: true,
 					tokenSeparators: [','],
 					width: 'element',
@@ -504,10 +504,10 @@
 					matcher: function(params, data) {
 						return null;
 					}
-				}).on('select2:unselect', function(e){
+				}).on('wfselect2:unselect', function(e){
 					jQuery(e.params.data.element).remove();
-				}).on('select2:opening select2:close', function(e){
-					$('body').toggleClass('wf-select2-suppress-dropdown', e.type == 'select2:opening');
+				}).on('wfselect2:opening wfselect2:close', function(e){
+					$('body').toggleClass('wf-select2-suppress-dropdown', e.type == 'wfselect2:opening');
 				}).on('change', function () {
 					var optionElement = $(this).closest('.wf-option');
 					var option = optionElement.data('tokenOption');
@@ -522,12 +522,12 @@
 					selected.each(function(index, value) {
 						var li = $('<li class="wf-tag-selected"><a class="wf-destroy-tag-selected">×</a>' + $(value).text() + '</li>');
 						li.children('a.wf-destroy-tag-selected')
-							.off('click.select2-copy')
-							.on('click.select2-copy', function(e) {
-								var opt = $(this).data('select2-opt');
+							.off('click.wfselect2-copy')
+							.on('click.wfselect2-copy', function(e) {
+								var opt = $(this).data('wfselect2-opt');
 								opt.attr('selected', false);
 								opt.parents('select').trigger('change');
-							}).data('select2-opt', $(value));
+							}).data('wfselect2-opt', $(value));
 						list.append(li);
 					});
 					tagsElement.html('').append(list);
@@ -558,7 +558,7 @@
 				}).triggerHandler('change');
 
 				$('.wf-option.wf-option-token select').each(function() { 
-					$(this).data('select2').$container.addClass('wf-select2-placeholder-fix wf-select2-hide-tags');
+					$(this).data('wfselect2').$container.addClass('wf-select2-placeholder-fix wf-select2-hide-tags');
 				});
 				
 				//Switch Option
@@ -827,12 +827,7 @@
 			showLoading: function() {
 				this.loadingCount++;
 				if (this.loadingCount == 1) {
-					var offset = 0;
-					if ($('#wf-live-traffic-legend:visible').length > 0) {
-						offset = $('#wf-live-traffic-legend').height() + parseInt($('#wf-live-traffic-legend').css('padding-top')) + parseInt($('#wf-live-traffic-legend').css('padding-bottom'));
-					}
-					
-					$('<div id="wordfenceWorking">Wordfence is working...</div>').css('bottom', offset + 'px').appendTo('body');
+					$('<div id="wordfenceWorking">Wordfence is working...</div>').appendTo('body');
 				}
 			},
 			removeLoading: function() {
@@ -1714,7 +1709,10 @@
 				var issueTypes = WFAD.siteCleaningIssueTypes;
 				for (var i = 0; i < issueTypes.length; i++) {
 					if ($('#wf-scan-results-new .wf-issue-' + issueTypes[i]).length) {
-						if (!!$('#wf-scan-results-new .wf-issue-' + issueTypes[i]).data('highSensitivity')) {
+						if (!!$('#wf-scan-results-new .wf-issue-' + issueTypes[i]).data('betaSignatures')) {
+							$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningBetaSigsTmpl').tmpl());
+						}
+						else if (!!$('#wf-scan-results-new .wf-issue-' + issueTypes[i]).data('highSensitivity')) {
 							$('#wf-scan-results-new .wf-issue').first().after($('#siteCleaningHighSenseTmpl').tmpl());
 						}
 						else {
@@ -3498,8 +3496,8 @@
 		});
 
 		var select2s = $('.wf-select2');
-		if (select2s.length && $.fn.select2) {
-			select2s.select2({
+		if (select2s.length && $.fn.wfselect2) {
+			select2s.wfselect2({
 				minimumResultsForSearch: 5
 			});
 		}
