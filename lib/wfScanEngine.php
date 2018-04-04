@@ -7,6 +7,8 @@ require_once('wfIssues.php');
 require_once('wfDB.php');
 require_once('wfUtils.php');
 class wfScanEngine {
+	const SCAN_MANUALLY_KILLED = -999;
+	
 	public $api = false;
 	private $dictWords = array();
 	private $forkRequested = false;
@@ -45,6 +47,7 @@ class wfScanEngine {
 	private $updateCheck = false;
 	private $pluginRepoStatus = array();
 	private $malwarePrefixesHash;
+	private $coreHashesHash;
 	private $scanMode = wfScanner::SCAN_TYPE_STANDARD;
 	private $pluginsCounted = false;
 	private $themesCounted = false;
@@ -130,9 +133,9 @@ class wfScanEngine {
 	}
 
 	public function __sleep(){ //Same order here as above for properties that are included in serialization
-		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics', 'checkHowGetIPsRequestTime', 'gsbMultisiteBlogOffset', 'updateCheck', 'pluginRepoStatus', 'malwarePrefixesHash', 'scanMode', 'pluginsCounted', 'themesCounted');
+		return array('hasher', 'jobList', 'i', 'wp_version', 'apiKey', 'startTime', 'maxExecTime', 'publicScanEnabled', 'fileContentsResults', 'scanner', 'scanQueue', 'hoover', 'scanData', 'statusIDX', 'userPasswdQueue', 'passwdHasIssues', 'suspectedFiles', 'dbScanner', 'knownFilesLoader', 'metrics', 'checkHowGetIPsRequestTime', 'gsbMultisiteBlogOffset', 'updateCheck', 'pluginRepoStatus', 'malwarePrefixesHash', 'coreHashesHash', 'scanMode', 'pluginsCounted', 'themesCounted');
 	}
-	public function __construct($malwarePrefixesHash = '', $scanMode = wfScanner::SCAN_TYPE_STANDARD) {
+	public function __construct($malwarePrefixesHash = '', $coreHashesHash = '', $scanMode = wfScanner::SCAN_TYPE_STANDARD) {
 		$this->startTime = time();
 		$this->recordMetric('scan', 'start', $this->startTime);
 		$this->maxExecTime = self::getMaxExecutionTime();
@@ -142,6 +145,7 @@ class wfScanEngine {
 		$this->apiKey = wfConfig::get('apiKey');
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
 		$this->malwarePrefixesHash = $malwarePrefixesHash;
+		$this->coreHashesHash = $coreHashesHash;
 		include('wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
 		$this->scanMode = $scanMode;
@@ -203,7 +207,7 @@ class wfScanEngine {
 		}
 		catch (wfScanEngineDurationLimitException $e) {
 			wfConfig::set('lastScanCompleted', $e->getMessage());
-			wfConfig::set('lastScanFailureType', 'duration');
+			wfConfig::set('lastScanFailureType', wfIssues::SCAN_FAILED_DURATION_REACHED);
 			$this->scanController->recordLastScanTime();
 			
 			$this->emailNewIssues(true);
@@ -216,7 +220,7 @@ class wfScanEngine {
 		}
 		catch (wfScanEngineCoreVersionChangeException $e) {
 			wfConfig::set('lastScanCompleted', $e->getMessage());
-			wfConfig::set('lastScanFailureType', 'versionchange');
+			wfConfig::set('lastScanFailureType', wfIssues::SCAN_FAILED_VERSION_CHANGE);
 			$this->scanController->recordLastScanTime();
 			
 			$this->recordMetric('scan', 'duration', (time() - $this->startTime));
@@ -226,9 +230,12 @@ class wfScanEngine {
 			wfScanEngine::refreshScanNotification($this->i);
 			throw $e;
 		}
-		catch(Exception $e) {
-			wfConfig::set('lastScanCompleted', $e->getMessage());
-			wfConfig::set('lastScanFailureType', 'general');
+		catch (Exception $e) {
+			if ($e->getCode() != wfScanEngine::SCAN_MANUALLY_KILLED) {
+				wfConfig::set('lastScanCompleted', $e->getMessage());
+				wfConfig::set('lastScanFailureType', wfIssues::SCAN_FAILED_GENERAL);
+			}
+			
 			$this->recordMetric('scan', 'duration', (time() - $this->startTime));
 			$this->recordMetric('scan', 'memory', wfConfig::get('wfPeakMemory', 0, false));
 			$this->recordMetric('scan', 'failure', $e->getMessage());
@@ -760,7 +767,7 @@ class wfScanEngine {
 		$knownFilesThemes = $this->getThemes();
 		$this->status(2, 'info', "Found " . sizeof($knownFilesThemes) . " themes");
 
-		$this->hasher = new wordfenceHash(strlen(ABSPATH), ABSPATH, $includeInKnownFilesScan, $knownFilesThemes, $knownFilesPlugins, $this, wfUtils::hex2bin($this->malwarePrefixesHash), $this->scanMode);
+		$this->hasher = new wordfenceHash(strlen(ABSPATH), ABSPATH, $includeInKnownFilesScan, $knownFilesThemes, $knownFilesPlugins, $this, wfUtils::hex2bin($this->malwarePrefixesHash), $this->coreHashesHash, $this->scanMode);
 	}
 	private function scan_knownFiles_main() {
 		$this->hasher->run($this); //Include this so we can call addIssue and ->api->
@@ -1921,7 +1928,7 @@ class wfScanEngine {
 		$kill = wfConfig::get('wfKillRequested', 0);
 		if($kill && time() - $kill < 600){ //Kill lasts for 10 minutes
 			wordfence::status(10, 'info', "SUM_KILLED:Previous scan was stopped successfully.");
-			throw new Exception("Scan was stopped on administrator request.");
+			throw new Exception("Scan was stopped on administrator request.", wfScanEngine::SCAN_MANUALLY_KILLED);
 		}
 	}
 	public static function startScan($isFork = false, $scanMode = false){

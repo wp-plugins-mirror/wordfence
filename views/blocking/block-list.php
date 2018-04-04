@@ -28,11 +28,11 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 			<div class="wf-col-xs-12">
 				<div class="wf-block wf-block-no-header wf-active">
 					<div class="wf-block-content wf-padding-add-top-large wf-padding-add-bottom-large">
-						<ul class="wf-flex-horizontal wf-flex-vertical-xs wf-flex-full-width wf-no-top">
+						<ul class="wf-flex-horizontal wf-flex-vertical-xs wf-flex-full-width wf-flex-grow-all wf-no-top">
 							<li class="wf-padding-add-bottom-xs">
-								<ul class="wf-flex-horizontal wf-flex-full-width wf-no-top" style="display: none !important;">
-									<li><input type="text" placeholder="<?php esc_attr_e('Filter', 'wordfence'); ?>" id="wf-blocks-filter-field" class="wf-input-text"></li>
-									<li class="wf-padding-add-left-medium"><a href="#" id="wf-blocks-apply-filter" class="wf-btn wf-btn-callout wf-btn-default"><?php _e('Filter', 'wordfence'); ?></a></li>
+								<ul class="wf-flex-horizontal wf-flex-full-width wf-flex-grow-first wf-no-top">
+									<li><input type="text" placeholder="<?php esc_attr_e('Filter by Type, Detail, or Reason', 'wordfence'); ?>" id="wf-blocks-filter-field" class="wf-input-text"></li>
+									<li class="wf-padding-add-left-medium"><a href="#" id="wf-blocks-apply-filter" class="wf-btn wf-btn-callout wf-btn-default"><?php _e('Filter', 'wordfence'); ?></a>&nbsp;&nbsp;<a href="<?php echo wfSupportController::esc_supportURL(wfSupportController::ITEM_FIREWALL_BLOCKING_FILTER); ?>" target="_blank" rel="noopener noreferrer" class="wf-inline-help"><i class="wf-fa wf-fa-question-circle-o" aria-hidden="true"></i></a></li>
 								</ul>
 							</li>
 							<li class="wf-right wf-flex-vertical-xs">

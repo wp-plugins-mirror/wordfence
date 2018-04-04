@@ -450,6 +450,9 @@
 						if (desc) {
 							return 'blocked by firewall for ' + desc;
 						}
+						if (data.failedRules == 'blocked') {
+							return 'blocked by real-time IP blacklist';
+						}
 						return 'blocked by firewall';
 					}
 					return 'blocked by firewall for ' + self.actionDescription();

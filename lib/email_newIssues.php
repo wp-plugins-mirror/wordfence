@@ -5,6 +5,10 @@
 
 <p><?php printf(__('Alert generated at %s', 'wordfence'), esc_html(wfUtils::localHumanDate())); ?></p>
 
+<br>
+
+<p><?php printf(__('See the details of these scan results on your site at: %s', 'wordfence'), network_admin_url('admin.php?page=WordfenceScan')); ?></p>
+
 <?php if (wfConfig::get('scansEnabled_highSense')): ?>
 	<div style="margin: 12px 0;padding: 8px; background-color: #ffffe0; border: 1px solid #ffd975; border-width: 1px 1px 1px 10px;">
 		<em><?php _e('HIGH SENSITIVITY scanning is enabled, it may produce false positives', 'wordfence'); ?></em>
@@ -73,6 +77,9 @@
 
 <?php foreach($issues as $i){ if($i['severity'] == 2){  ?>
 <p>* <?php echo htmlspecialchars($i['shortMsg']) ?></p>
+		<?php if ($i['type'] == 'coreUnknown'): ?>
+			<p><?php _e('The core files scan has not run because this version is not currently indexed by Wordfence. New WordPress versions may take up to a day to be indexed.', 'wordfence'); ?></p>
+		<?php endif ?>
 		<?php if (isset($i['tmplData']['wpURL'])): ?>
 			<p><?php echo $i['tmplData']['wpURL']; ?>/#developers</p>
 		<?php endif ?>

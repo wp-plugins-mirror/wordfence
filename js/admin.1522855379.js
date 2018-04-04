@@ -45,7 +45,7 @@
 			scanRunning: false,
 			basePageName: '',
 			pendingChanges: {},
-			scanFailed: false,
+			scanStalled: false,
 			siteCleaningIssueTypes: ['file', 'checkGSB', 'checkSpamIP', 'commentBadURL', 'dnsChange', 'knownfile', 'optionBadURL', 'postBadTitle', 'postBadURL', 'spamvertizeCheck', 'suspiciousAdminUsers'],
 
 			init: function() {
@@ -877,10 +877,15 @@
 						this.updateSignaturesTimestamp(res.signatureUpdateTime);
 					}
 
-					WFAD.scanFailed = (res.scanFailed == '1' ? true : false);
-					if (res.scanFailed) {
-						jQuery('#wf-scan-failed-time-ago').text(res.scanFailedTiming);
+					var oldScanStalled = WFAD.scanStalled;
+					WFAD.scanStalled = (res.scanStalled == '1' ? true : false);
+					var oldScanRunning = WFAD.scanRunning;
+					WFAD.scanRunning = (res.scanRunning == '1' && !WFAD.scanStalled) ? true : false;
+					
+					if (res.scanFailedHTML && !WFAD.scanRunning) {
+						jQuery('#wf-scan-failed').html(res.scanFailedHTML);
 						jQuery('#wf-scan-failed').show();
+						$(window).trigger('wfScanUpdateButtons');
 					}
 					else {
 						jQuery('#wf-scan-failed').hide();
@@ -949,9 +954,7 @@
 									element.removeClass();
 									element.addClass(newClasses.join(' '));
 								}
-
-								var oldScanRunning = WFAD.scanRunning;
-								WFAD.scanRunning = (res.scanRunning == '1' && !WFAD.scanFailed) ? true : false;
+								
 								if (oldScanRunning != WFAD.scanRunning) {
 									if (WFAD.scanRunning) {
 										$('#wf-scan-running-bar').show();
@@ -959,6 +962,9 @@
 									else {
 										$('#wf-scan-running-bar').hide();
 									}
+									$(window).trigger('wfScanUpdateButtons');
+								}
+								else if (oldScanStalled != WFAD.scanStalled) {
 									$(window).trigger('wfScanUpdateButtons');
 								}
 							}
@@ -1241,7 +1247,6 @@
 					}, false, false);
 			},
 			killScan: function(callback) {
-				var self = this;
 				this.ajax('wordfence_killScan', {}, function(res) {
 					if (res.ok) {
 						typeof callback === 'function' && callback(true);

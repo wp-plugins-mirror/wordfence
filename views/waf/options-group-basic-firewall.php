@@ -194,7 +194,6 @@ if (!isset($collapseable)) {
 										}
 
 										$('#wf-waf-install-continue, #wf-waf-uninstall-continue').toggleClass('wf-disabled', matchCount != backupsAvailable.length);
-										$('#wf-waf-install-continue, #wf-waf-uninstall-continue').text($('.wf-manual-waf-config').is(':visible') ? 'Close' : 'Continue');
 									};
 
 									var installUninstallResponseHandler = function(action, res) {
@@ -323,20 +322,15 @@ if (!isset($collapseable)) {
 												var el = $(this);
 												if (manualNotice.length) {
 													if (el.val() == 'manual') {
-														$('.wf-waf-automatic-only').hide();
 														manualNotice.fadeIn(400, function () {
 															$.wfcolorbox.resize();
 														});
 													}
 													else {
-														$('.wf-waf-automatic-only').show();
 														manualNotice.fadeOut(400, function () {
 															$.wfcolorbox.resize();
 														});
 													}
-												}
-												else {
-													$('.wf-waf-automatic-only').show();
 												}
 												
 												$('.wf-waf-backups').hide();
@@ -365,11 +359,6 @@ if (!isset($collapseable)) {
 											$('#wf-waf-install-continue').on('click', function(e) {
 												e.preventDefault();
 												e.stopPropagation();
-
-												if ($('.wf-manual-waf-config').is(':visible')) {
-													WFAD.colorboxClose();
-													return;
-												}
 
 												var serverConfiguration = $('#wf-waf-server-config').val();
 												var currentAutoPrepend = $('#wf-waf-include-prepend .wf-active').data('optionValue');
