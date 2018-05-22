@@ -172,6 +172,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.1.6 =
+* Fix: Added a workaround for sites with inaccessible WAF config files when reading php://input
+
 = 7.1.5 =
 * Improvement: GDPR compliance updates.
 * Improvement: The list of blocks now shows the most recently-added blocks at the top by default.
