@@ -165,6 +165,15 @@
 				}
 				
 				$('.wf-block-header-action-disclosure').each(function() {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+
+							$(this).closest('.wf-block-header').trigger('click');
+						}
+					});
+					
 					$(this).closest('.wf-block-header').css('cursor', 'pointer');
 					$(this).closest('.wf-block-header').on('click', function(e) {
 						// Let links in the header work.
@@ -184,6 +193,7 @@
 							$(this).closest('.wf-block').find('.wf-block-content').slideUp({
 								always: function() {
 									$(this).closest('.wf-block').removeClass('wf-active');
+									$(this).attr('aria-checked', 'false');
 								}
 							});
 						}
@@ -192,6 +202,7 @@
 							$(this).closest('.wf-block').find('.wf-block-content').slideDown({
 								always: function() {
 									$(this).closest('.wf-block').addClass('wf-active');
+									$(this).attr('aria-checked', 'true');
 								}
 							});
 						}
@@ -202,6 +213,15 @@
 				
 				//On/Off Option
 				$('.wf-option.wf-option-toggled .wf-option-checkbox').each(function() {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+							
+							$(this).trigger('click');
+						}
+					});
+					
 					$(this).on('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -215,11 +235,11 @@
 						var value = false;
 						var isActive = $(this).hasClass('wf-checked');
 						if (isActive) {
-							$(this).removeClass('wf-checked');
+							$(this).removeClass('wf-checked').attr('aria-checked', 'false');
 							value = optionElement.data('disabledValue');
 						}
 						else {
-							$(this).addClass('wf-checked');
+							$(this).addClass('wf-checked').attr('aria-checked', 'true');
 							value = optionElement.data('enabledValue');
 						}
 						
@@ -254,6 +274,15 @@
 
 				//On/Off Boolean Switch Option
 				$('.wf-option.wf-option-toggled-boolean-switch .wf-boolean-switch').each(function() {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+
+							$(this).trigger('click');
+						}
+					});
+					
 					$(this).on('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -275,11 +304,11 @@
 						var value = false;
 						var isActive = switchElement.hasClass('wf-active');
 						if (isActive) {
-							switchElement.removeClass('wf-active');
+							switchElement.removeClass('wf-active').attr('aria-checked', 'false');
 							value = optionElement.data('disabledValue');
 						}
 						else {
-							switchElement.addClass('wf-active');
+							switchElement.addClass('wf-active').attr('aria-checked', 'true');
 							value = optionElement.data('enabledValue');
 						}
 
@@ -338,6 +367,15 @@
 
 				//On/Off Multiple Option
 				$('.wf-option.wf-option-toggled-multiple .wf-option-checkbox').each(function() {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+
+							$(this).trigger('click');
+						}
+					});
+					
 					$(this).on('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -352,11 +390,11 @@
 						var value = false;
 						var isActive = $(this).hasClass('wf-checked');
 						if (isActive) {
-							$(this).removeClass('wf-checked');
+							$(this).removeClass('wf-checked').attr('aria-checked', 'false');
 							value = checkboxElement.data('disabledValue');
 						}
 						else {
-							$(this).addClass('wf-checked');
+							$(this).addClass('wf-checked').attr('aria-checked', 'true');
 							value = checkboxElement.data('enabledValue');
 						}
 
@@ -375,6 +413,15 @@
 
 				//On/Off Option with menu and Option with menu
 				$('.wf-option.wf-option-toggled-select .wf-option-checkbox').each(function() {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+
+							$(this).trigger('click');
+						}
+					});
+					
 					$(this).on('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -389,12 +436,12 @@
 						var value = false;
 						var isActive = $(this).hasClass('wf-checked');
 						if (isActive) {
-							$(this).removeClass('wf-checked');
+							$(this).removeClass('wf-checked').attr('aria-checked', 'false');
 							selectElement.attr('disabled', true);
 							value = optionElement.data('disabledToggleValue');
 						}
 						else {
-							$(this).addClass('wf-checked');
+							$(this).addClass('wf-checked').attr('aria-checked', 'true');
 							selectElement.attr('disabled', false);
 							value = optionElement.data('enabledToggleValue');
 						}
@@ -571,6 +618,15 @@
 				
 				//Switch Option
 				$('.wf-option.wf-option-switch .wf-switch > li').each(function(index, element) {
+					$(this).on('keydown', function(e) {
+						if (e.keyCode == 32) {
+							e.preventDefault();
+							e.stopPropagation();
+
+							$(this).trigger('click');
+						}
+					});
+					
 					$(element).on('click', function(e) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -582,7 +638,7 @@
 
 						var control = $(this).closest('.wf-switch');
 						control.find('li').each(function() {
-							$(this).toggleClass('wf-active', value == $(this).data('optionValue'));
+							$(this).toggleClass('wf-active', value == $(this).data('optionValue')).attr('aria-checked', value == $(this).data('optionValue') ? 'true' : 'false');
 						});
 
 						if (originalValue == value) {
@@ -3445,10 +3501,10 @@
 				var disabledValue = $(this).data('disabledValue');
 				var originalValue = $(this).data('originalValue');
 				if (enabledValue == originalValue) {
-					$(this).find('.wf-option-checkbox').addClass('wf-checked');
+					$(this).find('.wf-option-checkbox').addClass('wf-checked').attr('aria-checked', 'true');
 				}
 				else {
-					$(this).find('.wf-option-checkbox').removeClass('wf-checked');
+					$(this).find('.wf-option-checkbox').removeClass('wf-checked').attr('aria-checked', 'false');
 				}
 				$(this).trigger('change', [true]);
 			});
@@ -3458,10 +3514,10 @@
 				var disabledValue = $(this).data('disabledValue');
 				var originalValue = $(this).data('originalValue');
 				if (enabledValue == originalValue) {
-					$(this).find('.wf-boolean-switch').addClass('wf-active');
+					$(this).find('.wf-boolean-switch').addClass('wf-active').attr('aria-checked', 'true');
 				}
 				else {
-					$(this).find('.wf-boolean-switch').removeClass('wf-active');
+					$(this).find('.wf-boolean-switch').removeClass('wf-active').attr('aria-checked', 'false');
 				}
 				$(this).trigger('change', [true]);
 			});
@@ -3484,10 +3540,10 @@
 					var disabledValue = $(this).data('disabledValue');
 					var originalValue = $(this).data('originalValue');
 					if (enabledValue == originalValue) {
-						$(this).find('.wf-option-checkbox').addClass('wf-checked');
+						$(this).find('.wf-option-checkbox').addClass('wf-checked').attr('aria-checked', 'true');
 					}
 					else {
-						$(this).find('.wf-option-checkbox').removeClass('wf-checked');
+						$(this).find('.wf-option-checkbox').removeClass('wf-checked').attr('aria-checked', 'false');
 					}
 				});
 				$(this).trigger('change', [true]);
@@ -3500,11 +3556,11 @@
 				var disabledToggleValue = $(this).data('disabledToggleValue');
 				var originalToggleValue = $(this).data('originalToggleValue');
 				if (enabledToggleValue == originalToggleValue) {
-					$(this).find('.wf-option-checkbox').addClass('wf-checked');
+					$(this).find('.wf-option-checkbox').addClass('wf-checked').attr('aria-checked', 'true');
 					selectElement.attr('disabled', false);
 				}
 				else {
-					$(this).find('.wf-option-checkbox').removeClass('wf-checked');
+					$(this).find('.wf-option-checkbox').removeClass('wf-checked').attr('aria-checked', 'false');
 					selectElement.attr('disabled', true);
 				}
 
@@ -3547,7 +3603,7 @@
 			$('.wf-option.wf-option-switch').each(function() {
 				var originalValue = $(this).data('originalValue');
 				$(this).find('.wf-switch > li').each(function() {
-					$(this).toggleClass('wf-active', originalValue == $(this).data('optionValue'));
+					$(this).toggleClass('wf-active', originalValue == $(this).data('optionValue')).attr('aria-checked', originalValue == $(this).data('optionValue') ? 'true' : 'false');
 				});
 				$(this).trigger('change', [true]);
 			});

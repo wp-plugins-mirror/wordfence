@@ -139,9 +139,6 @@ class wordfence {
 		$wfdb = new wfDB();
 
 		if(wfConfig::get('other_WFNet')){
-			$table_wfNet404s = wfDB::networkTable('wfNet404s');
-			$wfdb->truncate($table_wfNet404s);
-			
 			$table_wfVulnScanners = wfDB::networkTable('wfVulnScanners');
 			$q2 = $wfdb->querySelect("select IP from {$table_wfVulnScanners} where ctime > unix_timestamp() - 3600");
 			$scanCont = "";
@@ -551,8 +548,11 @@ SQL
 		// Fix the data in the country column.
 		$previousVersionHash = wfConfig::get('geoIPVersionHash', '');
 		$geoIPVersion = wfUtils::geoIPVersion();
-		$geoIPVersionHash = hash('sha256', implode(',', $geoIPVersion));
-		if ($previousVersionHash != $geoIPVersionHash) {
+		if (is_array($geoIPVersion)) {
+			$geoIPVersion = implode(',', $geoIPVersion);
+		}
+		$geoIPVersionHash = hash('sha256', $geoIPVersion);
+		if ($geoIPVersion !== null && $previousVersionHash != $geoIPVersionHash) {
 			$table_wfBlockedIPLog = wfDB::networkTable('wfBlockedIPLog');
 			$ip_results = $wpdb->get_results("SELECT countryCode, IP FROM `{$table_wfBlockedIPLog}` GROUP BY IP");
 			if ($ip_results) {
@@ -5032,7 +5032,7 @@ HTML;
 		if(isset($_GET['page']) && preg_match('/^Wordfence/', @$_GET['page']) ){
 			wp_enqueue_style('wp-pointer');
 			wp_enqueue_script('wp-pointer');
-			wp_enqueue_style('wordfence-font', 'https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900,900i', '', WORDFENCE_VERSION);
+			wp_enqueue_style('wordfence-font', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wf-roboto-font.css'), '', WORDFENCE_VERSION);
 			wp_enqueue_style('wordfence-font-awesome-style', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wf-font-awesome.css'), '', WORDFENCE_VERSION); 
 			wp_enqueue_style('wordfence-main-style', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/main.css'), '', WORDFENCE_VERSION);
 			wp_enqueue_style('wordfence-ionicons-style', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wf-ionicons.css'), '', WORDFENCE_VERSION);
@@ -6814,6 +6814,12 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 		else if ($lastAggregation < (time() - 86400)) {
 			self::_aggregateBlockStats($lastAggregation);
 		}
+		
+		$maxAge = wfConfig::get('liveTraf_maxAge', 30);
+		if ($maxAge <= 0 || $maxAge > 30) {
+			$maxAge = 30;
+		}
+		$wfdb->queryWrite("DELETE FROM {$table_wfHits} WHERE ctime < %d", time() - ($maxAge * 86400));
 	}
 	
 	private static function _aggregateBlockStats($since = false) {

@@ -148,6 +148,7 @@ class wfConfig {
 			'alert_maxHourly' => array('value' => 0, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_INT)), 
 			'loginSec_userBlacklist' => array('value' => '', 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_STRING)),
 			'liveTraf_maxRows' => array('value' => 2000, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_INT)),
+			'liveTraf_maxAge' => array('value' => 30, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_INT)),
 			"neverBlockBG" => array('value' => "neverBlockVerified", 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_STRING)),
 			"loginSec_countFailMins" => array('value' => 240, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_INT)),
 			"loginSec_lockoutMins" => array('value' => 240, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_INT)),
@@ -1502,6 +1503,11 @@ Options -ExecCGI
 					$saved = true;
 					break;
 				}
+				case 'liveTraf_maxAge':
+				{
+					$value = max(1, $value);
+					break;
+				}
 				
 				//Scan scheduling
 				case 'scanSched':
@@ -1779,6 +1785,7 @@ Options -ExecCGI
 					'liveTraf_ignoreIPs',
 					'liveTraf_ignoreUA',
 					'liveTraf_maxRows',
+					'liveTraf_maxAge',
 					'displayTopLevelLiveTraffic',
 				);
 				break;
@@ -1932,6 +1939,7 @@ Options -ExecCGI
 					'liveTraf_ignoreIPs',
 					'liveTraf_ignoreUA',
 					'liveTraf_maxRows',
+					'liveTraf_maxAge',
 					'displayTopLevelLiveTraffic',
 					'other_noAnonMemberComments',
 					'other_scanComments',
