@@ -118,29 +118,9 @@
 				}
 
 				if (subscribe) {
-					for (var i = 0; i < emails.length; i++) {
-						$.ajax({
-							type: 'POST',
-							url: 'https://www.aweber.com/scripts/addlead.pl',
-							data: {
-								meta_web_form_id: '1428034071',
-								meta_split_id: '',
-								listname: 'wordfence',
-								redirect: 'https://www.aweber.com/thankyou-coi.htm?m=text',
-								meta_adtracking: 'widgetForm',
-								meta_message: '1',
-								meta_required: 'email',
-								meta_tooltip: '',
-								email: emails[i]
-							},
-							success: function(res) {
-								//Do nothing
-							},
-							error: function() {
-								//Do nothing
-							}
-						});
-					}
+					this.ajax('wordfence_mailingSignup', {emails: JSON.stringify(emails)}, function(res) {
+						//Do nothing
+					});
 				}
 			},
 			onboardingInstallLicense: function(license, successCallback, errorCallback) {

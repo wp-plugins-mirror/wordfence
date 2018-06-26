@@ -172,6 +172,13 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.1.8 =
+* Improvement: Better detection of removal status when uninstalling the WAF's auto-prepend file.
+* Improvement: Switched optional mailing list signup to go directly through our servers rather than a third party.
+* Fix: Fixed the dashboard erroneously showing the payment method as missing for some payment methods.
+* Fix: If a premium license is deleted from wordfence.com, the plugin will now automatically downgrade rather than get stuck in an intermediate state.
+* Fix: Changed some wording to consistently use "License" or "License Key".
+
 = 7.1.7 =
 * Improvement: Added better support for keyboard navigation of options.
 * Improvement: staging. and dev. subdomains are now supported for sharing premium licenses.

@@ -232,6 +232,24 @@ if (!isset($collapseable)) {
 												WFAD.colorboxClose();
 											});
 											$.wfcolorbox.resize();
+
+											var payload = {serverConfiguration: res.serverConfiguration, iniModified: 1};
+											if (res.credentials) {
+												payload['credentials'] = res.credentials;
+												payload['credentialsSignature'] = res.credentialsSignature;
+											}
+											
+											$('.wf-waf-uninstall-try-again').on('click', function(e) {
+												e.preventDefault();
+												e.stopPropagation();
+												
+												$(this).text('Retrying');
+												payload['retryAttempted'] = 1;
+
+												WFAD.ajax(action, payload, function(res) {
+													installUninstallResponseHandler(action, res);
+												});
+											});
 										}
 										else if (res.uninstallationWaiting) {
 											var replacement = $(res.html);

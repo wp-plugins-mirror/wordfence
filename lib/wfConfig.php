@@ -1569,7 +1569,7 @@ Options -ExecCGI
 					}
 				}
 				catch (Exception $e) {
-					throw new wfConfigException(__('Your options have been saved, but you left your API key blank, so we tried to get you a free API key from the Wordfence servers. There was a problem fetching the free key: ', 'wordfence') . wp_kses($e->getMessage(), array()));
+					throw new wfConfigException(__('Your options have been saved, but you left your license key blank, so we tried to get you a free license key from the Wordfence servers. There was a problem fetching the free key: ', 'wordfence') . wp_kses($e->getMessage(), array()));
 				}
 			}
 			else if ($existingAPIKey != $apiKey) { //Key changed, try activating
@@ -1590,7 +1590,7 @@ Options -ExecCGI
 					}
 				}
 				catch (Exception $e) {
-					throw new wfConfigException(__('Your options have been saved. However we noticed you changed your API key, and we tried to verify it with the Wordfence servers but received an error: ', 'wordfence') . wp_kses($e->getMessage(), array()));
+					throw new wfConfigException(__('Your options have been saved. However we noticed you changed your license key, and we tried to verify it with the Wordfence servers but received an error: ', 'wordfence') . wp_kses($e->getMessage(), array()));
 				}
 			}
 			else { //Key unchanged, just ping it
@@ -1619,7 +1619,7 @@ Options -ExecCGI
 					wfConfig::set('keyType', $keyType);
 				}
 				catch (Exception $e){
-					throw new wfConfigException(__('Your options have been saved. However we tried to verify your API key with the Wordfence servers and received an error: ', 'wordfence') . wp_kses($e->getMessage(), array()));
+					throw new wfConfigException(__('Your options have been saved. However we tried to verify your license key with the Wordfence servers and received an error: ', 'wordfence') . wp_kses($e->getMessage(), array()));
 				}
 			}
 		}

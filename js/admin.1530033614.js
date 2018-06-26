@@ -3256,7 +3256,7 @@
 							self.colorboxModalHTML((self.isSmallScreen ? '300px' : '400px'), 'Rules Updated', 'Your rules have been updated successfully. You are ' +
 								'currently using the free version of Wordfence. ' +
 								'Upgrade to Wordfence premium to have your rules updated automatically as new threats emerge. ' +
-								'<a href="https://www.wordfence.com/wafUpdateRules1/wordfence-signup/">Click here to purchase a premium API key</a>. ' +
+								'<a href="https://www.wordfence.com/wafUpdateRules1/wordfence-signup/">Click here to purchase a premium license</a>. ' +
 								'<em>Note: Your rules will still update every 30 days as a free user.</em>');
 						} else {
 							self.colorboxModal((self.isSmallScreen ? '300px' : '400px'), 'Rules Updated', 'Your rules have been updated successfully.');
