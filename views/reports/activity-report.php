@@ -108,7 +108,7 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 		<?php if ($top_failed_logins): ?>
 			<?php foreach ($top_failed_logins as $row): ?>
 				<tr class="<?php echo wfHelperString::cycle('odd', 'even') ?>">
-					<td><?php echo esc_html($row->username) ?></td>
+					<td class="wf-split-word"><?php echo esc_html($row->username) ?></td>
 					<td><?php echo esc_html($row->fail_count) ?></td>
 					<td class="<?php echo sanitize_html_class($row->is_valid_user ? 'loginFailValidUsername' : 'loginFailInvalidUsername') ?>"><?php echo $row->is_valid_user ? __('Yes', 'wordfence') : __('No', 'wordfence') ?></td>
 				</tr>

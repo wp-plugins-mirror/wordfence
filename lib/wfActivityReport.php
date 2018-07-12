@@ -539,7 +539,19 @@ SQL
 	 */
 	public function sendReportViaEmail($email_addresses) {
 		$shortSiteURL = preg_replace('/^https?:\/\//i', '', site_url());
-		return wp_mail($email_addresses, 'Wordfence activity for ' . date_i18n(get_option('date_format')) . ' on ' . $shortSiteURL, $this->toEmailView()->__toString(), 'Content-Type: text/html');
+		
+		$content = $this->toEmailView()->__toString();
+		
+		$success = true;
+		if (is_string($email_addresses)) { $email_addresses = explode(',', $email_addresses); }
+		foreach ($email_addresses as $email) {
+			$uniqueContent = str_replace('<!-- ##UNSUBSCRIBE## -->', sprintf(__('No longer an administrator for this site? <a href="%s" target="_blank">Click here</a> to stop receiving security alerts.', 'wordfence'), wfUtils::getSiteBaseURL() . '?_wfsf=removeAlertEmail&jwt=' . wfUtils::generateJWT(array('email' => $email))), $content);
+			if (!wp_mail($email, 'Wordfence activity for ' . date_i18n(get_option('date_format')) . ' on ' . $shortSiteURL, $uniqueContent, 'Content-Type: text/html')) {
+				$success = false;
+			}
+		}
+		
+		return $success;
 	}
 
 	/**

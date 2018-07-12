@@ -49,7 +49,7 @@ if (!isset($collapseable)) {
 					</li>
 					<li>
 						<?php
-						$breakpoints = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 100, 200, 500);
+						$breakpoints = array(2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 100, 200, 500);
 						$options = array();
 						foreach ($breakpoints as $b) {
 							$options[] = array('value' => $b, 'label' => $b);

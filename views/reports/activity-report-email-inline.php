@@ -239,7 +239,7 @@ h6 a:visited { color: purple !important; }
 								$stripe = wfHelperString::cycle('odd', 'even');
 								?>
 								<tr class="<?php echo $stripe ?>" style="font-size: 100%; vertical-align: baseline; margin: 0; padding: 0; border: 0;">
-									<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc;<?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline"><?php echo esc_html($row->username) ?></td>
+									<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc; word-wrap: break-word; word-break: break-all; <?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline"><?php echo esc_html($row->username) ?></td>
 									<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc;<?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline"><?php echo esc_html($row->fail_count) ?></td>
 									<td style="font-size: 100%; vertical-align: baseline; font-weight: normal; text-align: left; border-collapse: collapse; margin: 0; padding: 6px 4px; border: 1px solid #cccccc;<?php echo $bg_colors[$stripe] ?>" align="left" valign="baseline" class="<?php echo sanitize_html_class($row->is_valid_user ? 'loginFailValidUsername' : 'loginFailInvalidUsername') ?>"><?php echo $row->is_valid_user ? __('Yes', 'wordfence') : __('No', 'wordfence') ?></td>
 								</tr>
@@ -383,6 +383,10 @@ h6 a:visited { color: purple !important; }
 
 				<p style="font-size: 100%; vertical-align: baseline; margin: 1em 0; padding: 0; border: 0;">
 					<?php printf(__('If you would like to sign-in to <a href="%s">%s</a> please <a href="%s">click here</a> now. You can change the frequency of this email or turn it on and off by visiting your <a href="%s">Wordfence options page</a>.', 'wordfence'), network_site_url(), network_site_url(), network_admin_url(), network_admin_url('admin.php?page=Wordfence&subpage=global_options#global-options-email-summary')); ?>
+				</p>
+
+				<p style="font-size: 100%; vertical-align: baseline; margin: 1em 0; padding: 0; border: 0;">
+					<!-- ##UNSUBSCRIBE## -->
 				</p>
 			</div>
 		</td>

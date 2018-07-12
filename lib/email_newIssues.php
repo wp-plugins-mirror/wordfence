@@ -110,5 +110,6 @@
 	<p><?php _e('Click here to upgrade to Wordfence Premium:', 'wordfence'); ?><br><a href="https://www.wordfence.com/zz2/wordfence-signup/">https://www.wordfence.com/zz2/wordfence-signup/</a></p>
 <?php } ?>
 
+<p><!-- ##UNSUBSCRIBE## --></p>
 
 
