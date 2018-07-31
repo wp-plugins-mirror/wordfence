@@ -34,6 +34,19 @@ echo wfView::create('tools/options-group-live-traffic', array(
 	'showControls' => true,
 ))->render();
 ?>
+
+<?php
+$overridden = false;
+if (!wfConfig::liveTrafficEnabled($overridden)):
+	?>
+	<div id="wordfenceLiveActivityDisabled"><p>
+			<strong><?php _e('Live activity is disabled', 'wordfence') ?><?php
+				if ($overridden) {
+					_e(' by the host', 'wordfence');
+				} ?>.</strong> <?php _e('Login and firewall activity will still appear below.', 'wordfence') ?></p>
+	</div>
+<?php endif ?>
+
 <div id="wf-live-traffic" class="wf-row<?php echo wfConfig::get('liveTraf_displayExpandedRecords') ? ' wf-live-traffic-display-expanded' : '' ?>">
 	<div class="wf-col-xs-12">
 		<div class="wf-block wf-active">
@@ -45,17 +58,6 @@ echo wfView::create('tools/options-group-live-traffic', array(
 						// echo $rightRail;
 						?>
 						<div class="<?php echo wfStyle::contentClasses(); ?>">
-							<?php
-							$overridden = false;
-							if (!wfConfig::liveTrafficEnabled($overridden)):
-								?>
-								<div id="wordfenceLiveActivityDisabled"><p>
-										<strong><?php _e('Live activity is disabled', 'wordfence') ?><?php
-											if ($overridden) {
-												_e(' by the host', 'wordfence');
-											} ?>.</strong> <?php _e('Login and firewall activity will still appear below.', 'wordfence') ?></p>
-								</div>
-							<?php endif ?>
 							<div id="wf-live-traffic-legend">
 								<ul>
 									<li class="wfHuman"><?php _e('Human', 'wordfence') ?></li>
@@ -344,6 +346,9 @@ echo wfView::create('tools/options-group-live-traffic', array(
 
 																<span data-bind="if: statusCode() == 200 && !action()">
 																	visited
+																</span>
+																<span data-bind="if: (statusCode() == 301 || statusCode() == 302) && !action()">
+																	was redirected when visiting
 																</span>
 																<span data-bind="if: statusCode() == 403 || statusCode() == 503">
 																	was <span data-bind="text: firewallAction" style="color: #F00;"></span> at

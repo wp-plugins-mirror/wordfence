@@ -189,6 +189,10 @@ class wordfence {
 		
 		wfConfig::set('lastDailyCron', time());
 		
+		global $wpdb;
+		$version = $wpdb->get_var("SELECT VERSION()");
+		wfConfig::set('dbVersion', $version);
+		
 		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
 		try {
 			$keyType = wfAPI::KEY_TYPE_FREE;
@@ -257,6 +261,9 @@ class wordfence {
 			wordfence::status(4, 'error', "Could not verify Wordfence License: " . $e->getMessage());
 			wfConfig::set('useNoc3Secure', false);
 		}
+		
+		$allowMySQLi = wfConfig::testDB();
+		wfConfig::set('allowMySQLi', $allowMySQLi);
 
 		$wfdb = new wfDB();
 		try {
@@ -394,7 +401,7 @@ class wordfence {
 				$message .= $items[$i];
 			}
 			
-			new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, '<a href="' . network_admin_url('update-core.php') . '">' . $message . '</a>', 'wfplugin_updates');
+			new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, '<a href="' . wfUtils::wpAdminURL('update-core.php') . '">' . $message . '</a>', 'wfplugin_updates');
 		}
 		else {
 			$n = wfNotification::getNotificationForCategory('wfplugin_updates');
@@ -1195,6 +1202,7 @@ SQL
 		//add_filter( 'cron_schedules', 'wordfence::cronAddSchedules' );
 
 		add_filter('wp_redirect', 'wordfence::wpRedirectFilter', 99, 2);
+		add_filter('wp_redirect_status', 'wordfence::wpRedirectStatusFilter', 99, 2);
 		add_filter('pre_comment_approved', 'wordfence::preCommentApprovedFilter', '99', 2);
 		//html|xhtml|atom|rss2|rdf|comment|export
 		if(wfConfig::get('other_hideWPVersion')){
@@ -1211,6 +1219,7 @@ SQL
 		add_filter('get_the_generator_comment', 'wordfence::genFilter', 99, 2);
 		add_filter('get_the_generator_export', 'wordfence::genFilter', 99, 2);
 		add_filter('registration_errors', 'wordfence::registrationFilter', 99, 3);
+		add_filter('woocommerce_new_customer_data', 'wordfence::wooRegistrationFilter', 99, 1);
 		
 		if (wfConfig::get('loginSec_disableAuthorScan')) {
 			add_filter('oembed_response_data', 'wordfence::oembedAuthorFilter', 99, 4);
@@ -1305,8 +1314,16 @@ SQL
 		}
 		return $from_email;
 	}
-	public static function wpRedirectFilter($URL, $status){
-		return $URL;
+	public static function wpRedirectFilter($location, $status) {
+		self::getLog()->initLogRequest();
+		self::getLog()->getCurrentRequest()->statusCode = $status;
+		return $location;
+	}
+	public static function wpRedirectStatusFilter($status, $location) {
+		self::getLog()->initLogRequest();
+		self::getLog()->getCurrentRequest()->statusCode = $status;
+		self::getLog()->logHit();
+		return $status;
 	}
 	public static function enqueueAJAXWatcher() {
 		$wafDisabled = !WFWAF_ENABLED || (class_exists('wfWAFConfig') && wfWAFConfig::isDisabled());
@@ -1974,11 +1991,37 @@ SQL
 			wfUtils::setcookie($cookiename, $cookievalue, time() + (86400 * 365), '/', null, wfUtils::isFullSSL(), true);
 		}
 	}
-	public static function registrationFilter($errors, $santizedLogin, $userEmail){
-		if(wfConfig::get('loginSec_blockAdminReg') && $santizedLogin == 'admin'){
-			$errors->add('user_login_error', '<strong>ERROR</strong>: You can\'t register using that username');
+	public static function registrationFilter($errors, $sanitizedLogin, $userEmail) {
+		if (wfConfig::get('loginSec_blockAdminReg') && $sanitizedLogin == 'admin') {
+			$errors->add('user_login_error', __('<strong>ERROR</strong>: You can\'t register using that username', 'wordfence'));
 		}
 		return $errors;
+	}
+	public static function wooRegistrationFilter($wooCustomerData) {
+		/*
+		   $wooCustomerData matches:
+		   array(
+				'user_login' => $username,
+				'user_pass'  => $password,
+				'user_email' => $email,
+				'role'       => 'customer',
+			)
+		 */
+		if (wfConfig::get('loginSec_blockAdminReg') && is_array($wooCustomerData) && isset($wooCustomerData['user_login']) && isset($wooCustomerData['user_email']) && preg_match('/^admin\d*$/i', $wooCustomerData['user_login'])) {
+			//Converts a username of `admin` generated from something like `admin@example.com` to `adminexample`
+			$emailComponents = explode('@', $wooCustomerData['user_email']);
+			if (strpos(wfUtils::array_last($emailComponents), '.') === false) { //e.g., admin@localhost 
+				$wooCustomerData['user_login'] .= wfUtils::array_last($emailComponents); 
+			}
+			else { //e.g., admin@example.com
+				$hostComponents = explode('.', wfUtils::array_last($emailComponents));
+				array_pop($hostComponents);
+				$wooCustomerData['user_login'] .= wfUtils::array_last($hostComponents);
+			}
+			
+			//If it's still `admin` at this point, it will fall through and get blocked by wordfence::blacklistedUsernames
+		}
+		return $wooCustomerData;
 	}
 	public static function oembedAuthorFilter($data, $post, $width, $height) {
 		unset($data['author_name']);
@@ -4645,7 +4688,7 @@ HTACCESS;
 			$hresults = $hooverResults[1];
 			$count = count($hresults);
 			if ($count > 0) {
-				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, "Page contains {$count} malware URL" . ($count == 1 ? '' : 's') . ': ' . esc_html($pageURL), 'wfplugin_malwareurl_' . md5($pageURL), null, array(array('link' => network_admin_url('admin.php?page=WordfenceScan'), 'label' => 'Run a Scan')));
+				new wfNotification(null, wfNotification::PRIORITY_HIGH_WARNING, "Page contains {$count} malware URL" . ($count == 1 ? '' : 's') . ': ' . esc_html($pageURL), 'wfplugin_malwareurl_' . md5($pageURL), null, array(array('link' => wfUtils::wpAdminURL('admin.php?page=WordfenceScan'), 'label' => 'Run a Scan')));
 				return array('bad' => $count);
 			}
 		}
@@ -5891,10 +5934,10 @@ HTML
 		return $approved;
 	}
 	public static function getMyHomeURL(){
-		return network_admin_url('admin.php?page=Wordfence');
+		return wfUtils::wpAdminURL('admin.php?page=Wordfence');
 	}
 	public static function getMyOptionsURL(){
-		return network_admin_url('admin.php?page=Wordfence&subpage=global_options');
+		return wfUtils::wpAdminURL('admin.php?page=Wordfence&subpage=global_options');
 	}
 
 	public static function alert($subject, $alertMsg, $IP){

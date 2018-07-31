@@ -2061,6 +2061,12 @@ class wfUtils {
 				$homeurl = home_url($path, $scheme);
 			}
 		}
+		else {
+			$homeurl = set_url_scheme($homeurl, $scheme);
+			if ($path && is_string($path)) {
+				$homeurl .= '/' . ltrim($path, '/');
+			}
+		}
 		return $homeurl;
 	}
 	
@@ -2127,6 +2133,14 @@ class wfUtils {
 		}
 	}
 	
+	/**
+	 * Equivalent to network_site_url but uses the cached value for the URL if we have it
+	 * to avoid breaking on sites that define it based on the requesting hostname.
+	 * 
+	 * @param string $path
+	 * @param null|string $scheme
+	 * @return string
+	 */
 	public static function wpSiteURL($path = '', $scheme = null) {
 		$siteurl = wfConfig::get('wp_site_url', '');
 		if (function_exists('get_bloginfo') && empty($siteurl)) {
@@ -2137,7 +2151,40 @@ class wfUtils {
 				$siteurl = site_url($path, $scheme);
 			}
 		}
+		else {
+			$siteurl = set_url_scheme($siteurl, $scheme);
+			if ($path && is_string($path)) {
+				$siteurl .= '/' . ltrim($path, '/');
+			}
+		}
 		return $siteurl;
+	}
+	
+	/**
+	 * Equivalent to network_admin_url but uses the cached value for the URL if we have it
+	 * to avoid breaking on sites that define it based on the requesting hostname.
+	 *
+	 * @param string $path
+	 * @param null|string $scheme
+	 * @return string
+	 */
+	public static function wpAdminURL($path = '', $scheme = null) {
+		if (!is_multisite()) {
+			$adminURL = self::wpSiteURL('wp-admin/', $scheme);
+		}
+		else {
+			$adminURL = self::wpSiteURL('wp-admin/network/', $scheme);
+		}
+		
+		if ($path && is_string($path)) {
+			$adminURL .= ltrim($path, '/');
+		}
+		
+		if (!is_multisite()) {
+			return apply_filters('admin_url', $adminURL, $path, null);
+		}
+		
+		return apply_filters('network_admin_url', $adminURL, $path);
 	}
 	
 	public static function wafInstallationType() {

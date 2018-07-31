@@ -512,6 +512,29 @@ class wfConfig {
 		return (int) self::get($key, $default, $allowCached);
 	}
 	
+	/**
+	 * Runs a test against the database to verify set_ser is working via MySQLi.
+	 * 
+	 * @return bool
+	 */
+	public static function testDB() {
+		$nonce = bin2hex(wfWAFUtils::random_bytes(32));
+		$payload = array('nonce' => $nonce);
+		$allow = wfConfig::get('allowMySQLi', true);
+		wfConfig::set('allowMySQLi', true);
+		wfConfig::set_ser('dbTest', $payload, false, wfConfig::DONT_AUTOLOAD);
+		
+		$stored = wfConfig::get_ser('dbTest', false, false);
+		wfConfig::set('allowMySQLi', $allow);
+		$result = false;
+		if (is_array($stored) && isset($stored['nonce']) && hash_equals($nonce, $stored['nonce'])) {
+			$result = true;
+		}
+		
+		wfConfig::delete_ser_chunked('dbTest');
+		return $result;
+	}
+	
 	private static function canCompressValue() {
 		if (!function_exists('gzencode') || !function_exists('gzdecode')) {
 			return false;
@@ -624,7 +647,7 @@ class wfConfig {
 		
 		global $wpdb;
 		$dbh = $wpdb->dbh;
-		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli);
+		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli && wfConfig::get('allowMySQLi', true));
 		
 		if (!self::$tableExists) {
 			return;

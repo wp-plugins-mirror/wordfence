@@ -1,7 +1,7 @@
 <?php if (!defined('WORDFENCE_VERSION')) { exit; } ?>
 <?php printf(__('This email was sent from your website "%s" by the Wordfence plugin at %s', 'wordfence'), $blogName, $date); ?>
 
-<?php printf(__('The Wordfence administrative URL for this site is: %s', 'wordfence'), network_admin_url('admin.php?page=Wordfence')); ?>
+<?php printf(__('The Wordfence administrative URL for this site is: %s', 'wordfence'), wfUtils::wpAdminURL('admin.php?page=Wordfence')); ?>
 
 <?php echo $alertMsg; ?>
 <?php if($IPMsg){ echo "\n$IPMsg\n"; } ?>

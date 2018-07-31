@@ -46,7 +46,7 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 </table>
 
 <p>
-	<a class="button button-primary" href="<?php echo network_admin_url('admin.php?page=WordfenceWAF#top#blocking') ?>"><?php _e('Update Blocked IPs', 'wordfence'); ?></a>
+	<a class="button button-primary" href="<?php echo wfUtils::wpAdminURL('admin.php?page=WordfenceWAF#top#blocking') ?>"><?php _e('Update Blocked IPs', 'wordfence'); ?></a>
 </p>
 
 <?php wfHelperString::cycle(); ?>
@@ -89,7 +89,7 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 </table>
 
 <p>
-	<a class="button button-primary" href="<?php echo network_admin_url('admin.php?page=WordfenceWAF#top#blocking') ?>"><?php _e('Update Blocked Countries', 'wordfence'); ?></a>
+	<a class="button button-primary" href="<?php echo wfUtils::wpAdminURL('admin.php?page=WordfenceWAF#top#blocking') ?>"><?php _e('Update Blocked Countries', 'wordfence'); ?></a>
 </p>
 
 <?php wfHelperString::cycle(); ?>
@@ -124,7 +124,7 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 </table>
 
 <p>
-	<a class="button button-primary" href="<?php echo network_admin_url('admin.php?page=WordfenceWAF&subpage=waf_options#waf-options-bruteforce') ?>"><?php _e('Update Login Security Options', 'wordfence'); ?></a>
+	<a class="button button-primary" href="<?php echo wfUtils::wpAdminURL('admin.php?page=WordfenceWAF&subpage=waf_options#waf-options-bruteforce') ?>"><?php _e('Update Login Security Options', 'wordfence'); ?></a>
 </p>
 
 <?php wfHelperString::cycle(); ?>
@@ -193,7 +193,7 @@ if (!defined('WORDFENCE_VERSION')) { exit; }
 <?php endif ?>
 
 <?php if ($updates_needed['core'] || $updates_needed['plugins'] || $updates_needed['themes']): ?>
-	<p><a class="button button-primary" href="<?php echo esc_attr(network_admin_url('update-core.php')) ?>"><?php _e('Update Now', 'wordfence'); ?></a></p>
+	<p><a class="button button-primary" href="<?php echo esc_attr(wfUtils::wpAdminURL('update-core.php')) ?>"><?php _e('Update Now', 'wordfence'); ?></a></p>
 <?php else: ?>
 	<p><?php _e('No updates are available at this time.', 'wordfence'); ?></p>
 <?php endif ?>

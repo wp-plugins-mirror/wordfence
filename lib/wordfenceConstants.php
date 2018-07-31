@@ -1,5 +1,5 @@
 <?php
-define('WORDFENCE_API_VERSION', '2.24'); 
+define('WORDFENCE_API_VERSION', '2.25'); 
 define('WORDFENCE_API_URL_SEC', 'https://noc1.wordfence.com/');
 define('WORDFENCE_API_URL_NONSEC', 'http://noc1.wordfence.com/');
 define('WORDFENCE_API_URL_BASE_SEC', WORDFENCE_API_URL_SEC . 'v' . WORDFENCE_API_VERSION . '/');

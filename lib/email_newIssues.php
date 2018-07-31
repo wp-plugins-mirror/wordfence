@@ -8,7 +8,7 @@
 
 <br>
 
-<p><?php printf(__('See the details of these scan results on your site at: %s', 'wordfence'), network_admin_url('admin.php?page=WordfenceScan')); ?></p>
+<p><?php printf(__('See the details of these scan results on your site at: %s', 'wordfence'), wfUtils::wpAdminURL('admin.php?page=WordfenceScan')); ?></p>
 
 <?php if ($scanOptions['scansEnabled_highSense']): ?>
 	<div style="margin: 12px 0;padding: 8px; background-color: #ffffe0; border: 1px solid #ffd975; border-width: 1px 1px 1px 10px;">
@@ -24,7 +24,7 @@
 
 <?php if ($timeLimitReached): ?>
 	<div style="margin: 12px 0;padding: 8px; background-color: #ffffe0; border: 1px solid #ffd975; border-width: 1px 1px 1px 10px;">
-		<em><?php printf(__('The scan was terminated early because it reached the time limit for scans. If you would like to allow your scans to run longer, you can customize the limit on the options page: <a href="%s">%s</a> or read more about scan options to improve scan speed here: <a href="%s">%s</a>', 'wordfence'), esc_attr(network_admin_url('admin.php?page=WordfenceScan&subpage=scan_options#wf-scanner-options-performance')), esc_attr(network_admin_url('admin.php?page=WordfenceScan&subpage=scan_options')), wfSupportController::esc_supportURL(wfSupportController::ITEM_SCAN_TIME_LIMIT), esc_html(wfSupportController::supportURL(wfSupportController::ITEM_SCAN_TIME_LIMIT))); ?></em>
+		<em><?php printf(__('The scan was terminated early because it reached the time limit for scans. If you would like to allow your scans to run longer, you can customize the limit on the options page: <a href="%s">%s</a> or read more about scan options to improve scan speed here: <a href="%s">%s</a>', 'wordfence'), esc_attr(wfUtils::wpAdminURL('admin.php?page=WordfenceScan&subpage=scan_options#wf-scanner-options-performance')), esc_attr(wfUtils::wpAdminURL('admin.php?page=WordfenceScan&subpage=scan_options')), wfSupportController::esc_supportURL(wfSupportController::ITEM_SCAN_TIME_LIMIT), esc_html(wfSupportController::supportURL(wfSupportController::ITEM_SCAN_TIME_LIMIT))); ?></em>
 	</div>
 <?php endif ?>
 
@@ -88,7 +88,7 @@
 <?php } } } ?>
 
 <?php if ($issuesNotShown > 0) { ?>
-<p><?php printf(($issuesNotShown == 1 ? __('%d issue was omitted from this email.', 'wordfence') : __('%d issues were omitted from this email.', 'wordfence')), $issuesNotShown); echo ' '; _e('View every issue:', 'wordfence'); ?> <a href="<?php echo esc_attr(network_admin_url('admin.php?page=WordfenceScan')); ?>"><?php echo esc_html(network_admin_url('admin.php?page=WordfenceScan')); ?></a></p>
+<p><?php printf(($issuesNotShown == 1 ? __('%d issue was omitted from this email.', 'wordfence') : __('%d issues were omitted from this email.', 'wordfence')), $issuesNotShown); echo ' '; _e('View every issue:', 'wordfence'); ?> <a href="<?php echo esc_attr(wfUtils::wpAdminURL('admin.php?page=WordfenceScan')); ?>"><?php echo esc_html(wfUtils::wpAdminURL('admin.php?page=WordfenceScan')); ?></a></p>
 <?php } ?>
 
 
