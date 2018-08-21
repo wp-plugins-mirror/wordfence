@@ -1019,6 +1019,7 @@ HTML
 		try {
 			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
 			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL');
+			$customText = wfWAF::getInstance()->getStorageEngine()->getConfig('blockCustomText');
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -1028,6 +1029,7 @@ HTML
 			'waf' => $this,
 			'homeURL' => $homeURL,
 			'siteURL' => $siteURL,
+			'customText' => $customText,
 		))->render();
 	}
 	
@@ -1039,6 +1041,7 @@ HTML
 		try {
 			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
 			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL');
+			$customText = wfWAF::getInstance()->getStorageEngine()->getConfig('blockCustomText');
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -1049,6 +1052,7 @@ HTML
 			'reason' => $reason,
 			'homeURL' => $homeURL,
 			'siteURL' => $siteURL,
+			'customText' => $customText,
 		))->render();
 	}
 

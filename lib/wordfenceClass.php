@@ -1508,6 +1508,7 @@ SQL
 		$lockout = wfBlock::lockoutForIP(wfUtils::getIP());
 		if ($lockout !== false) {
 			$lockout->recordBlock();
+			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 			require('wfLockedOut.php');
 		}
 		
@@ -1533,6 +1534,7 @@ SQL
 			}
 			if($forgotAttempts >= wfConfig::get('loginSec_maxForgotPasswd')){
 				self::lockOutIP($IP, "Exceeded the maximum number of tries to recover their password which is set at: " . wfConfig::get('loginSec_maxForgotPasswd') . ". The last username or email they entered before getting locked out was: '" . $_POST['user_login'] . "'");
+				$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 				require('wfLockedOut.php');
 			}
 			set_transient($tKey, $forgotAttempts, wfConfig::get('loginSec_countFailMins') * 60);
@@ -1812,6 +1814,7 @@ SQL
 					'other_WFNet'    => !!wfConfig::get('other_WFNet', true), 
 					'pluginABSPATH'	 => ABSPATH,
 					'serverIPs'		 => json_encode(wfUtils::serverIPs()),
+					'blockCustomText' => wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', ''))),
 				);
 				foreach ($configDefaults as $key => $value) {
 					$waf->getStorageEngine()->setConfig($key, $value);
@@ -2558,6 +2561,7 @@ SQL
 						self::lockOutIP($IP, "Used an invalid username '" . $username . "' to try to sign in.");
 						self::getLog()->logLogin('loginFailInvalidUsername', true, $username);
 					}
+					$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 					require('wfLockedOut.php');
 				}
 			}
@@ -2571,6 +2575,7 @@ SQL
 				}
 				if($tries >= wfConfig::get('loginSec_maxFailures')){
 					self::lockOutIP($IP, "Exceeded the maximum number of login failures which is: " . wfConfig::get('loginSec_maxFailures') . ". The last username they tried to sign in with was: '" . $username . "'");
+					$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 					require('wfLockedOut.php');
 				}
 				set_transient($tKey, $tries, wfConfig::get('loginSec_countFailMins') * 60);
@@ -2808,6 +2813,7 @@ SQL
 		$lockout = wfBlock::lockoutForIP(wfUtils::getIP());
 		if ($lockout !== false) {
 			$lockout->recordBlock();
+			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 			require('wfLockedOut.php');
 		}
 		
@@ -2817,6 +2823,7 @@ SQL
 		$lockout = wfBlock::lockoutForIP(wfUtils::getIP());
 		if ($lockout !== false) {
 			$lockout->recordBlock();
+			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 			require('wfLockedOut.php');
 		}
 		
@@ -2850,6 +2857,7 @@ SQL
 		$lockout = wfBlock::lockoutForIP(wfUtils::getIP());
 		if ($lockout !== false) {
 			$lockout->recordBlock();
+			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 			require('wfLockedOut.php');
 		}
 		

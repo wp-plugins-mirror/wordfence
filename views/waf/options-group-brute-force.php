@@ -230,6 +230,19 @@ if (!isset($collapseable)) {
 					</li>
 					<li>
 						<?php
+						echo wfView::create('options/option-textarea', array(
+							'textOptionName' => 'blockCustomText',
+							'textValue' => wfConfig::get('blockCustomText'),
+							'title' => __('Custom text shown on block pages', 'wordfence'),
+							'alignTitle' => 'top',
+							'subtitleHTML' => __('HTML tags will be stripped prior to output and line breaks will be converted into the appropriate tags.', 'wordfence'),
+							'subtitlePosition' => 'value',
+							'helpLink' => wfSupportController::supportURL(wfSupportController::ITEM_FIREWALL_WAF_OPTION_CUSTOM_BLOCK_TEXT),
+						))->render();
+						?>
+					</li>
+					<li>
+						<?php
 						echo wfView::create('options/option-toggled', array(
 							'optionName' => 'other_pwStrengthOnUpdate',
 							'enabledValue' => 1,

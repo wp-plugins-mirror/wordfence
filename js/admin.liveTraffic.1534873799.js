@@ -473,6 +473,9 @@
 			if (self.actionData() && self.actionData().learningMode) {
 				classes += ' wfWAFLearningMode';
 			}
+			if (self.action() == 'loginFailValidUsername' || self.action() == 'loginFailInvalidUsername') {
+				classes += ' wfFailedLogin';
+			}
 			// if (self.highlighted()) {
 			// 	classes += ' highlighted';
 			// }
@@ -483,7 +486,7 @@
 			var classes = 'wf-live-traffic-type-icon';
 			if (self.statusCode() == 403 || self.statusCode() == 503) {
 				classes += ' wf-icon-blocked wf-ion-android-cancel';
-			} else if (self.statusCode() == 404) {
+			} else if (self.statusCode() == 404 || self.action() == 'loginFailValidUsername' || self.action() == 'loginFailInvalidUsername') {
 				classes += ' wf-icon-warning wf-ion-alert-circled';
 			} else if (self.jsRun() == 1) {
 				classes += ' wf-icon-human wf-ion-ios-person';
@@ -496,7 +499,9 @@
 
 		self.typeText = ko.pureComputed(function() {
 			var type = 'Type: ';
-			if (self.statusCode() == 403 || self.statusCode() == 503) {
+			if (self.action() == 'loginFailValidUsername' || self.action() == 'loginFailInvalidUsername') {
+				type += 'Failed Login';
+			} else if (self.statusCode() == 403 || self.statusCode() == 503) {
 				type += 'Blocked';
 			} else if (self.statusCode() == 404) {
 				type += '404 Not Found';

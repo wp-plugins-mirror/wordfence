@@ -753,6 +753,7 @@ class wfLog {
 		if($secsToGo){
 			header('Retry-After: ' . $secsToGo);
 		}
+		$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
 		require_once('wf503.php');
 		exit();
 	}

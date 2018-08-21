@@ -187,6 +187,7 @@ class wfConfig {
 			'cbl_bypassRedirDest' => array('value' => '', 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_STRING)),
 			'cbl_bypassViewURL' => array('value' => '', 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_STRING)),
 			'loginSec_enableSeparateTwoFactor' => array('value' => false, 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_BOOL)),
+			'blockCustomText' => array('value' => '', 'autoload' => self::AUTOLOAD, 'validation' => array('type' => self::TYPE_STRING)),
 		),
 		//Set as default only, not included automatically in the settings import/export or options page saving
 		'defaultsOnly' => array(
@@ -647,7 +648,7 @@ class wfConfig {
 		
 		global $wpdb;
 		$dbh = $wpdb->dbh;
-		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli && wfConfig::get('allowMySQLi', true));
+		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli && wfConfig::get('allowMySQLi', true) && WORDFENCE_ALLOW_DIRECT_MYSQLI);
 		
 		if (!self::$tableExists) {
 			return;
@@ -856,56 +857,36 @@ class wfConfig {
 		wfConfig::set('autoUpdate', '0');	
 		wp_clear_scheduled_hook('wordfence_daily_autoUpdate');
 	}
-	public static function createLock($name, $timeout = null) { //Polyfill since WP's built-in version wasn't added until 4.5
+	public static function createLock($name, $timeout = null) { //Our own version of WP_Upgrader::create_lock that uses our table instead
 		global $wpdb;
-		$oldBlogID = $wpdb->set_blog_id(0);
-		
-		if (function_exists('WP_Upgrader::create_lock')) {
-			$result = WP_Upgrader::create_lock($name, $timeout);
-			$wpdb->set_blog_id($oldBlogID);
-			return $result;
-		}
 		
 		if (!$timeout) {
 			$timeout = 3600;
 		}
 		
+		$table = self::table();
+		
 		$lock_option = $name . '.lock';
-		$lock_result = $wpdb->query($wpdb->prepare("INSERT IGNORE INTO `{$wpdb->options}` (`option_name`, `option_value`, `autoload`) VALUES (%s, %s, 'no') /* LOCK */", $lock_option, time()));
+		$lock_result = $wpdb->query($wpdb->prepare("INSERT IGNORE INTO `$table` (`name`, `val`, `autoload`) VALUES (%s, %s, 'no')", $lock_option, time()));
 		
 		if (!$lock_result) {
-			$lock_result = get_option($lock_option);
+			$lock_result = self::get($lock_option, false, false);
 			if (!$lock_result) {
-				$wpdb->set_blog_id($oldBlogID);
 				return false;
 			}
 			
 			if ($lock_result > (time() - $timeout)) {
-				$wpdb->set_blog_id($oldBlogID);
 				return false;
 			}
 			
 			self::releaseLock($name);
-			$wpdb->set_blog_id($oldBlogID);
 			return self::createLock($name, $timeout);
 		}
 		
-		update_option($lock_option, time());
-		$wpdb->set_blog_id($oldBlogID);
 		return true;
 	}
 	public static function releaseLock($name) {
-		global $wpdb;
-		$oldBlogID = $wpdb->set_blog_id(0);
-		if (function_exists('WP_Upgrader::release_lock')) {
-			$result = WP_Upgrader::release_lock($name);
-		}
-		else {
-			$result = delete_option($name . '.lock');
-		}
-		
-		$wpdb->set_blog_id($oldBlogID);
-		return $result;
+		self::remove($name . '.lock');
 	}
 	public static function autoUpdate(){
 		if (!wfConfig::get('other_bypassLitespeedNoabort', false) && getenv('noabort') != '1' && stristr($_SERVER['SERVER_SOFTWARE'], 'litespeed') !== false) {

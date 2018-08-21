@@ -24,7 +24,7 @@ $w = new wfConfig();
 	</div>
 <?php endif ?>
 
-<p><?php _e("Wordfence Live Traffic shows you what is happening on your site in real-time. This includes a lot of data that javascript based analytics packages like Google analytics do not show you. The reason they can't show you this data is because Wordfence logs your traffic at the server level. So for example, we will show you visits from Google's crawlers, Bing's crawlers, hack attempts and other visits that don't execute javascript. Whereas Google analytics and other analytics packages will only show you visits from web browsers that are usually operated by a human.", 'wordfence') ?></p>
+<p><?php _e("Wordfence Live Traffic shows you what is happening on your site in real-time. Traffic is logged at the server level which means it includes visits that don't execute JavaScript. Google and other JavaScript-based analytics packages will typically only show visits from browsers that are operated by a human. Live Traffic shows visits from crawlers like Google and Bing. It also shows hack attempts and requests that were blocked by the Wordfence Firewall.", 'wordfence') ?></p>
 
 <div class="wordfenceModeElem" id="wordfenceMode_liveTraffic"></div>
 
@@ -350,7 +350,7 @@ if (!wfConfig::liveTrafficEnabled($overridden)):
 																<span data-bind="if: (statusCode() == 301 || statusCode() == 302) && !action()">
 																	was redirected when visiting
 																</span>
-																<span data-bind="if: statusCode() == 403 || statusCode() == 503">
+																<span data-bind="if: ((statusCode() == 403 || statusCode() == 503) && action() != 'loginFailValidUsername' && action() != 'loginFailInvalidUsername')">
 																	was <span data-bind="text: firewallAction" style="color: #F00;"></span> at
 																</span>
 
@@ -364,10 +364,10 @@ if (!wfConfig::liveTrafficEnabled($overridden)):
 																	requested a password reset.
 																</span>
 																<span data-bind="if: action() == 'loginFailValidUsername'">
-																	attempted a failed login as "<strong data-bind="text: username"></strong>".
+																	attempted a <span style="color: #F00;">failed login</span> as "<strong data-bind="text: username"></strong>".
 																</span>
 																<span data-bind="if: action() == 'loginFailInvalidUsername'">
-																	attempted a failed login using an invalid username "<strong
+																	attempted a <span style="color: #F00;">failed login</span> using an invalid username "<strong
 																			data-bind="text: username"></strong>".
 																</span>
 																<span data-bind="if: action() == 'user:passwordReset'">
@@ -404,7 +404,7 @@ if (!wfConfig::liveTrafficEnabled($overridden)):
 																	</a>
 																</span>
 															</div>
-															<div data-bind="visible: (jQuery.inArray(parseInt(statusCode(), 10), [403, 503, 404]) !== -1)">
+															<div data-bind="visible: (jQuery.inArray(parseInt(statusCode(), 10), [403, 503, 404]) !== -1 || action() == 'loginFailValidUsername' || action() == 'loginFailInvalidUsername')">
 																<strong>Human/Bot:</strong> <span data-bind="text: (jsRun() === '1' ? 'Human' : 'Bot')"></span>
 															</div>
 															<div data-bind="if: browser() && browser().browser != 'Default Browser'">

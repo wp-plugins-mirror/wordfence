@@ -398,7 +398,7 @@ class wordfenceScanner {
 											'ignoreP' => $this->path . $file,
 											'ignoreC' => $fileSum,
 											'shortMsg' => __('File appears to be malicious: ', 'wordfence') . esc_html($file),
-											'longMsg' => sprintf(__('This file appears to be installed or modified by a hacker to perform malicious activity. If you know about this file you can choose to ignore it to exclude it from future scans. The text we found in this file that matches a known malicious file is: <strong style="color: #F00;" class="wf-split-word">%s</strong>.', 'wordfence'), wfUtils::potentialBinaryStringToHTML((wfUtils::strlen($matchString) > 200 ? wfUtils::substr($matchString, 0, 200) . '...' : $matchString))) . ' ' . sprintf(__('The infection type is: <strong>%s</strong>.', 'wordfence'), esc_html($rule[3])) . $extraMsg,
+											'longMsg' => sprintf(__('This file appears to be installed or modified by a hacker to perform malicious activity. If you know about this file you can choose to ignore it to exclude it from future scans. The text we found in this file that matches a known malicious file is: <strong style="color: #F00;" class="wf-split-word">%s</strong>', 'wordfence'), wfUtils::potentialBinaryStringToHTML((wfUtils::strlen($matchString) > 200 ? wfUtils::substr($matchString, 0, 200) . '...' : $matchString))) . '<br><br>' . sprintf(__('The infection type is: <strong>%s</strong>', 'wordfence'), esc_html($rule[7])) . '<br>' . sprintf(__('Description: <strong>%s</strong>', 'wordfence'), esc_html($rule[3])) . $extraMsg,
 											'data' => array_merge(array(
 												'file' => $file,
 												'shac' => $record->SHAC,

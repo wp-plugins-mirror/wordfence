@@ -1247,7 +1247,7 @@ class wfScanEngine {
 		$counter = 0;
 		$query = "select ID from " . $wpdb->users;
 		$dbh = $wpdb->dbh;
-		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli && wfConfig::get('allowMySQLi', true));
+		$useMySQLi = (is_object($dbh) && $wpdb->use_mysqli && wfConfig::get('allowMySQLi', true) && WORDFENCE_ALLOW_DIRECT_MYSQLI);
 		if ($useMySQLi) { //If direct-access MySQLi is available, we use it to minimize the memory footprint instead of letting it fetch everything into an array first
 			$result = $dbh->query($query);
 			if (!is_object($result)) {
