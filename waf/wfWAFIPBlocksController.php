@@ -44,7 +44,7 @@ class wfWAFIPBlocksController
 	}
 	
 	public static function synchronizeConfigSettings() {
-		if (!class_exists('wfConfig')) { // Ensure this is only called when WordPress and the plugin are fully loaded
+		if (!class_exists('wfConfig') || !wfConfig::tableExists()) { // Ensure this is only called when WordPress and the plugin are fully loaded
 			return;
 		}
 		
@@ -119,16 +119,16 @@ class wfWAFIPBlocksController
 		// Save it
 		try {
 			$patternBlocksJSON = wfWAFUtils::json_encode($patternBlocks);
-			wfWAF::getInstance()->getStorageEngine()->setConfig('patternBlocks', $patternBlocksJSON);
+			wfWAF::getInstance()->getStorageEngine()->setConfig('patternBlocks', $patternBlocksJSON, 'synced');
 			$countryBlocksJSON = wfWAFUtils::json_encode($countryBlocks);
-			wfWAF::getInstance()->getStorageEngine()->setConfig('countryBlocks', $countryBlocksJSON);
+			wfWAF::getInstance()->getStorageEngine()->setConfig('countryBlocks', $countryBlocksJSON, 'synced');
 			$otherBlocksJSON = wfWAFUtils::json_encode($otherBlocks);
-			wfWAF::getInstance()->getStorageEngine()->setConfig('otherBlocks', $otherBlocksJSON);
+			wfWAF::getInstance()->getStorageEngine()->setConfig('otherBlocks', $otherBlocksJSON, 'synced');
 			$lockoutsJSON = wfWAFUtils::json_encode($lockouts);
-			wfWAF::getInstance()->getStorageEngine()->setConfig('lockouts', $lockoutsJSON);
+			wfWAF::getInstance()->getStorageEngine()->setConfig('lockouts', $lockoutsJSON, 'synced');
 			
-			wfWAF::getInstance()->getStorageEngine()->setConfig('advancedBlockingEnabled', wfConfig::get('firewallEnabled'));
-			wfWAF::getInstance()->getStorageEngine()->setConfig('disableWAFIPBlocking', wfConfig::get('disableWAFIPBlocking'));
+			wfWAF::getInstance()->getStorageEngine()->setConfig('advancedBlockingEnabled', wfConfig::get('firewallEnabled'), 'synced');
+			wfWAF::getInstance()->getStorageEngine()->setConfig('disableWAFIPBlocking', wfConfig::get('disableWAFIPBlocking'), 'synced');
 		}
 		catch (Exception $e) {
 			// Do nothing
@@ -169,13 +169,13 @@ class wfWAFIPBlocksController
 		
 		$isPaid = false;
 		try {
-			$isPaid = wfWAF::getInstance()->getStorageEngine()->getConfig('isPaid');
-			$pluginABSPATH = wfWAF::getInstance()->getStorageEngine()->getConfig('pluginABSPATH');
+			$isPaid = wfWAF::getInstance()->getStorageEngine()->getConfig('isPaid', null, 'synced');
+			$pluginABSPATH = wfWAF::getInstance()->getStorageEngine()->getConfig('pluginABSPATH', null, 'synced');
 			
-			$patternBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('patternBlocks');
-			$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks');
-			$otherBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('otherBlocks');
-			$lockoutsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('lockouts');
+			$patternBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('patternBlocks', null, 'synced');
+			$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks', null, 'synced');
+			$otherBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('otherBlocks', null, 'synced');
+			$lockoutsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('lockouts', null, 'synced');
 		}
 		catch (Exception $e) {
 			// Do nothing
@@ -355,7 +355,7 @@ class wfWAFIPBlocksController
 	public function countryRedirURL($countryBlocks = null) {
 		if (!isset($countryBlocks)) {
 			try {
-				$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks');
+				$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks', null, 'synced');
 			}
 			catch (Exception $e) {
 				return false;
@@ -374,7 +374,7 @@ class wfWAFIPBlocksController
 	public function countryBypassRedirURL($countryBlocks = null) {
 		if (!isset($countryBlocks)) {
 			try {
-				$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks');
+				$countryBlocksJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('countryBlocks', null, 'synced');
 			}
 			catch (Exception $e) {
 				return false;
@@ -390,7 +390,7 @@ class wfWAFIPBlocksController
 	
 	protected function checkForBlockedCountry($countryBlock, $ip, $bareRequestURI) {
 		try {
-			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
+			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL', null, 'synced');
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -430,8 +430,8 @@ class wfWAFIPBlocksController
 	
 	protected function checkForWhitelisted($ip) {
 		try {
-			$pluginABSPATH = wfWAF::getInstance()->getStorageEngine()->getConfig('pluginABSPATH');
-			$serverIPsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('serverIPs');
+			$pluginABSPATH = wfWAF::getInstance()->getStorageEngine()->getConfig('pluginABSPATH', null, 'synced');
+			$serverIPsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('serverIPs', null, 'synced');
 		}
 		catch (Exception $e) {
 			// Do nothing
@@ -508,7 +508,7 @@ class wfWAFIPBlocksController
 				$is_ssl = true;
 			}
 			
-			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL');
+			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL', null, 'synced');
 			return $is_ssl && parse_url($homeURL, PHP_URL_SCHEME) === 'https';
 		}
 		catch (Exception $e) {

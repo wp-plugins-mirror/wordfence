@@ -13,10 +13,9 @@
  - Country blocking
  - Two factor authentication
  - IP reputation monitoring
- - Advanced comment spam filter
  - Schedule scans to run more frequently and at optimal times
  - Access to Premium Support
- - Discounts for multi-license purchases
+ - Discounts for multi-year and multi-license purchases
 
 Click here to upgrade to Wordfence Premium:
 https://www.wordfence.com/zz1/wordfence-signup/', 'wordfence'); ?>

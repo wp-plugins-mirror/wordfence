@@ -102,8 +102,6 @@ if (isset($_GET['source']) && wfPage::isValidPage($_GET['source'])) {
 				'wf-option-email-summary-enabled' => __('Enable email summary', 'wordfence'),
 				'wf-option-email-summary-excluded-directories' => __('List of directories to exclude from recently modified file list', 'wordfence'),
 				'wf-option-email-summary-dashboard-widget-enabled' => __('Enable activity report widget on the WordPress dashboard', 'wordfence'),
-				'wf-option-exportOptions' => __('Export this site\'s Wordfence options for import on another site', 'wordfence'),
-				'wf-option-importOptions' => __('Import Wordfence options from another site using a token', 'wordfence'),
 				'wf-option-wafStatus' => __('Web Application Firewall Status', 'wordfence'),
 				'wf-option-protectionMode' => __('Web Application Firewall Protection Level', 'wordfence'),
 				'wf-option-disableWAFBlacklistBlocking' => __('Real-Time IP Blacklist', 'wordfence'),
@@ -189,9 +187,8 @@ if (isset($_GET['source']) && wfPage::isValidPage($_GET['source'])) {
 				'wf-option-liveTraf-ignoreUA' => __('Browser user-agent to ignore', 'wordfence'),
 				'wf-option-liveTraf-maxRows' => __('Amount of Live Traffic data to store (number of rows)', 'wordfence'),
 				'wf-option-liveTraf-maxAge' => __('Maximum days to keep Live Traffic data', 'wordfence'),
-				'wf-option-other-noAnonMemberComments' => __('Hold anonymous comments using member emails for moderation', 'wordfence'),
-				'wf-option-other-scanComments' => __('Filter comments for malware and phishing URLs', 'wordfence'),
-				'wf-option-advancedCommentScanning' => __('Advanced Comment Spam Filter', 'wordfence'),
+				'wf-option-exportOptions' => __('Export this site\'s Wordfence options for import on another site', 'wordfence'),
+				'wf-option-importOptions' => __('Import Wordfence options from another site using a token', 'wordfence'),
 			);
 			
 			echo wfView::create('options/block-all-options-controls', array(
@@ -243,7 +240,6 @@ else if (wfConfig::get('touppPromptNeeded')) {
 						'wf-unified-global-options-dashboard',
 						'wf-unified-global-options-alert',
 						'wf-unified-global-options-email-summary',
-						'wf-unified-global-options-import',
 						'wf-unified-waf-options-basic',
 						'wf-unified-waf-options-advanced',
 						'wf-unified-waf-options-bruteforce',
@@ -257,7 +253,6 @@ else if (wfConfig::get('touppPromptNeeded')) {
 						'wf-unified-scanner-options-custom',
 						'wf-unified-2fa-options',
 						'wf-unified-live-traffic-options',
-						//'wf-unified-comment-spam-options', //Does not currently support collapsing
 					);
 					
 					echo wfView::create('options/options-title', array(
@@ -297,10 +292,6 @@ else if (wfConfig::get('touppPromptNeeded')) {
 					
 					echo wfView::create('dashboard/options-group-email-summary', array(
 						'stateKey' => 'wf-unified-global-options-email-summary',
-					))->render();
-					
-					echo wfView::create('dashboard/options-group-import', array(
-						'stateKey' => 'wf-unified-global-options-import',
 					))->render();
 					?>
 					
@@ -398,12 +389,36 @@ else if (wfConfig::get('touppPromptNeeded')) {
 						'stateKey' => 'wf-unified-live-traffic-options',
 						'hideShowMenuItem' => true,
 					))->render();
-					
-					echo wfView::create('tools/options-group-comment-spam', array(
-						'stateKey' => 'wf-unified-comment-spam-options',
-					))->render();
 					?>
-				</div> <!-- end waf options block -->
+
+					<div class="wf-row">
+						<div class="wf-col-xs-12">
+							<div class="wf-block wf-always-active" data-persistence-key="">
+								<div class="wf-block-header">
+									<div class="wf-block-header-content">
+										<div class="wf-block-title">
+											<strong><?php _e('Import/Export Options', 'wordfence'); ?></strong>
+										</div>
+									</div>
+								</div>
+								<div class="wf-block-content">
+									<ul class="wf-block-list">
+										<li>
+											<ul class="wf-flex-horizontal wf-flex-vertical-xs wf-flex-full-width wf-add-top wf-add-bottom">
+												<li><?php _e('Importing and exporting of options is available on the Tools page', 'wordfence'); ?></li>
+												<li class="wf-right wf-left-xs wf-padding-add-top-xs-small">
+													<a href="<?php echo esc_url(network_admin_url('admin.php?page=WordfenceTools&subpage=importexport')); ?>" class="wf-btn wf-btn-primary wf-btn-callout-subtle" id="wf-export-options"><?php _e('Import/Export Options', 'wordfence'); ?></a>
+												</li>
+											</ul>
+											<input type="hidden" id="wf-option-exportOptions">
+											<input type="hidden" id="wf-option-importOptions">
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div> <!-- end import options -->
+				</div> <!-- end options block -->
 			</div> <!-- end content block -->
 		</div> <!-- end row -->
 	</div> <!-- end container -->

@@ -18,14 +18,12 @@ class wfConfig {
 	const OPTIONS_TYPE_SCANNER = 'scanner';
 	const OPTIONS_TYPE_TWO_FACTOR = 'twofactor';
 	const OPTIONS_TYPE_LIVE_TRAFFIC = 'livetraffic';
-	const OPTIONS_TYPE_COMMENT_SPAM = 'commentspam';
 	const OPTIONS_TYPE_DIAGNOSTICS = 'diagnostics';
 	const OPTIONS_TYPE_ALL = 'all';
 	
 	public static $diskCache = array();
 	private static $diskCacheDisabled = false; //enables if we detect a write fail so we don't keep calling stat()
 	private static $cacheDisableCheckDone = false;
-	private static $table = false;
 	private static $tableExists = true;
 	private static $cache = array();
 	private static $DB = false;
@@ -100,7 +98,6 @@ class wfConfig {
 			"notification_productUpdates" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"notification_scanStatus" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"other_hideWPVersion" => array('value' => false, 'autoload' => self::AUTOLOAD),
-			"other_noAnonMemberComments" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"other_blockBadPOST" => array('value' => false, 'autoload' => self::AUTOLOAD),
 			"other_scanComments" => array('value' => true, 'autoload' => self::AUTOLOAD),
 			"other_pwStrengthOnUpdate" => array('value' => true, 'autoload' => self::AUTOLOAD),
@@ -321,6 +318,11 @@ class wfConfig {
 			self::$tableExists = false;
 		}
 	}
+	
+	public static function tableExists() {
+		return self::$tableExists;
+	}
+	
 	private static function updateCachedOption($name, $val) {
 		$options = self::loadAllOptions();
 		$options[$name] = $val;
@@ -421,6 +423,8 @@ class wfConfig {
 		$old_suppress_errors = $wpdb->suppress_errors(true);
 		$table = self::table();
 		$rowExists = false;
+		$successful = false;
+		$attempts = 0;
 		do {
 			if (!$rowExists && $wpdb->query($wpdb->prepare("INSERT INTO {$table} (name, val, autoload) values (%s, %s, %s)", $key, 1, self::DONT_AUTOLOAD))) {
 				$val = 1;
@@ -434,7 +438,8 @@ class wfConfig {
 					$successful = true;
 				}
 			}
-		} while (!$successful);
+			$attempts++;
+		} while (!$successful && $attempts < 100);
 		$wpdb->suppress_errors($old_suppress_errors);
 		return $val;
 	}
@@ -468,7 +473,7 @@ class wfConfig {
 			}
 			
 			try {
-				wfWAF::getInstance()->getStorageEngine()->setConfig($key, $val);
+				wfWAF::getInstance()->getStorageEngine()->setConfig($key, $val, 'synced');
 			} catch (wfWAFStorageFileException $e) {
 				error_log($e->getMessage());
 			}
@@ -808,10 +813,7 @@ class wfConfig {
 		return self::$DB;
 	}
 	private static function table(){
-		if(! self::$table){
-			self::$table = wfDB::networkTable('wfConfig');
-		}
-		return self::$table;
+		return wfDB::networkTable('wfConfig');
 	}
 	public static function haveAlertEmails(){
 		$emails = self::getAlertEmails();
@@ -1295,7 +1297,7 @@ Options -ExecCGI
 				}
 				case 'whitelistedURLParams':
 				{
-					$whitelistedURLParams = (array) $wafConfig->getConfig('whitelistedURLParams');
+					$whitelistedURLParams = (array) $wafConfig->getConfig('whitelistedURLParams', null, 'livewaf');
 					if (isset($value['delete'])) {
 						foreach ($value['delete'] as $whitelistKey => $unused) {
 							unset($whitelistedURLParams[$whitelistKey]);
@@ -1310,7 +1312,7 @@ Options -ExecCGI
 							}
 						}
 					}
-					$wafConfig->setConfig('whitelistedURLParams', $whitelistedURLParams);
+					$wafConfig->setConfig('whitelistedURLParams', $whitelistedURLParams, 'livewaf');
 					
 					if (isset($value['add'])) {
 						foreach ($value['add'] as $entry) {
@@ -1332,13 +1334,6 @@ Options -ExecCGI
 						}
 					}
 					
-					$saved = true;
-					break;
-				}
-				case 'disableWAFIPBlocking':
-				{
-					wfConfig::set($key, wfUtils::truthyToInt($value));
-					$wafConfig->setConfig($key, wfUtils::truthyToInt($value));
 					$saved = true;
 					break;
 				}
@@ -1502,6 +1497,13 @@ Options -ExecCGI
 					$saved = true;
 					break;
 				}
+				case 'email_summary_interval':
+				{
+					wfConfig::set($key, $value);
+					wfActivityReport::scheduleCronJob();
+					$saved = true;
+					break;
+				}
 				case 'email_summary_enabled':
 				{
 					$value = wfUtils::truthyToBoolean($value);
@@ -1533,7 +1535,7 @@ Options -ExecCGI
 					$value = wfUtils::truthyToBoolean($value);
 					wfConfig::set($key, $value);
 					if (class_exists('wfWAFConfig')) {
-						wfWAFConfig::set('betaThreatDefenseFeed', $value);
+						wfWAFConfig::set('betaThreatDefenseFeed', $value, 'synced');
 					}
 					$saved = true;
 					break;
@@ -1579,8 +1581,7 @@ Options -ExecCGI
 				else if (in_array($key, self::$serializedOptions)) {
 					wfConfig::set_ser($key, $value);
 				}
-				else {
-					//TODO: remove me when done with QA
+				else if (WFWAF_DEBUG) {
 					error_log("*** DEBUG: Config option '{$key}' missing save handler.");
 				}
 			}
@@ -1589,6 +1590,7 @@ Options -ExecCGI
 		if ($apiKey !== false) {
 			$existingAPIKey = wfConfig::get('apiKey', '');
 			$apiKey = strtolower(trim($apiKey)); //Already validated above
+			$ping = false;
 			if (empty($apiKey)) { //Empty, try getting a free key
 				$api = new wfAPI('', wfUtils::getWPVersion());
 				try {
@@ -1598,6 +1600,7 @@ Options -ExecCGI
 						wfConfig::set('isPaid', false);
 						wfConfig::set('keyType', wfAPI::KEY_TYPE_FREE);
 						wordfence::licenseStatusChanged();
+						wfConfig::set('touppPromptNeeded', true);
 					}
 					else {
 						throw new Exception("The Wordfence server's response did not contain the expected elements.");
@@ -1619,6 +1622,7 @@ Options -ExecCGI
 						if (!$isPaid) {
 							wfConfig::set('keyType', wfAPI::KEY_TYPE_FREE);
 						}
+						$ping = true;
 					}
 					else {
 						throw new Exception("The Wordfence server's response did not contain the expected elements.");
@@ -1629,6 +1633,10 @@ Options -ExecCGI
 				}
 			}
 			else { //Key unchanged, just ping it
+				$ping = true;
+			}
+			
+			if ($ping) {
 				$api = new wfAPI($apiKey, wfUtils::getWPVersion());
 				try {
 					$keyType = wfAPI::KEY_TYPE_FREE;
@@ -1824,13 +1832,6 @@ Options -ExecCGI
 					'displayTopLevelLiveTraffic',
 				);
 				break;
-			case self::OPTIONS_TYPE_COMMENT_SPAM:
-				$options = array(
-					'other_noAnonMemberComments',
-					'other_scanComments',
-					'advancedCommentScanning',
-				);
-				break;
 			case self::OPTIONS_TYPE_DIAGNOSTICS:
 				$options = array(
 					'debugOn',
@@ -1976,7 +1977,6 @@ Options -ExecCGI
 					'liveTraf_maxRows',
 					'liveTraf_maxAge',
 					'displayTopLevelLiveTraffic',
-					'other_noAnonMemberComments',
 					'other_scanComments',
 					'advancedCommentScanning',
 				);

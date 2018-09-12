@@ -101,10 +101,9 @@
 		<li><?php _e('Country blocking', 'wordfence'); ?></li>
 		<li><?php _e('Two factor authentication', 'wordfence'); ?></li>
 		<li><?php _e('IP reputation monitoring', 'wordfence'); ?></li>
-		<li><?php _e('Advanced comment spam filter', 'wordfence'); ?></li>
 		<li><?php _e('Schedule scans to run more frequently and at optimal times', 'wordfence'); ?></li>
 		<li><?php _e('Access to Premium Support', 'wordfence'); ?></li>
-		<li><?php _e('Discounts for multi-license purchases', 'wordfence'); ?></li>
+		<li><?php _e('Discounts for multi-year and multi-license purchases', 'wordfence'); ?></li>
 	</ul>
 
 	<p><?php _e('Click here to upgrade to Wordfence Premium:', 'wordfence'); ?><br><a href="https://www.wordfence.com/zz2/wordfence-signup/">https://www.wordfence.com/zz2/wordfence-signup/</a></p>

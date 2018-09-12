@@ -36,7 +36,7 @@ if (!isset($collapseable)) {
 							'optionName' => 'disableWAFIPBlocking',
 							'enabledValue' => 1,
 							'disabledValue' => 0,
-							'value' => $config->getConfig('disableWAFIPBlocking') ? 1 : 0,
+							'value' => wfConfig::get('disableWAFIPBlocking') ? 1 : 0,
 							'title' => __('Delay IP and Country blocking until after WordPress and plugins have loaded (only process firewall rules early)', 'wordfence'),
 							'subtitle' => ($firewall->isSubDirectoryInstallation() ? __('You are currently running the WAF from another WordPress installation. This option can be changed once you configure the firewall to run correctly on this site.', 'wordfence') : ''),
 							'helpLink' => wfSupportController::supportURL(wfSupportController::ITEM_FIREWALL_WAF_OPTION_DELAY_BLOCKING),

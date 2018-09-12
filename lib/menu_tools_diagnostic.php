@@ -666,7 +666,7 @@ if (!isset($sendingDiagnosticEmail)) {
 									if ($hasAll): ?>
 									<div class="wf-result-success"><?php _e('All Tables Exist', 'wordfence'); ?></div>
 									<?php else: ?>
-									<div class="wf-result-error"><?php printf(__('Tables missing (prefix %s): %s', 'wordfence'), wfDB::networkPrefix(), implode(', ', $missingTables)); ?></div>
+									<div class="wf-result-error"><?php printf(__('Tables missing (prefix %s, %s): %s', 'wordfence'), wfDB::networkPrefix(), wfSchema::usingLowercase() ? __('lowercase', 'wordfence') : __('regular case', 'wordfence'), implode(', ', $missingTables)); ?></div>
 									<?php endif; ?>
 								<?php endif; ?>
 							</div>

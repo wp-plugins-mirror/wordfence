@@ -65,7 +65,7 @@ class wfBlock {
 	 * @return string
 	 */
 	public static function blocksTable() {
-		return wfDB::networkPrefix() . 'wfBlocks7';
+		return wfDB::networkTable('wfBlocks7');
 	}
 	
 	/**

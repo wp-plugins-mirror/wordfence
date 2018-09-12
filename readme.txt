@@ -34,7 +34,6 @@ Wordfence includes an endpoint firewall and malware scanner that were built from
 #### SECURITY TOOLS
 * With Live Traffic, monitor visits and hack attempts not shown in other analytics packages in real time; including origin, their IP address, the time of day and time spent on your site.
 * [Premium] Stop brute force attacks permanently by using two factor authentication, one of the most secure forms of remote system authentication available.
-* The free version of Wordfence includes an excellent comment spam filter. [Premium] An advanced comment spam filter is automatically enabled for premium customers.
 * Block attackers by IP or build advanced rules based on IP Range, Hostname, User Agent and Referrer. [Premium] Country blocking available with Wordfence Premium.
 
 == Installation ==
@@ -171,6 +170,17 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.1.12 =
+* Improvement: Updated bundled GeoIP database.
+* Improvement: Restructured the WAF configuration storage to be more resilient on hosts with no file locking support.
+* Change: Moved the settings import/export to the Tools page.
+* Change: New installations will now use lowercase table names to avoid issues with some backup plugins and Windows-based sites.
+* Fix: The notice and repair link for an unreadable WAF configuration now work correctly.
+* Fix: Improved appearance of some stat components on smaller screens.
+* Fix: Fixed duplicate entries with different status codes appearing in detailed live traffic.
+* Fix: Added better caching for the breached password check to compensate for sites that prevent the cache from expiring correctly.
+* Fix: Changing the frequency of the activity summary email now reschedules it.
 
 = 7.1.11 =
 * Improvement: Added a custom message field that will show on all block pages.
