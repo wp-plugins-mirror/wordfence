@@ -398,6 +398,8 @@
 						return 'Blocked by the Wordfence Security Network';
 					case 'blocked:waf':
 						return 'Blocked by the Wordfence Web Application Firewall';
+					case 'cbl:redirect':
+						return 'Redirected by Country Blocking bypass URL';
 					default:
 						return 'Blocked by Wordfence';
 				}
@@ -455,6 +457,9 @@
 						return 'blocked by firewall';
 					}
 					return 'blocked by firewall for ' + self.actionDescription();
+				case 'cbl:redirect':
+					desc = self.actionDescription();
+					return desc;
 			}
 			return desc;
 		});
@@ -505,6 +510,8 @@
 				type += 'Blocked';
 			} else if (self.statusCode() == 404) {
 				type += '404 Not Found';
+			} else if (self.statusCode() == 302) {
+				type += 'Redirected';
 			} else if (self.jsRun() == 1) {
 				type += 'Human';
 			} else {

@@ -1,4 +1,6 @@
 <?php
+if (!defined('WFWAF_RUN_COMPLETE')) {
+
 class wfWAFIPBlocksController
 {
 	const WFWAF_BLOCK_UAREFIPRANGE = 'UA/Referrer/IP Range not allowed';
@@ -472,13 +474,11 @@ class wfWAFIPBlocksController
 			return '';
 		}
 		
-		if (!class_exists('wfWAFGeoIP2')) {
-			require_once(dirname(__FILE__) . '/wfWAFGeoIP2.php');
-		}
+		require_once(dirname(__FILE__) . '/wfWAFGeoIP2.php');
 		
 		try {
-			$geoip = wfWAFGeoIP2::shared();
-			$code = $geoip->countryCode($ip);
+			$geoip = @wfWAFGeoIP2::shared();
+			$code = @$geoip->countryCode($ip);
 			return is_string($code) ? $code : '';
 		}
 		catch (Exception $e) {
@@ -517,4 +517,5 @@ class wfWAFIPBlocksController
 		
 		return false;
 	}
+}
 }

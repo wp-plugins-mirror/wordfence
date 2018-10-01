@@ -1347,8 +1347,8 @@ class wfUtils {
 		}
 		
 		try {
-			$geoip = wfGeoIP2::shared();
-			$code = $geoip->countryCode($IP);
+			$geoip = @wfGeoIP2::shared();
+			$code = @$geoip->countryCode($IP);
 			return is_string($code) ? $code : '';
 		}
 		catch (Exception $e) {
@@ -1367,8 +1367,8 @@ class wfUtils {
 		}
 		
 		try {
-			$geoip = wfGeoIP2::shared();
-			return $geoip->version();
+			$geoip = @wfGeoIP2::shared();
+			return @$geoip->version();
 		}
 		catch (Exception $e) {
 			//Ignore

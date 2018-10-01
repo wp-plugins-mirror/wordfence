@@ -1,4 +1,5 @@
 <?php
+if (defined('WFWAF_VERSION') && !defined('WFWAF_RUN_COMPLETE')) {
 
 class wfWAF {
 
@@ -1934,6 +1935,27 @@ class wfWAFCronFetchBlacklistPrefixesEvent extends wfWAFCronEvent {
 		return $newEvent;
 	}
 }
+	
+interface wfWAFObserver {
+	
+	public function prevBlocked($ip);
+	
+	public function block($ip, $exception);
+	
+	public function allow($ip, $exception);
+	
+	public function blockXSS($ip, $exception);
+	
+	public function blockSQLi($ip, $exception);
+	
+	public function log($ip, $exception);
+	
+	public function wafDisabled();
+	
+	public function beforeRunRules();
+	
+	public function afterRunRules();
+}
 
 class wfWAFEventBus implements wfWAFObserver {
 
@@ -2023,27 +2045,6 @@ class wfWAFEventBus implements wfWAFObserver {
 			$observer->afterRunRules();
 		}
 	}
-}
-
-interface wfWAFObserver {
-
-	public function prevBlocked($ip);
-
-	public function block($ip, $exception);
-
-	public function allow($ip, $exception);
-
-	public function blockXSS($ip, $exception);
-
-	public function blockSQLi($ip, $exception);
-	
-	public function log($ip, $exception);
-
-	public function wafDisabled();
-
-	public function beforeRunRules();
-
-	public function afterRunRules();
 }
 
 class wfWAFBaseObserver implements wfWAFObserver {
@@ -2175,4 +2176,5 @@ class wfWAFBuildRulesException extends wfWAFException {
 }
 
 class wfWAFEventBusException extends wfWAFException {
+}
 }

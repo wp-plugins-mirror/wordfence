@@ -40,6 +40,7 @@ namespace Composer\Autoload;
  * @see    http://www.php-fig.org/psr/psr-0/
  * @see    http://www.php-fig.org/psr/psr-4/
  */
+if (!class_exists('\\Composer\\Autoload\\ClassLoader')) {
 class ClassLoader
 {
     // PSR-4
@@ -433,13 +434,16 @@ class ClassLoader
         return false;
     }
 }
+}
 
 /**
  * Scope isolated include.
  *
  * Prevents access to $this/self from included files.
  */
-function includeFile($file)
-{
-    include $file;
+if (!function_exists('\\Composer\\Autoload\\includeFile')) {
+	function includeFile($file)
+	{
+		include $file;
+	}
 }
