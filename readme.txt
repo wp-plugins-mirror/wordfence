@@ -171,6 +171,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.1.15 =
+* Fix: Addressed a plugin conflict with the composer autoloader.
+
 = 7.1.14 =
 * Improvement: Reduced queries and potential table size for rate limiting-related data.
 * Improvement: Updated the internal browscap database.
