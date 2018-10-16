@@ -434,12 +434,13 @@ class wfWAFIPBlocksController
 		try {
 			$pluginABSPATH = wfWAF::getInstance()->getStorageEngine()->getConfig('pluginABSPATH', null, 'synced');
 			$serverIPsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('serverIPs', null, 'synced');
+			$whitelistedServiceIPsJSON = wfWAF::getInstance()->getStorageEngine()->getConfig('whitelistedServiceIPs', null, 'synced');
 		}
 		catch (Exception $e) {
 			// Do nothing
 		}
 		
-		$serverIPs = @wfWAFUtils::json_decode($serverIPsJSON);
+		$serverIPs = @wfWAFUtils::json_decode($serverIPsJSON, true);
 		if (is_array($serverIPs)) {
 			if (
 				(isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] == realpath($pluginABSPATH . DIRECTORY_SEPARATOR . 'wp-cron.php')) || //Safe -- plugin will do a final check to make sure the cron constant is defined
@@ -453,8 +454,15 @@ class wfWAFIPBlocksController
 			}
 		}
 		
-		$wordfenceLib = realpath(dirname(__FILE__) . '/../lib');
-		include($wordfenceLib . '/wfIPWhitelist.php'); /** @var $wfIPWhitelist */
+		$whitelistedServiceIPs = @wfWAFUtils::json_decode($whitelistedServiceIPsJSON, true);
+		if (is_array($whitelistedServiceIPs)) {
+			$wfIPWhitelist = $whitelistedServiceIPs;
+		}
+		else {
+			$wordfenceLib = realpath(dirname(__FILE__) . '/../lib');
+			include($wordfenceLib . '/wfIPWhitelist.php'); /** @var array $wfIPWhitelist */
+		}
+		
 		foreach ($wfIPWhitelist as $group) {
 			foreach ($group as $subnet) {
 				if ($subnet instanceof wfWAFUserIPRange) { //Not currently reached

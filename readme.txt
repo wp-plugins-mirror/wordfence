@@ -171,6 +171,14 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.1.16 =
+* Improvement: Service whitelisting can now be selectively toggled on or off per service.
+* Improvement: Updated bundled GeoIP database.
+* Change: Removed the "Disable Wordfence Cookies" option as we've removed all cookies it affected.
+* Change: Updates that refresh country statistics are more efficient and now only affect the most recent records.
+* Change: Changed the title of the Wordfence Dashboard so it's easier to identify when many tabs are open.
+* Fix: Fixed an issue with country blocking and XML-RPC requests containing credentials.
+
 = 7.1.15 =
 * Fix: Addressed a plugin conflict with the composer autoloader.
 

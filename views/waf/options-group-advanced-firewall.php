@@ -59,6 +59,40 @@ if (!isset($collapseable)) {
 					</li>
 					<li>
 						<?php
+						$whitelistedServices = wfConfig::getJSON('whitelistedServices', array());
+						$whitelistPresets = wfUtils::whitelistPresets();
+						
+						$names = array();
+						foreach ($whitelistPresets as $tag => $preset) {
+							if (!isset($preset['n'])) { continue; } //Not named, omitted from configurable list
+							if ((isset($preset['h']) && $preset['h']) || (isset($preset['f']) && $preset['f'])) { continue; } //Flagged as hidden or always enabled, omitted from configurable list
+							$names[$tag] = $preset['n'];
+							if (!isset($whitelistedServices[$tag]) && isset($preset['d']) && $preset['d']) {
+								$whitelistedServices[$tag] = 1;
+							}
+						}
+						
+						$options = array();
+						foreach ($names as $tag => $name) {
+							$options[] = array(
+								'name' => 'whitelistedServices.' . preg_replace('/[^a-z0-9]/i', '', $tag),
+								'enabledValue' => 1,
+								'disabledValue' => 0,
+								'value' => (isset($whitelistedServices[$tag]) && $whitelistedServices[$tag]) ? 1 : 0,
+								'title' => $name,
+							);
+						}
+						
+						echo wfView::create('options/option-toggled-multiple', array(
+							'options' => $options,
+							'title' => __('Whitelisted services', 'wordfence'),
+							'id' => 'wf-option-whitelistedServices',
+							'helpLink' => wfSupportController::supportURL(wfSupportController::ITEM_FIREWALL_WAF_OPTION_WHITELISTED_SERVICES),
+						))->render();
+						?>
+					</li>
+					<li>
+						<?php
 						echo wfView::create('options/option-textarea', array(
 							'textOptionName' => 'bannedURLs',
 							'textValue' => wfUtils::cleanupOneEntryPerLine(wfConfig::get('bannedURLs')),
