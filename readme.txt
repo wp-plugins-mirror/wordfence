@@ -3,7 +3,7 @@ Contributors: mmaunder
 Tags: security, firewall, malware scanner, web application firewall, antivirus, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Requires PHP: 5.3
-Tested up to: 4.9.8
+Tested up to: 5.0
 Stable tag: 7.1.16
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
@@ -170,6 +170,13 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.1.17 =
+* Improvement: Increased frequency of filesystem permission check and update of the WAF config files.
+* Improvement: More complete data removal when deactivating with remove tables and files checked.
+* Improvement: Better diagnostics logging for GeoIP conflicts.
+* Fix: Text fix in invalid username lockout message.
+* Fix: PHP 7.3 syntax compatibility fixes.
 
 = 7.1.16 =
 * Improvement: Service whitelisting can now be selectively toggled on or off per service.

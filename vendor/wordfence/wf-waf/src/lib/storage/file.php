@@ -668,6 +668,36 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		@unlink($this->getRulesDSLCacheFile());
 	}
 	
+	public function fileList() {
+		$fileList = array();
+		$fileList[] = $this->getAttackDataFile();
+		$fileList[] = $this->getIPCacheFile();
+		if (defined('WFWAF_DEBUG') && WFWAF_DEBUG) {
+			$fileList[] = $this->getRulesDSLCacheFile();
+		}
+		$fileList[] = $this->getConfigFile();
+		$configDir = dirname($this->getConfigFile());
+		$dir = opendir($configDir);
+		if ($dir) {
+			$escapedPath = preg_quote($this->getConfigFile(), '/');
+			$components = explode('\\/', $escapedPath);
+			$pattern = $components[count($components) - 1];
+			if (preg_match('/^(.+?)(\\\..+$|$)/i', $pattern, $matches)) {
+				$pattern = $matches[1] . '\\-[a-z0-9]+' . $matches[2]; //Results in a pattern like config\-[a-z0-9]\.php
+			}
+			
+			while ($path = readdir($dir)) {
+				if ($path == '.' || $path == '..') { continue; }
+				if (is_dir($configDir . '/' . $path)) { continue; }
+				if (preg_match('/^' . $pattern . '$/i', $path)) {
+					$fileList[] = $configDir . '/' . $path;
+				}
+			}
+			closedir($dir);
+		}
+		return $fileList;
+	}
+	
 	public function removeConfigFiles() {
 		@unlink($this->getConfigFile());
 		$configDir = dirname($this->getConfigFile());

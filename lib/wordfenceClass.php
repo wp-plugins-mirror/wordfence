@@ -285,6 +285,8 @@ class wordfence {
 		if ($next - time() > 3600 && wfConfig::get('scheduledScansEnabled')) {
 			wfScanEngine::startScan(false, wfScanner::SCAN_TYPE_QUICK);
 		}
+		
+		wfConfig::remove('lastPermissionsTemplateCheck');
 	}
 	public static function _scheduleRefreshUpdateNotification($upgrader, $options) {
 		$defer = false;
@@ -1832,7 +1834,8 @@ SQL
 			}
 			
 			try {
-				if (wfUtils::isAdmin()) {
+				$sapi = @php_sapi_name();
+				if ($sapi != "cli") {
 					$lastPermissionsTemplateCheck = wfConfig::getInt('lastPermissionsTemplateCheck', 0);
 					if (defined('WFWAF_LOG_PATH') && ($lastPermissionsTemplateCheck + 43200) < time()) { //Run no more frequently than every 12 hours
 						$timestamp = preg_replace('/[^0-9]/', '', microtime(false)); //We avoid using tmpfile since it can potentially create one with different permissions than the defaults
@@ -1866,10 +1869,41 @@ SQL
 						}
 						
 						wfConfig::set('lastPermissionsTemplateCheck', time());
-					}
 					
-					@chmod(WFWAF_LOG_PATH, (wfWAFWordPress::permissions() | 0755));
-					@chmod(rtrim(WFWAF_LOG_PATH, '/') . '/.htaccess', (wfWAFWordPress::permissions() | 0444));
+						@chmod(WFWAF_LOG_PATH, (wfWAFWordPress::permissions() | 0755));
+						wfWAFWordPress::writeHtaccess();
+						
+						$contents = self::_wflogsContents();
+						if ($contents) {
+							$validFiles = wfWAF::getInstance()->fileList();
+							foreach ($validFiles as &$vf) {
+								$vf = basename($vf);
+							}
+							$validFiles = array_filter($validFiles);
+							
+							$previousWflogsFileList = wfConfig::getJSON('previousWflogsFileList', array());
+							
+							$wflogs = realpath(WFWAF_LOG_PATH);
+							$filesRemoved = array();
+							foreach ($contents as $f) {
+								if (!in_array($f, $validFiles) && in_array($f, $previousWflogsFileList)) {
+									$fullPath = $f;
+									$removed = self::_recursivelyRemoveWflogs($f);
+									$filesRemoved = array_merge($filesRemoved, $removed);
+								}
+							}
+							
+							$contents = self::_wflogsContents();
+							wfConfig::setJSON('previousWflogsFileList', $contents);
+							
+							if (!empty($filesRemoved)) {
+								$removalHistory = wfConfig::getJSON('diagnosticsWflogsRemovalHistory', array());
+								$removalHistory = array_slice($removalHistory, 0, 4);
+								array_unshift($removalHistory, array(time(), $filesRemoved));
+								wfConfig::setJSON('diagnosticsWflogsRemovalHistory', $removalHistory);
+							}
+						}
+					}
 				}
 			}
 			catch (Exception $e) { 
@@ -2033,6 +2067,80 @@ SQL
 				//exits
 			}
 		}
+	}
+	
+	private static function _wflogsContents() {
+		$dir = opendir(WFWAF_LOG_PATH);
+		if ($dir) {
+			$contents = array();
+			while ($path = readdir($dir)) {
+				if ($path == '.' || $path == '..') { continue; }
+				$contents[] = $path;
+			}
+			closedir($dir);
+			return $contents;
+		}
+		return false;
+	}
+	
+	/**
+	 * Removes a path within wflogs, recursing as necessary.
+	 * 
+	 * @param string $file
+	 * @param array $processedDirs
+	 * @return array The list of removed files/folders.
+	 */
+	private static function _recursivelyRemoveWflogs($file, $processedDirs = array()) {
+		if (preg_match('~(?:^|/|\\\\)\.\.(?:/|\\\\|$)~', $file)) {
+			return array();
+		}
+		
+		if (stripos(WFWAF_LOG_PATH, 'wflogs') === false) { //Sanity check -- if not in a wflogs folder, user will have to do removal manually
+			return array();
+		}
+		
+		$path = rtrim(WFWAF_LOG_PATH, '/') . '/' . $file;
+		if (is_link($path)) {
+			if (@unlink($path)) {
+				return array($file);
+			}
+			return array();
+		}
+		
+		if (is_dir($path)) {
+			$real = realpath($file);
+			if (in_array($real, $processedDirs)) {
+				return array();
+			}
+			$processedDirs[] = $real;
+			
+			$count = 0;
+			$dir = opendir($path);
+			if ($dir) {
+				$contents = array();
+				while ($sub = readdir($dir)) {
+					if ($sub == '.' || $sub == '..') { continue; }
+					$contents[] = $sub;
+				}
+				closedir($dir);
+				
+				$filesRemoved = array();
+				foreach ($contents as $f) {
+					$removed = self::_recursivelyRemoveWflogs($file . '/' . $f, $processedDirs);
+					$filesRemoved = array($filesRemoved, $removed);
+				}
+			}
+			
+			if (@rmdir($path)) {
+				$filesRemoved[] = $file;
+			}
+			return $filesRemoved;
+		}
+		
+		if (@unlink($path)) {
+			return array($file);
+		}
+		return array();
 	}
 
 	public static function loginAction($username){
@@ -2648,7 +2756,7 @@ SQL
 				}
 				if(wfConfig::get('loginSec_lockInvalidUsers')){
 					if(strlen($username) > 0 && preg_match('/[^\r\s\n\t]+/', $username)){
-						self::lockOutIP($IP, "Used an invalid username '" . $username . "' to try to sign in.");
+						self::lockOutIP($IP, "Used an invalid username '" . $username . "' to try to sign in");
 						self::getLog()->logLogin('loginFailInvalidUsername', true, $username);
 					}
 					$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
