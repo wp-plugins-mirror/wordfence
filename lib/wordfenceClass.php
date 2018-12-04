@@ -4917,7 +4917,7 @@ HTACCESS;
 				foreach ($data as &$d) {
 					$d['IP'] = esc_html(wfUtils::inet_ntop($d['IP']));
 					$d['blockCount'] = esc_html(number_format_i18n($d['blockCount']));
-					$d['countryFlag'] = esc_attr(wfUtils::getBaseURL() . 'images/flags/' . esc_attr(strtolower($d['countryCode'])) . '.png');
+					$d['countryFlag'] = esc_attr('wf-flag-' . strtolower($d['countryCode']));
 					$d['countryName'] = esc_html($d['countryName']);
 				}
 				return array('ok' => 1, 'data' => $data);
@@ -5371,6 +5371,9 @@ HTML;
 	}
 
 	public static function initAction(){
+		$firewall = new wfFirewall();
+		define('WFWAF_OPERATIONAL', $firewall->testConfig());
+		
 		$currentUserID = get_current_user_id();
 		$role = wordfence::getCurrentUserRole();
 		if (!WFWAF_SUBDIRECTORY_INSTALL) {

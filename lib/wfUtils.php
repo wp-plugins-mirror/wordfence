@@ -2528,6 +2528,14 @@ class wfUtils {
 		return $values[count($values) - 1];
 	}
 	
+	public static function array_strtolower($array) {
+		$result = array();
+		foreach ($array as $a) {
+			$result[] = strtolower($a);
+		}
+		return $result;
+	}
+	
 	public static function array_column($input = null, $columnKey = null, $indexKey = null) { //Polyfill from https://github.com/ramsey/array_column/blob/master/src/array_column.php
 		$argc = func_num_args();
 		$params = func_get_args();

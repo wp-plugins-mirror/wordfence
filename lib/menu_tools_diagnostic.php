@@ -654,9 +654,11 @@ if (!isset($sendingDiagnosticEmail)) {
 									$hasAll = true;
 									$schemaTables = wfSchema::tableList();
 									$existingTables = wfUtils::array_column($q, 'Name');
+									if (WFWAF_IS_WINDOWS) { $existingTables = wfUtils::array_strtolower($existingTables); } //Windows MySQL installations are case-insensitive
 									$missingTables = array();
 									foreach ($schemaTables as $t) {
 										$table = wfDB::networkTable($t);
+										if (WFWAF_IS_WINDOWS) { $table = strtolower($table); }
 										if (!in_array($table, $existingTables)) {
 											$hasAll = false;
 											$missingTables[] = $t;

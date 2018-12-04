@@ -180,7 +180,7 @@ if (isset($_GET['source']) && wfPage::isValidPage($_GET['source'])) {
 				'wf-option-scan-include-extra' => __('Additional scan signatures', 'wordfence'),
 				'wf-option-loginSec-requireAdminTwoFactor' => __('Require Cellphone Sign-in for all Administrators', 'wordfence'),
 				'wf-option-loginSec-enableSeparateTwoFactor' => __('Enable Separate Prompt for Two Factor Code', 'wordfence'),
-				'wf-option-liveTrafficEnabled' => __('Enable live traffic logging', 'wordfence'),
+				'wf-option-liveTrafficEnabled' => __('Traffic logging mode (Live Traffic)', 'wordfence'),
 				'wf-option-liveTraf-ignorePublishers' => __('Don\'t log signed-in users with publishing access', 'wordfence'),
 				'wf-option-liveTraf-ignoreUsers' => __('List of comma separated usernames to ignore', 'wordfence'),
 				'wf-option-liveTraf-ignoreIPs' => __('List of comma separated IP addresses to ignore', 'wordfence'),

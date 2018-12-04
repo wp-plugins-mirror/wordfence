@@ -2049,17 +2049,24 @@ class wfScanEngine {
 	public static function getMaxExecutionTime($staySilent = false) {
 		$config = wfConfig::get('maxExecutionTime');
 		if (!$staySilent) { wordfence::status(4, 'info', "Got value from wf config maxExecutionTime: $config"); }
-		if(is_numeric($config) && $config >= WORDFENCE_SCAN_MIN_EXECUTION_TIME){
+		if (is_numeric($config) && $config >= WORDFENCE_SCAN_MIN_EXECUTION_TIME) {
 			if (!$staySilent) { wordfence::status(4, 'info', "getMaxExecutionTime() returning config value: $config"); }
 			return $config;
 		}
+		
 		$ini = @ini_get('max_execution_time');
 		if (!$staySilent) { wordfence::status(4, 'info', "Got max_execution_time value from ini: $ini"); }
-		if(is_numeric($ini) && $ini >= WORDFENCE_SCAN_MIN_EXECUTION_TIME){
+		if (is_numeric($ini) && $ini >= WORDFENCE_SCAN_MIN_EXECUTION_TIME) {
+			if ($ini > WORDFENCE_SCAN_MAX_INI_EXECUTION_TIME) {
+				if (!$staySilent) { wordfence::status(4, 'info', "ini value of {$ini} is higher than value for WORDFENCE_SCAN_MAX_INI_EXECUTION_TIME (" . WORDFENCE_SCAN_MAX_INI_EXECUTION_TIME . "), reducing"); }
+				$ini = WORDFENCE_SCAN_MAX_INI_EXECUTION_TIME;
+			}
+			
 			$ini = floor($ini / 2);
 			if (!$staySilent) { wordfence::status(4, 'info', "getMaxExecutionTime() returning half ini value: $ini"); }
 			return $ini;
 		}
+		
 		if (!$staySilent) { wordfence::status(4, 'info', "getMaxExecutionTime() returning default of: 15"); }
 		return 15;
 	}
