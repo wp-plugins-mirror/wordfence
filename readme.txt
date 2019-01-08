@@ -171,6 +171,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.1.20 - January 8, 2019 =
+* Fix: Fixed a commit error with 7.1.19
+
 = 7.1.19 - January 8, 2019 =
 * Improvement: Speed optimizations for WAF rule compilation.
 * Improvement: Added Kosovo to country blocking.
