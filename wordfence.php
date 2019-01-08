@@ -67,7 +67,7 @@ if(! defined('WORDFENCE_VERSIONONLY_MODE')){ //Used to get version from file.
 		}
 	}
 
-	requirence('lib/wordfenceConstants.php');
+	require_once('lib/wordfenceConstants.php');
 	require_once('lib/wordfenceClass.php');
 	wordfence::install_actions();
 }
