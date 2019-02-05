@@ -31,6 +31,12 @@ Wordfence includes an endpoint firewall and malware scanner that were built from
 * Checks your content safety by scanning file contents, posts and comments for dangerous URLs and suspicious content.
 * [Premium] Checks to see if your site or IP have been blacklisted for malicious activity, generating spam or other security issue.
 
+#### WORDFENCE CENTRAL
+* Wordfence Central is a powerful and efficient way to manage the security for multiple sites in one place.
+* Efficiently assess the security status of all your websites in one view. View detailed security findings without leaving Wordfence Central.
+* Powerful templates make configuring Wordfence a breeze.
+* Free to use for unlimited sites.
+
 #### SECURITY TOOLS
 * With Live Traffic, monitor visits and hack attempts not shown in other analytics packages in real time; including origin, their IP address, the time of day and time spent on your site.
 * [Premium] Stop brute force attacks permanently by using two factor authentication, one of the most secure forms of remote system authentication available.
@@ -170,6 +176,14 @@ Secure your website with Wordfence.
 
 
 == Changelog ==
+
+= 7.2.1 - February 5, 2019 =
+* Improvement: Integrated Wordfence with Wordfence Central, a new service allowing you to manage multiple Wordfence installations from a single interface.
+* Improvement: Added a help link to the mode display when a host disabling Live Traffic is active.
+* Improvement: Added an option for whitelisting ManageWP in "Whitelisted Services".
+* Fix: Enqueued fonts used in admin notices on all admin pages.
+* Fix: Change false positive user-reports link to use https.
+* Fix: Fix reference to non-existent function when registering menus.
 
 = 7.1.20 - January 8, 2019 =
 * Fix: Fixed a commit error with 7.1.19

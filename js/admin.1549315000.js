@@ -1747,8 +1747,8 @@
 					issuesDOM.sort(function(a, b) {
 						var severityA = $(a).data('issueSeverity');
 						var severityB = $(b).data('issueSeverity');
-						if (severityA < severityB) { return -1; }
-						else if (severityA > severityB) { return 1; }
+						if (severityA > severityB) { return -1; }
+						else if (severityA < severityB) { return 1; }
 
 						var typeA = $(a).data('issueType');
 						var typeB = $(b).data('issueType');
