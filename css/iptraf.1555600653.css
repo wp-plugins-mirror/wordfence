@@ -10,12 +10,12 @@ pre {
 	overflow: auto;
 }
 h1 {
-	background: url(../images/wordfence-logo-64x64.png);
+	background: url(../images/wordfence-logo.svg);
 	background-position: 0 0;
 	background-repeat: no-repeat;
 	height: 64px;
 	vertical-align: middle;
-	padding: 10px 0 0 70px;
+	padding: 10px 0 0 90px;
 	margin: 20px 0 10px 0;
 	font-size: 34px;
 	color: #777;

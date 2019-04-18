@@ -5889,7 +5889,7 @@ HTML;
 		$formattedCount = number_format_i18n($notificationCount);
 		$dashboardExtra = " <span class='update-plugins wf-menu-badge wf-notification-count-container{$hidden}' title='{$notificationCount}'><span class='update-count wf-notification-count-value'>{$formattedCount}</span></span>";
 
-		add_menu_page('Wordfence', "Wordfence{$dashboardExtra}", 'activate_plugins', 'Wordfence', 'wordfence::menu_dashboard', wfUtils::getBaseURL() . 'images/wordfence-logo-16x16.png'); 
+		add_menu_page('Wordfence', "Wordfence{$dashboardExtra}", 'activate_plugins', 'Wordfence', 'wordfence::menu_dashboard', wfUtils::getBaseURL() . 'images/wordfence-logo.svg'); 
 		add_submenu_page("Wordfence", "Wordfence Dashboard", "Dashboard", "activate_plugins", "Wordfence", 'wordfence::menu_dashboard');
 		add_submenu_page("Wordfence", "Firewall", "Firewall", "activate_plugins", "WordfenceWAF", 'wordfence::menu_firewall');
 		if (wfConfig::get('displayTopLevelBlocking')) {

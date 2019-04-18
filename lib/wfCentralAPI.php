@@ -324,6 +324,13 @@ class wfCentral {
 	}
 
 	/**
+	 * @return bool
+	 */
+	public static function isPartialConnection() {
+		return !wfConfig::get('wordfenceCentralConnected') && wfConfig::get('wordfenceCentralSiteID');
+	}
+
+	/**
 	 * @param array $issue
 	 * @return bool|wfCentralAPIResponse
 	 */
