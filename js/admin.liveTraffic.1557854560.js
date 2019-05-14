@@ -563,6 +563,7 @@
 				}, 200)
 				.html('<h3 style=\'margin-top:0;\'>Recent Activity</h3>' + result.result);
 				$(window).trigger('wf-live-traffic-overlay-bind', self);
+				WFAD.avatarLookup();
 			});
 		};
 

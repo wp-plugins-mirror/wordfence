@@ -400,6 +400,28 @@ class wfCentral {
 	}
 
 	/**
+	 * @return bool|wfCentralAPIResponse
+	 */
+	public static function deleteNewIssues() {
+		$siteID = wfConfig::get('wordfenceCentralSiteID');
+		$request = new wfCentralAuthenticatedAPIRequest('/site/' . $siteID . '/issues', 'DELETE', array(
+			'data' => array(
+				'type'       => 'issue-list',
+				'attributes' => array(
+					'status' => 'new',
+				)
+			),
+		));
+		try {
+			$response = $request->execute();
+			return $response;
+		} catch (wfCentralAPIException $e) {
+			error_log($e);
+		}
+		return false;
+	}
+
+	/**
 	 * @param array $types Array of issue types to delete
 	 * @param string $status Issue status to delete
 	 * @return bool|wfCentralAPIResponse

@@ -482,6 +482,8 @@
 				});
 
 				$('.wf-option.wf-option-toggled-select > .wf-option-content > ul > li.wf-option-select select, .wf-option.wf-option-select > .wf-option-content > ul > li.wf-option-select select, .wf-option.wf-option-select > li.wf-option-select select').each(function() {
+					if (!$.fn.wfselect2) { return; }
+					
 					var width = WFAD.isSmallScreen ? '200px' : 'resolve';
 					if ($(this).data('preferredWidth')) {
 						width = $(this).data('preferredWidth');
@@ -556,71 +558,73 @@
 				});
 
 				//Value entry token option
-				$('.wf-option.wf-option-token select').wfselect2({
-					tags: true,
-					tokenSeparators: [','],
-					width: 'element',
-					minimumResultsForSearch: -1,
-					selectOnClose: true,
-					matcher: function(params, data) {
-						return null;
-					}
-				}).on('wfselect2:unselect', function(e){
-					jQuery(e.params.data.element).remove();
-				}).on('wfselect2:opening wfselect2:close', function(e){
-					$('body').toggleClass('wf-select2-suppress-dropdown', e.type == 'wfselect2:opening');
-				}).on('change', function () {
-					var optionElement = $(this).closest('.wf-option');
-					var option = optionElement.data('tokenOption');
-					var value = $(this).val();
-					if (!(value instanceof Array)) {
-						value = [];
-					}
-
-					var selected = $(this).find('option:selected');
-					var tagsElement = optionElement.find('.wf-option-token-tags');
-					var list = $('<ul>');
-					selected.each(function(index, value) {
-						var li = $('<li class="wf-tag-selected"><a class="wf-destroy-tag-selected">×</a>' + $(value).text() + '</li>');
-						li.children('a.wf-destroy-tag-selected')
-							.off('click.wfselect2-copy')
-							.on('click.wfselect2-copy', function(e) {
-								var opt = $(this).data('wfselect2-opt');
-								opt.attr('selected', false);
-								opt.parents('select').trigger('change');
-							}).data('wfselect2-opt', $(value));
-						list.append(li);
-					});
-					tagsElement.html('').append(list);
-
-					var originalValue = optionElement.data('originalTokenValue');
-					var match = true;
-					if (value.length != originalValue.length) {
-						match = false;
-					}
-					else {
-						value = value.sort();
-						originalValue = originalValue.sort();
-						for (var i = 0; i < value.length; i++) {
-							if (value[i] !== originalValue[i]) {
-								match = false;
+				if ($.fn.wfselect2) {
+					$('.wf-option.wf-option-token select').wfselect2({
+						tags: true,
+						tokenSeparators: [','],
+						width: 'element',
+						minimumResultsForSearch: -1,
+						selectOnClose: true,
+						matcher: function(params, data) {
+							return null;
+						}
+					}).on('wfselect2:unselect', function(e){
+						jQuery(e.params.data.element).remove();
+					}).on('wfselect2:opening wfselect2:close', function(e){
+						$('body').toggleClass('wf-select2-suppress-dropdown', e.type == 'wfselect2:opening');
+					}).on('change', function () {
+						var optionElement = $(this).closest('.wf-option');
+						var option = optionElement.data('tokenOption');
+						var value = $(this).val();
+						if (!(value instanceof Array)) {
+							value = [];
+						}
+	
+						var selected = $(this).find('option:selected');
+						var tagsElement = optionElement.find('.wf-option-token-tags');
+						var list = $('<ul>');
+						selected.each(function(index, value) {
+							var li = $('<li class="wf-tag-selected"><a class="wf-destroy-tag-selected">×</a>' + $(value).text() + '</li>');
+							li.children('a.wf-destroy-tag-selected')
+								.off('click.wfselect2-copy')
+								.on('click.wfselect2-copy', function(e) {
+									var opt = $(this).data('wfselect2-opt');
+									opt.attr('selected', false);
+									opt.parents('select').trigger('change');
+								}).data('wfselect2-opt', $(value));
+							list.append(li);
+						});
+						tagsElement.html('').append(list);
+	
+						var originalValue = optionElement.data('originalTokenValue');
+						var match = true;
+						if (value.length != originalValue.length) {
+							match = false;
+						}
+						else {
+							value = value.sort();
+							originalValue = originalValue.sort();
+							for (var i = 0; i < value.length; i++) {
+								if (value[i] !== originalValue[i]) {
+									match = false;
+								}
 							}
 						}
-					}
-					if (match) {
-						delete WFAD.pendingChanges[option];
-					}
-					else {
-						WFAD.pendingChanges[option] = value;
-					}
-
-					$(optionElement).trigger('change', [false]);
-					WFAD.updatePendingChanges();
-				}).triggerHandler('change');
-
-				$('.wf-option.wf-option-token select').each(function() { 
-					$(this).data('wfselect2').$container.addClass('wf-select2-placeholder-fix wf-select2-hide-tags');
-				});
+						if (match) {
+							delete WFAD.pendingChanges[option];
+						}
+						else {
+							WFAD.pendingChanges[option] = value;
+						}
+	
+						$(optionElement).trigger('change', [false]);
+						WFAD.updatePendingChanges();
+					}).triggerHandler('change');
+	
+					$('.wf-option.wf-option-token select').each(function() { 
+						$(this).data('wfselect2').$container.addClass('wf-select2-placeholder-fix wf-select2-hide-tags');
+					});
+				}
 				
 				//Switch Option
 				$('.wf-option.wf-option-switch .wf-switch > li').each(function(index, element) {
@@ -930,6 +934,12 @@
 				if (this.loadingCount == 0) {
 					jQuery('#wordfenceWorking').remove();
 				}
+			},
+			switch2FAToNew: function() {
+				
+			},
+			switch2FAToOld: function() {
+				window.location.reload(true);
 			},
 			startActivityLogUpdates: function() {
 				var self = this;
@@ -1251,9 +1261,6 @@
 
 				} else if (this.mode == 'activity' && /^(?:404|hit|human|ruser|gCrawler|crawler|loginLogout)$/.test(this.activityMode)) {
 					alsoGet = 'logList_' + this.activityMode;
-					otherParams = this.newestActivityTime;
-				} else if (this.mode == 'perfStats') {
-					alsoGet = 'perfStats';
 					otherParams = this.newestActivityTime;
 				}
 				data += '&alsoGet=' + encodeURIComponent(alsoGet) + '&otherParams=' + encodeURIComponent(otherParams);
