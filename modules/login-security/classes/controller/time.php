@@ -88,11 +88,11 @@ class Controller_Time {
 				$fractional = sprintf('%010d', round(($remote_originate - ((int) $remote_originate)) * 0x100000000));
 				$packed = pack('N', $secondsNTP) . pack('N', $fractional);
 				
-				if (fwrite($socket, $packet . $packed)) {
+				if (@fwrite($socket, $packet . $packed)) {
 					$response = fread($socket, 48);
 					$local_transmitted = microtime(true);
 				}
-				fclose($socket);
+				@fclose($socket);
 				
 				if (isset($response) && Model_Crypto::strlen($response) == 48) {
 					break;

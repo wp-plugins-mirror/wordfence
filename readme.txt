@@ -183,6 +183,12 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.3.2 - May 16, 2019 =
+* Improvement: Updated sodium_compat to address an incompatibility that may occur with the pending WordPress 5.2.1 update.
+* Improvement: Clarified text around the reCAPTCHA setting to indicate v3 keys must be used.
+* Improvement: Added detection for Jetpack and a notice when XML-RPC authentication is disabled.
+* Fix: Suppressed error messages on the NTP time check to compensate for hosts with UDP connections disabled.
+
 = 7.3.1 - May 14, 2019 =
 * Improvement: Two-factor authentication is new and improved, now available on all Premium and Free installations.
 * Improvement: Added Google reCAPTCHA v3 support to the login and registration forms.

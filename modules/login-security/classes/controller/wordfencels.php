@@ -114,6 +114,23 @@ class Controller_WordfenceLS {
 END
 );
 		}
+		
+		if ((is_plugin_active('jetpack/jetpack.php') || (is_multisite() && is_plugin_active_for_network('jetpack/jetpack.php'))) && !Controller_Settings::shared()->get_bool(Controller_Settings::OPTION_ALLOW_XML_RPC) && Controller_Permissions::shared()->can_manage_settings()) {
+			if (is_multisite()) {
+				add_action('network_admin_notices', array($this, '_jetpack_xml_rpc_notice'));
+			}
+			else {
+				add_action('admin_notices', array($this, '_jetpack_xml_rpc_notice'));
+			}
+		}
+	}
+	
+	/**
+	 * Notices
+	 */
+	
+	public function _jetpack_xml_rpc_notice() {
+		echo '<div class="notice notice-warning"><p>' . sprintf(__('XML-RPC authentication is disabled. Jetpack is currently active and requires XML-RPC authentication to work correctly. <a href="%s">Manage Settings</a>', 'wordfence-2fa'), esc_url(network_admin_url('admin.php?page=WFLS#top#settings'))) . '</p></div>';
 	}
 	
 	/**

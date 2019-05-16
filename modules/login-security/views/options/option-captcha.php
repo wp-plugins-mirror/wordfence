@@ -19,7 +19,7 @@ $secretValue = \WordfenceLS\Controller_Settings::shared()->get($secretOptionName
 					<li>
 						<strong id="wfls-enable-auth-captcha-label"><?php _e('Enable reCAPTCHA on the login and user registration pages', 'wordfence-2fa'); ?></strong>
 					</li>
-					<li class="wfls-option-subtitle"><?php _e('Note: This feature requires a free site key and secret for the <a href="https://www.google.com/recaptcha/intro/v3.html" target="_blank" rel="noopener noreferrer">reCAPTCHA Service</a>.', 'wordfence-2fa'); ?></li>
+					<li class="wfls-option-subtitle"><?php _e('Note: This feature requires a free site key and secret for the <a href="https://www.google.com/recaptcha/intro/v3.html" target="_blank" rel="noopener noreferrer">Google reCAPTCHA v3 Service</a>.', 'wordfence-2fa'); ?></li>
 				</ul>
 			</li>
 		</ul>
@@ -30,11 +30,11 @@ $secretValue = \WordfenceLS\Controller_Settings::shared()->get($secretOptionName
 			<li>
 				<table>
 					<tr class="wfls-option wfls-option-text" data-original-value="<?php echo esc_attr($siteKeyValue); ?>" data-text-option="<?php echo esc_attr($siteKeyOptionName); ?>">
-						<th id="wfls-enable-captcha-site-key-label" class="wfls-padding-add-bottom"><?php _e('Site Key', 'wordfence'); ?></th>
+						<th id="wfls-enable-captcha-site-key-label" class="wfls-padding-add-bottom"><?php _e('reCAPTCHA v3 Site Key', 'wordfence'); ?></th>
 						<td class="wfls-option-text wfls-padding-add-bottom"><input type="text" name="recaptchaSiteKey" id="input-recaptchaSiteKey" class="wfls-form-control" value="<?php echo esc_attr($siteKeyValue); ?>"<?php if (!$currentEnableValue) { echo ' disabled'; } ?>></td>
 					</tr>
 					<tr class="wfls-option wfls-option-text" data-original-value="<?php echo esc_attr($secretValue); ?>" data-text-option="<?php echo esc_attr($secretOptionName); ?>">
-						<th id="wfls-enable-captcha-secret-label"><?php _e('Secret', 'wordfence'); ?></th>
+						<th id="wfls-enable-captcha-secret-label"><?php _e('reCAPTCHA v3 Secret', 'wordfence'); ?></th>
 						<td class="wfls-option-text"><input type="text" name="recaptchaSecret" id="input-recaptchaSecret" class="wfls-form-control" value="<?php echo esc_attr($secretValue); ?>"<?php if (!$currentEnableValue) { echo ' disabled'; } ?>></td>
 					</tr>
 				</table>
