@@ -2053,7 +2053,7 @@
 						WFAD.repositionSiteCleaningCallout();
 						WFAD.updateBulkButtons();
 						setTimeout(function() {
-							WFAD.colorboxModal((WFAD.isSmallScreen ? '300px' : '400px'), res.bulkHeading, res.bulkBody);
+							WFAD.colorboxModalHTML((WFAD.isSmallScreen ? '300px' : '400px'), res.bulkHeading, res.bulkBody);
 						}, 500);
 					}
 				});

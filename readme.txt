@@ -1,5 +1,5 @@
 === Wordfence Security - Firewall & Malware Scan ===
-Contributors: mmaunder 
+Contributors: mmaunder, wfryan, wfmatt, wfmattr
 Tags: security, firewall, malware scanner, web application firewall, two factor authentication, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Requires PHP: 5.3
@@ -60,7 +60,7 @@ Secure your website using the following steps to install Wordfence:
 6. Optionally, change your security level or adjust the advanced options to set individual scanning and protection options for your site.
 7. Click the "Live Traffic" menu option to watch your site activity in real-time. Situational awareness is an important part of website security.
 
-To install the Wordfence on WordPress Multi-Site installations:
+To install Wordfence on WordPress Multi-Site installations:
 
 1. Install Wordfence via the plugin directory or by uploading the ZIP file.
 2. Network Activate Wordfence. This step is important because until you network activate it, your sites will see the plugin option on their plugins menu. Once activated that option disappears. 
@@ -182,6 +182,15 @@ Secure your website with Wordfence.
 9. Logging in is easy with Wordfence 2FA.
 
 == Changelog ==
+
+= 7.3.3 - June 11, 2019 =
+* Improvement: Added support for managing the login security settings to Wordfence Central.
+* Improvement: Updated the bundled root CA certificate store.
+* Improvement: Added a check and update flow for mod_php hosts with only the PHP5 directive set for the WAF's extended protection mode.
+* Improvement: Added additional values to Diagnostics for debugging time-related issues, the new fatal error handler settings, and updated the PHP version check to reflect the new 5.6.20 requirement of WordPress.
+* Change: Changed the autoloader for our copy of sodium_compat to always load after WordPress core does.
+* Fix: Fixed the "removed from wordpress.org" detection for plugin, which was broken due to an API change.
+* Fix: Fixed the bulk repair function in the scan results when it included core files.
 
 = 7.3.2 - May 16, 2019 =
 * Improvement: Updated sodium_compat to address an incompatibility that may occur with the pending WordPress 5.2.1 update.

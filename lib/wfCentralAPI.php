@@ -253,7 +253,7 @@ class wfCentralAuthenticatedAPIRequest extends wfCentralAPIRequest {
 	}
 
 	public function fetchToken() {
-		require_once WORDFENCE_PATH . '/vendor/paragonie/sodium_compat/autoload-fast.php';
+		require_once WORDFENCE_PATH . '/crypto/vendor/paragonie/sodium_compat/autoload-fast.php';
 
 		$defaultArgs = array(
 			'timeout' => 6,
@@ -313,7 +313,7 @@ class wfCentral {
 	 * @return bool
 	 */
 	public static function isSupported() {
-		return function_exists('register_rest_route');
+		return function_exists('register_rest_route') && version_compare(phpversion(), '5.3', '>=');
 	}
 
 	/**
@@ -447,7 +447,7 @@ class wfCentral {
 	}
 
 	public static function requestConfigurationSync() {
-		if (! wfCentral::isConnected()) {
+		if (! wfCentral::isConnected() || !self::$syncConfig) {
 			return;
 		}
 
@@ -460,6 +460,12 @@ class wfCentral {
 		} catch (Exception $e) {
 			// We can safely ignore an error here for now.
 		}
+	}
+
+	protected static $syncConfig = true;
+
+	public static function preventConfigurationSync() {
+		self::$syncConfig = false;
 	}
 
 	/**

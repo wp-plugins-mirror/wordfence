@@ -513,13 +513,13 @@
 			}
 			return message; //Others
 		},
-
-		saveOptions: function(successCallback, failureCallback) {
-			if (!Object.keys(WFLS.pendingChanges).length) {
+		
+		setOptions: function(options, successCallback, failureCallback) {
+			if (!Object.keys(options).length) {
 				return;
 			}
-			
-			this.ajax('wordfence_ls_save_options', {changes: JSON.stringify(WFLS.pendingChanges)}, function(res) {
+
+			this.ajax('wordfence_ls_save_options', {changes: JSON.stringify(options)}, function(res) {
 				if (res.success) {
 					typeof successCallback == 'function' && successCallback(res);
 				}
@@ -530,10 +530,14 @@
 					else {
 						WFLS.panelModal((WFLS.screenSize(500) ? '300px' : '400px'), 'Error Saving Options', res.error);
 					}
-					
+
 					typeof failureCallback == 'function' && failureCallback
 				}
 			});
+		},
+
+		saveOptions: function(successCallback, failureCallback) {
+			this.setOptions(WFLS.pendingChanges, successCallback, failureCallback);
 		},
 
 		updateIPPreview: function(value, successCallback) {

@@ -46,11 +46,11 @@ if (version_compare(phpversion(), '5.3', '>=')) {
 	require_once(dirname(__FILE__) . '/WFLSPHP52Compatability.php');
 	define('WORDFENCE_USE_LEGACY_2FA', wfCredentialsController::useLegacy2FA());
 	$wfCoreLoading = true;
-	require(dirname(__FILE__) . '/../modules/login-security/wordfence-ls.php');	
+	require(dirname(__FILE__) . '/../modules/login-security/wordfence-login-security.php');	
 }
 
-require_once('wfJWT.php');
-require_once('wfCentralAPI.php');
+require_once(dirname(__FILE__) . '/wfJWT.php');
+require_once(dirname(__FILE__) . '/wfCentralAPI.php');
 
 if (class_exists('WP_REST_Users_Controller')) { //WP 4.7+
 	require_once('wfRESTAPI.php');
@@ -1242,6 +1242,7 @@ SQL
 		add_action('wfls_xml_rpc_blocked', 'wordfence::checkSecurityNetwork');
 		add_action('wfls_registration_blocked', 'wordfence::checkSecurityNetwork');
 		add_action('wfls_activation_page_footer', 'wordfence::_outputLoginSecurityTour');
+		add_action('wfls_settings_set', 'wordfence::queueCentralConfigurationSync');
 
 		if(is_admin()){
 			add_action('admin_init', 'wordfence::admin_init');
@@ -3342,24 +3343,30 @@ SQL
 		}
 	}
 	public static function getWPFileContent($file, $cType, $cName, $cVersion){
-		if($cType == 'plugin'){
-			if(preg_match('#^/?wp-content/plugins/[^/]+/#', $file)){
+		if ($cType == 'plugin') {
+			if (preg_match('#^/?wp-content/plugins/[^/]+/#', $file)) {
 				$file = preg_replace('#^/?wp-content/plugins/[^/]+/#', '', $file);
-			} else {
+			}
+			else {
 				//If user is using non-standard wp-content dir, then use /plugins/ in pattern to figure out what to strip off
 				$file = preg_replace('#^.*[^/]+/plugins/[^/]+/#', '', $file);
 			}
-		} else if($cType == 'theme'){
-			if(preg_match('#/?wp-content/themes/[^/]+/#', $file)){
+		}
+		else if ($cType == 'theme') {
+			if (preg_match('#/?wp-content/themes/[^/]+/#', $file)) {
 				$file = preg_replace('#/?wp-content/themes/[^/]+/#', '', $file);
-			} else {
+			}
+			else {
 				$file = preg_replace('#^.*[^/]+/themes/[^/]+/#', '', $file);
 			}
-		} else if($cType == 'core'){
-
-		} else {
-			return array('errorMsg' => "An invalid type was specified to get file.");
 		}
+		else if ($cType == 'core') {
+			//No special processing
+		}
+		else {
+			return array('errorMsg' => __('An invalid type was specified to get file.', 'wordfence'));
+		}
+		
 		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
 		try {
 			$contResult = $api->binCall('get_wp_file_content', array(
@@ -3369,12 +3376,13 @@ SQL
 				'cName' => $cName,
 				'cVersion' => $cVersion
 				));
-			if($contResult['data']){
+			if ($contResult['data']) {
 				return array('fileContent' => $contResult['data']);
-			} else {
-				throw new Exception("We could not fetch a core WordPress file from the Wordfence API.");
 			}
-		} catch (Exception $e){
+			
+			throw new Exception(__('We could not fetch a core WordPress file from the Wordfence API.', 'wordfence'));
+		}
+		catch (Exception $e) {
 			return array('errorMsg' => wp_kses($e->getMessage(), array()));
 		}
 	}
@@ -4842,7 +4850,7 @@ HTACCESS;
 						}
 						
 						if ($localFile === ABSPATH . 'wp-config.php') {
-							$errors[] = __('Deleting an infected wp-config.php file must be done outside of Wordfence. The wp-config.php file contains your database credentials, which you will need to restore normal site operations. Your site will NOT function once the wp-config.php file has been deleted.', 'wordfence');
+							$errors[] = esc_html__('Deleting an infected wp-config.php file must be done outside of Wordfence. The wp-config.php file contains your database credentials, which you will need to restore normal site operations. Your site will NOT function once the wp-config.php file has been deleted.', 'wordfence');
 						}
 						else if (@unlink($localFile)) {
 							$wfIssues->updateIssue($i['id'], 'delete');
@@ -4851,7 +4859,7 @@ HTACCESS;
 						}
 						else {
 							$err = error_get_last();
-							$errors[] = sprintf(__('Could not delete file %s. Error was: %s', 'wordfence'), wp_kses($file, array()), wp_kses(str_replace(ABSPATH, '{WordPress Root}/', $err['message']), array()));
+							$errors[] = esc_html(sprintf(__('Could not delete file %s. Error was: %s', 'wordfence'), wp_kses($file, array()), wp_kses(str_replace(ABSPATH, '{WordPress Root}/', $err['message']), array())));
 						}
 					}
 					else if ($op == 'repair' && @$i['data']['canFix']) {
@@ -4863,16 +4871,19 @@ HTACCESS;
 						}
 						
 						$result = array();
-						if (isset($i['data']) && is_array($i['data']) && isset($i['data']['file']) && isset($i['data']['cType']) && isset($i['data']['cName']) && isset($i['data']['cVersion'])) {
-							$result = self::getWPFileContent($i['data']['file'], $i['data']['cType'], $i['data']['cName'], $i['data']['cVersion']);
+						if (isset($i['data']) && is_array($i['data']) && isset($i['data']['file']) && isset($i['data']['cType']) && ( //Basics
+								$i['data']['cType'] == 'core' || //Core file
+								($i['data']['cType'] == 'plugin' || $i['data']['cType'] == 'theme') && isset($i['data']['cName']) && isset($i['data']['cVersion']) //Plugin or Theme file
+							)) {
+							$result = self::getWPFileContent($i['data']['file'], $i['data']['cType'], isset($i['data']['cName']) ? $i['data']['cName'] : null, isset($i['data']['cVersion']) ? $i['data']['cVersion'] : null);
 						}
 						
 						if (is_array($result) && isset($result['errorMsg'])) {
-							$errors[] = $result['errorMsg'];
+							$errors[] = esc_html($result['errorMsg']);
 							continue;
 						}
 						else if (!is_array($result) || !isset($result['fileContent'])) {
-							$errors[] = sprintf(__('We could not retrieve the original file of %s to do a repair.', 'wordfence'), wp_kses($file, array()));
+							$errors[] = esc_html(sprintf(__('We could not retrieve the original file of %s to do a repair.', 'wordfence'), wp_kses($file, array())));
 							continue;
 						}
 						
@@ -4885,10 +4896,10 @@ HTACCESS;
 						if (!$fh) {
 							$err = error_get_last();
 							if (preg_match('/Permission denied/i', $err['message'])) {
-								$errMsg = sprintf(__('You don\'t have permission to repair %s. You need to either fix the file manually using FTP or change the file permissions and ownership so that your web server has write access to repair the file.', 'wordfence'), wp_kses($file, array()));
+								$errMsg = esc_html(sprintf(__('You don\'t have permission to repair %s. You need to either fix the file manually using FTP or change the file permissions and ownership so that your web server has write access to repair the file.', 'wordfence'), wp_kses($file, array())));
 							}
 							else {
-								$errMsg = sprintf(__('We could not write to %s. The error was: %s', 'wordfence'), wp_kses($file, array()),  $err['message']);
+								$errMsg = esc_html(sprintf(__('We could not write to %s. The error was: %s', 'wordfence'), wp_kses($file, array()),  $err['message']));
 							}
 							$errors[] = $errMsg;
 							continue;
@@ -4899,7 +4910,7 @@ HTACCESS;
 						flock($fh, LOCK_UN);
 						fclose($fh);
 						if ($bytes < 1) {
-							$errors[] = sprintf(__('We could not write to %s. (%d bytes written) You may not have permission to modify files on your WordPress server.', 'wordfence'), wp_kses($file, array()), $bytes);
+							$errors[] = esc_html(sprintf(__('We could not write to %s. (%d bytes written) You may not have permission to modify files on your WordPress server.', 'wordfence'), wp_kses($file, array()), $bytes));
 							continue;
 						}
 						
@@ -4911,20 +4922,20 @@ HTACCESS;
 			}
 			
 			if ($filesWorkedOn > 0 && count($errors) > 0) {
-				$headMsg = ($op == 'del' ? __('Deleted some files with errors', 'wordfence') : __('Repaired some files with errors', 'wordfence'));
-				$bodyMsg = sprintf(($op == 'del' ? __('Deleted %d files but we encountered the following errors with other files: %s', 'wordfence') : __('Repaired %d files but we encountered the following errors with other files: %s', 'wordfence')), $filesWorkedOn, implode('<br>', $errors));
+				$headMsg = esc_html($op == 'del' ? __('Deleted some files with errors', 'wordfence') : __('Repaired some files with errors', 'wordfence'));
+				$bodyMsg = sprintf(esc_html($op == 'del' ? __('Deleted %d files but we encountered the following errors with other files: %s', 'wordfence') : __('Repaired %d files but we encountered the following errors with other files: %s', 'wordfence')), $filesWorkedOn, implode('<br>', $errors));
 			}
 			else if ($filesWorkedOn > 0) {
-				$headMsg = sprintf(($op == 'del' ? __('Deleted %d files successfully', 'wordfence') : __('Repaired %d files successfully', 'wordfence')), $filesWorkedOn);
-				$bodyMsg = sprintf(($op == 'del' ? __('Deleted %d files successfully. No errors were encountered.', 'wordfence') : __('Repaired %d files successfully. No errors were encountered.', 'wordfence')), $filesWorkedOn);
+				$headMsg = sprintf(esc_html($op == 'del' ? __('Deleted %d files successfully', 'wordfence') : __('Repaired %d files successfully', 'wordfence')), $filesWorkedOn);
+				$bodyMsg = sprintf(esc_html($op == 'del' ? __('Deleted %d files successfully. No errors were encountered.', 'wordfence') : __('Repaired %d files successfully. No errors were encountered.', 'wordfence')), $filesWorkedOn);
 			}
 			else if (count($errors) > 0) {
-				$headMsg = ($op == 'del' ? __('Could not delete files', 'wordfence') : __('Could not repair files', 'wordfence'));
-				$bodyMsg = sprintf(($op == 'del' ? __('We could not delete any of the files you selected. We encountered the following errors: %s', 'wordfence') : __('We could not repair any of the files you selected. We encountered the following errors: %s', 'wordfence')),  implode('<br>', $errors));
+				$headMsg = esc_html($op == 'del' ? __('Could not delete files', 'wordfence') : __('Could not repair files', 'wordfence'));
+				$bodyMsg = sprintf(esc_html($op == 'del' ? __('We could not delete any of the files you selected. We encountered the following errors: %s', 'wordfence') : __('We could not repair any of the files you selected. We encountered the following errors: %s', 'wordfence')),  implode('<br>', $errors));
 			}
 			else {
-				$headMsg = __('Nothing done', 'wordfence');
-				$bodyMsg = ($op == 'del' ? __('We didn\'t delete anything and no errors were found.', 'wordfence') : __('We didn\'t repair anything and no errors were found.', 'wordfence'));
+				$headMsg = esc_html__('Nothing done', 'wordfence');
+				$bodyMsg = esc_html($op == 'del' ? __('We didn\'t delete anything and no errors were found.', 'wordfence') : __('We didn\'t repair anything and no errors were found.', 'wordfence'));
 			}
 			
 			wfScanEngine::refreshScanNotification($wfIssues);
@@ -4932,7 +4943,7 @@ HTACCESS;
 			return array('ok' => 1, 'bulkHeading' => $headMsg, 'bulkBody' => $bodyMsg, 'idsRemoved' => $idsRemoved, 'issueCounts' => $counts);
 		}
 		else {
-			return array('errorMsg' => __('Invalid bulk operation selected', 'wordfence'));
+			return array('errorMsg' => esc_html__('Invalid bulk operation selected', 'wordfence'));
 		}
 	}
 	public static function ajax_deleteFile_callback($issueID = null){
@@ -5846,6 +5857,32 @@ HTML;
 		
 		echo '<div id="wafConfigInaccessibleNotice" class="fade error"><p><strong>' . __('The Wordfence Web Application Firewall cannot run.', 'wordfence') . '</strong> ' . sprintf('The configuration files are corrupt or inaccessible by the web server, which is preventing the WAF from functioning. Please verify the web server has permission to access the configuration files. You may also try to rebuild the configuration file by <a href="%s">clicking here</a>. It will automatically resume normal operation when it is fixed. <a class="wfhelp" target="_blank" rel="noopener noreferrer" href="%s"></a>', $wafMenuURL, wfSupportController::esc_supportURL(wfSupportController::ITEM_NOTICE_WAF_INACCESSIBLE_CONFIG)) . '</p></div>';
 	}
+	public static function wafConfigNeedsUpdate_mod_php() {
+		if (function_exists('network_admin_url') && is_multisite()) {
+			$wafMenuURL = network_admin_url('admin.php?page=WordfenceWAF&wafconfigfixmodphp=1');
+		}
+		else {
+			$wafMenuURL = admin_url('admin.php?page=WordfenceWAF&wafconfigfixmodphp=1');
+		}
+		$wafMenuURL = add_query_arg(array(
+			'waf-nonce' => wp_create_nonce('wafconfigfixmodphp'),
+		), $wafMenuURL);
+		
+		echo '<div id="wafConfigNeedsUpdateNotice" class="fade error"><p><strong>' . __('The Wordfence Web Application Firewall needs a configuration update.', 'wordfence') . '</strong> ' . sprintf('It is currently configured to use an older version of PHP and may become deactivated if PHP is updated. You may perform the configuration update automatically by <a href="%s">clicking here</a>. <a class="wfhelp" target="_blank" rel="noopener noreferrer" href="%s"></a>', $wafMenuURL, wfSupportController::esc_supportURL(wfSupportController::ITEM_NOTICE_WAF_MOD_PHP_FIX)) . '</p></div>';
+	}
+	public static function wafConfigNeedsFixed_mod_php() {
+		if (function_exists('network_admin_url') && is_multisite()) {
+			$wafMenuURL = network_admin_url('admin.php?page=WordfenceWAF&wafconfigfixmodphp=1');
+		}
+		else {
+			$wafMenuURL = admin_url('admin.php?page=WordfenceWAF&wafconfigfixmodphp=1');
+		}
+		$wafMenuURL = add_query_arg(array(
+			'waf-nonce' => wp_create_nonce('wafconfigfixmodphp'),
+		), $wafMenuURL);
+		
+		echo '<div id="wafConfigNeedsFixedNotice" class="fade error"><p><strong>' . __('The Wordfence Web Application Firewall needs a configuration update.', 'wordfence') . '</strong> ' . sprintf('It is not currently in extended protection mode but was configured to use an older version of PHP and may have become deactivated when PHP was updated. You may perform the configuration update automatically by <a href="%s">clicking here</a> or use the "Optimize the Wordfence Firewall" button on the Firewall Options page. <a class="wfhelp" target="_blank" rel="noopener noreferrer" href="%s"></a>', $wafMenuURL, wfSupportController::esc_supportURL(wfSupportController::ITEM_NOTICE_WAF_MOD_PHP_FIX)) . '</p></div>';
+	}
 	public static function wafReadOnlyNotice() {
 		echo '<div id="wordfenceWAFReadOnlyNotice" class="fade error"><p><strong>' . __('The Wordfence Web Application Firewall is in read-only mode.', 'wordfence') . '</strong> ' . sprintf('PHP is currently running as a command line user and to avoid file permission issues, the WAF is running in read-only mode. It will automatically resume normal operation when run normally by a web server. <a class="wfhelp" target="_blank" rel="noopener noreferrer" href="%s"></a>', wfSupportController::esc_supportURL(wfSupportController::ITEM_NOTICE_WAF_READ_ONLY_WARNING)) . '</p></div>';
 	}
@@ -5915,6 +5952,27 @@ HTML;
 			}
 			else {
 				add_action('admin_notices', 'wordfence::wafConfigInaccessibleNotice');
+			}
+		}
+		
+		if (!$warningAdded && !WFWAF_SUBDIRECTORY_INSTALL && !wfWAFAutoPrependHelper::verifyHtaccessMod_php()) {
+			if (WFWAF_AUTO_PREPEND) { //Active, running PHP 5 only mod_php block
+				$warningAdded = true;
+				if (wfUtils::isAdminPageMU()) {
+					add_action('network_admin_notices', 'wordfence::wafConfigNeedsUpdate_mod_php');
+				}
+				else {
+					add_action('admin_notices', 'wordfence::wafConfigNeedsUpdate_mod_php');
+				}
+			}
+			else if (PHP_MAJOR_VERSION > 5) { //Inactive, probably deactivated by updating from PHP 5 -> 7 due to no PHP 7 mod_php block
+				$warningAdded = true;
+				if (wfUtils::isAdminPageMU()) {
+					add_action('network_admin_notices', 'wordfence::wafConfigNeedsFixed_mod_php');
+				}
+				else {
+					add_action('admin_notices', 'wordfence::wafConfigNeedsFixed_mod_php');
+				}
 			}
 		}
 		
@@ -6020,6 +6078,19 @@ HTML;
 			check_admin_referer('wafconfigrebuild', 'waf-nonce');
 			
 			wfWAF::getInstance()->uninstall();
+			if (function_exists('network_admin_url') && is_multisite()) {
+				$wafMenuURL = network_admin_url('admin.php?page=WordfenceWAF');
+			} else {
+				$wafMenuURL = admin_url('admin.php?page=WordfenceWAF');
+			}
+			wp_redirect($wafMenuURL);
+			exit;
+		}
+		
+		if (!empty($_GET['page']) && $_GET['page'] === 'WordfenceWAF' && !empty($_GET['wafconfigfixmodphp']) && !WFWAF_SUBDIRECTORY_INSTALL) {
+			check_admin_referer('wafconfigfixmodphp', 'waf-nonce');
+			
+			wfWAFAutoPrependHelper::fixHtaccessMod_php();
 			if (function_exists('network_admin_url') && is_multisite()) {
 				$wafMenuURL = network_admin_url('admin.php?page=WordfenceWAF');
 			} else {
@@ -8400,14 +8471,16 @@ if (file_exists(%1$s)) {
 	}
 
 	public static function initRestAPI() {
-		$auth = new wfRESTAuthenticationController();
-		$auth->registerRoutes();
+		if (wfCentral::isSupported()) {
+			$auth = new wfRESTAuthenticationController();
+			$auth->registerRoutes();
 
-		$config = new wfRESTConfigController();
-		$config->registerRoutes();
+			$config = new wfRESTConfigController();
+			$config->registerRoutes();
 
-		$scan = new wfRESTScanController();
-		$scan->registerRoutes();
+			$scan = new wfRESTScanController();
+			$scan->registerRoutes();
+		}
 	}
 
 	public static function ajax_wfcentral_step1_callback() {
@@ -8475,7 +8548,7 @@ if (file_exists(%1$s)) {
 		// Step 2: Makes POST request to `/central/api/wf/site/<guid>` endpoint passing in the new public key.
 		// Uses JWT from auth grant endpoint as auth.
 
-		require_once WORDFENCE_PATH . '/vendor/paragonie/sodium_compat/autoload-fast.php';
+		require_once WORDFENCE_PATH . '/crypto/vendor/paragonie/sodium_compat/autoload-fast.php';
 
 		$accessToken = wfConfig::get('wordfenceCentralAccessToken');
 		if (!$accessToken) {
@@ -8652,6 +8725,15 @@ if (file_exists(%1$s)) {
 			'success' => 1,
 		);
 	}
+
+	public static function queueCentralConfigurationSync() {
+		static $hasRun;
+		if ($hasRun) {
+			return;
+		}
+		$hasRun = true;
+		add_action('shutdown', 'wfCentral::requestConfigurationSync');
+	}
 }
 
 
@@ -8678,6 +8760,66 @@ class wfWAFAutoPrependHelper {
 			'manual',
 		);
 		return in_array($serverConfig, $validValues);
+	}
+	
+	/**
+	 * Verifies the .htaccess block for mod_php if present, returning true if no changes need to happen, false
+	 * if something needs to update.
+	 * 
+	 * @return bool
+	 */
+	public static function verifyHtaccessMod_php() {
+		if (WFWAF_AUTO_PREPEND && PHP_MAJOR_VERSION > 5) {
+			return true;
+		}
+		
+		$serverInfo = wfWebServerInfo::createFromEnvironment();
+		if (!$serverInfo->isApacheModPHP()) {
+			return true;
+		}
+		
+		$htaccessPath = get_home_path() . '.htaccess';
+		if (file_exists($htaccessPath)) {
+			$htaccessContent = file_get_contents($htaccessPath);
+			$regex = '/# Wordfence WAF.*?# END Wordfence WAF/is';
+			if (preg_match($regex, $htaccessContent, $matches)) {
+				$wafBlock = $matches[0];
+				$hasPHP5 = preg_match('/<IfModule mod_php5\.c>\s*php_value auto_prepend_file \'.*?\'\s*<\/IfModule>/is', $wafBlock);
+				$hasPHP7 = preg_match('/<IfModule mod_php7\.c>\s*php_value auto_prepend_file \'.*?\'\s*<\/IfModule>/is', $wafBlock);
+				if ($hasPHP5 && !$hasPHP7) { //The only case we care about is having the PHP 5 block but not the 7 because downgrading is unlikely
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Updates the mod_php block of the .htaccess if needed to include PHP 7. Returns whether or not this was performed successfully.
+	 * 
+	 * @return bool
+	 */
+	public static function fixHtaccessMod_php() {
+		$htaccessPath = get_home_path() . '.htaccess';
+		if (file_exists($htaccessPath)) {
+			$htaccessContent = file_get_contents($htaccessPath);
+			$regex = '/# Wordfence WAF.*?# END Wordfence WAF/is';
+			if (preg_match($regex, $htaccessContent, $matches, PREG_OFFSET_CAPTURE)) {
+				$wafBlock = $matches[0][0];
+				$hasPHP5 = preg_match('/<IfModule mod_php5\.c>\s*php_value auto_prepend_file \'(.*?)\'\s*<\/IfModule>/is', $wafBlock, $php5Matches, PREG_OFFSET_CAPTURE);
+				$hasPHP7 = preg_match('/<IfModule mod_php7\.c>\s*php_value auto_prepend_file \'.*?\'\s*<\/IfModule>/is', $wafBlock);
+				if ($hasPHP5 && !$hasPHP7) { 
+					$beforeWAFBlock = substr($htaccessContent, 0, $matches[0][1]);
+					$afterWAFBlock = substr($htaccessContent, $matches[0][1] + strlen($wafBlock));
+					$beforeMod_php = substr($wafBlock, 0, $php5Matches[0][1]);
+					$afterMod_php = substr($wafBlock, $php5Matches[0][1] + strlen($php5Matches[0][0]));
+					$updatedHtaccessContent = $beforeWAFBlock . $beforeMod_php . $php5Matches[0][0] . "\n" . sprintf("<IfModule mod_php7.c>\n\tphp_value auto_prepend_file '%s'\n</IfModule>", $php5Matches[1][0] /* already escaped */) . $afterMod_php . $afterWAFBlock;
+					return file_put_contents($htaccessPath, $updatedHtaccessContent) !== false;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -8788,12 +8930,15 @@ file because of file permissions. Please verify the permissions are correct and 
 		switch ($serverConfig) {
 			case 'apache-mod_php':
 				$autoPrependDirective = sprintf("# Wordfence WAF
-<IfModule mod_php%d.c>
+<IfModule mod_php5.c>
+	php_value auto_prepend_file '%s'
+</IfModule>
+<IfModule mod_php7.c>
 	php_value auto_prepend_file '%s'
 </IfModule>
 $userIniHtaccessDirectives
 # END Wordfence WAF
-", PHP_MAJOR_VERSION, addcslashes($bootstrapPath, "'"));
+", addcslashes($bootstrapPath, "'"), addcslashes($bootstrapPath, "'"));
 				break;
 
 			case 'litespeed':

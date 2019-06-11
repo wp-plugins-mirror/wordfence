@@ -29,6 +29,7 @@ class Controller_Settings {
 	const OPTION_NTP_OFFSET = 'ntp-offset';
 	const OPTION_SHARED_HASH_SECRET_KEY = 'shared-hash-secret';
 	const OPTION_SHARED_SYMMETRIC_SECRET_KEY = 'shared-symmetric-secret';
+	const OPTION_DISMISSED_FRESH_INSTALL_MODAL = 'dismissed-fresh-install-modal';
 	
 	protected $_settingsStorage;
 	
@@ -128,6 +129,7 @@ class Controller_Settings {
 			case self::OPTION_REMEMBER_DEVICE_ENABLED:
 			case self::OPTION_ALLOW_XML_RPC:
 			case self::OPTION_ENABLE_AUTH_CAPTCHA:
+			case self::OPTION_DISMISSED_FRESH_INSTALL_MODAL:
 				return true;
 				
 			//Int
@@ -197,6 +199,9 @@ class Controller_Settings {
 			case self::OPTION_REQUIRE_2FA_ADMIN:
 			case self::OPTION_REQUIRE_2FA_GRACE_PERIOD_ENABLED:
 			case self::OPTION_REMEMBER_DEVICE_ENABLED:
+			case self::OPTION_ALLOW_XML_RPC:
+			case self::OPTION_ENABLE_AUTH_CAPTCHA:
+			case self::OPTION_DISMISSED_FRESH_INSTALL_MODAL:
 				return $this->_truthy_to_bool($value);
 				
 			//Int
