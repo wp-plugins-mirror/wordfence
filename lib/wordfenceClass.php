@@ -41,6 +41,7 @@ require_once(dirname(__FILE__) . '/wfVersionCheckController.php');
 require_once(dirname(__FILE__) . '/wfDateLocalization.php');
 require_once(dirname(__FILE__) . '/wfAdminNoticeQueue.php');
 require_once(dirname(__FILE__) . '/wfModuleController.php');
+require_once(dirname(__FILE__) . '/wfAlerts.php');
 
 if (version_compare(phpversion(), '5.3', '>=')) {
 	require_once(dirname(__FILE__) . '/WFLSPHP52Compatability.php');
@@ -95,11 +96,13 @@ class wordfence {
 	}
 	public static function uninstallPlugin(){
 		//Send admin alert
-		if (wfConfig::get('alertOn_wordfenceDeactivated')) {
-			$currentUser = wp_get_current_user();
-			$username = $currentUser->user_login;
-			wordfence::alert("Wordfence Deactivated", "A user with username \"$username\" deactivated Wordfence on your WordPress site.", wfUtils::getIP());
-		}
+		$currentUser = wp_get_current_user();
+		$username = $currentUser->user_login;
+		$alertCallback = array(new wfWordfenceDeactivatedAlert($username, wfUtils::getIP()), 'send');
+		do_action('wordfence_security_event', 'wordfenceDeactivated', array(
+			'username' => $username,
+			'ip' => wfUtils::getIP(),
+		), $alertCallback);
 		
 		//Check if caching is enabled and if it is, disable it and fix the .htaccess file.
 		wfCache::removeCaching();
@@ -1310,6 +1313,11 @@ SQL
 
 		add_action('rest_api_init', 'wordfence::initRestAPI');
 
+		if (wfCentral::isConnected()) {
+			add_action('wordfence_security_event', 'wfCentral::sendSecurityEvent', 10, 3);
+		} else {
+			add_action('wordfence_security_event', 'wfCentral::sendAlertCallback', 10, 3);
+		}
 	}
 	public static function _pluginPageActionLinks($links) {
 		if (!wfConfig::get('isPaid')) {
@@ -1664,9 +1672,12 @@ SQL
 		}
 
 		if($user){
-			if(wfConfig::get('alertOn_lostPasswdForm')){
-				wordfence::alert("Password recovery attempted", "Someone tried to recover the password for user with email address: " . wp_kses($user->user_email, array()), $IP);
-			}
+			$alertCallback = array(new wfLostPasswdFormAlert($user, wfUtils::getIP()), 'send');
+			do_action('wordfence_security_event', 'lostPasswdForm', array(
+				'email' => $user->user_email,
+				'ip' => wfUtils::getIP(),
+			), $alertCallback);
+
 		}
 		if(wfConfig::get('loginSecurityEnabled')){
 			$tKey = 'wffgt_' . bin2hex(wfUtils::inet_pton($IP));
@@ -1687,13 +1698,13 @@ SQL
 	public static function lockOutIP($IP, $reason) {
 		wfBlock::createLockout($reason, $IP, wfBlock::lockoutDuration(), time(), time(), 1);
 		self::getLog()->tagRequestForLockout($reason);
-		if (wfConfig::get('alertOn_loginLockout')) {
-			$message = sprintf(__('A user with IP addr %s has been locked out from signing in or using the password recovery form for the following reason: %s.', 'wordfence'), $IP, $reason);
-			if (wfBlock::lockoutDuration() > 0) {
-				$message .= "\n" . sprintf(__('The duration of the lockout is %s.', 'wordfence'), wfUtils::makeDuration(wfBlock::lockoutDuration(), true));
-			}
-			wordfence::alert(__('User locked out from signing in', 'wordfence'), $message, $IP);
-		}
+		$alertCallback = array(new wfLoginLockoutAlert($IP, $reason), 'send');
+		do_action('wordfence_security_event', 'loginLockout', array(
+			'ip'       => $IP,
+			'reason'   => $reason,
+			'duration' => wfBlock::lockoutDuration(),
+		), $alertCallback);
+
 	}
 
 	public static function veryFirstAction() {
@@ -2402,27 +2413,26 @@ SQL
 		$cookiename = 'wf_loginalerted_' . hash_hmac('sha256', wfUtils::getIP() . '|' . $user->ID, $salt);
 		$cookievalue = hash_hmac('sha256', $user->user_login, $salt);
 		if(wfUtils::isAdmin($userID)){
-			if(wfConfig::get('alertOn_adminLogin')){
-				$shouldAlert = true;
-				if (wfConfig::get('alertOn_firstAdminLoginOnly') && isset($_COOKIE[$cookiename])) {
-					$shouldAlert = !hash_equals($cookievalue, $_COOKIE[$cookiename]);
-				}
-				
-				if ($shouldAlert) {
-					wordfence::alert("Admin Login", "A user with username \"$username\" who has administrator access signed in to your WordPress site.", wfUtils::getIP());
-				}
+			$securityEvent = 'adminLoginNewLocation';
+			if (isset($_COOKIE[$cookiename]) && hash_equals($cookievalue, $_COOKIE[$cookiename])) {
+				$securityEvent = 'adminLogin';
 			}
+			$alertCallback = array(new wfAdminLoginAlert($cookiename, $cookievalue, $username, wfUtils::getIP()), 'send');
+			do_action('wordfence_security_event', $securityEvent, array(
+				'username' => $username,
+				'ip' => wfUtils::getIP(),
+			), $alertCallback);
+
 		} else {
-			if(wfConfig::get('alertOn_nonAdminLogin')){
-				$shouldAlert = true;
-				if (wfConfig::get('alertOn_firstNonAdminLoginOnly') && isset($_COOKIE[$cookiename])) {
-					$shouldAlert = !hash_equals($cookievalue, $_COOKIE[$cookiename]);
-				}
-				
-				if ($shouldAlert) {
-					wordfence::alert("User login", "A non-admin user with username \"$username\" signed in to your WordPress site.", wfUtils::getIP());
-				}
+			$securityEvent = 'nonAdminLoginNewLocation';
+			if (isset($_COOKIE[$cookiename]) && hash_equals($cookievalue, $_COOKIE[$cookiename])) {
+				$securityEvent = 'nonAdminLogin';
 			}
+			$alertCallback = array(new wfNonAdminLoginAlert($cookiename, $cookievalue, $username, wfUtils::getIP()), 'send');
+			do_action('wordfence_security_event', $securityEvent, array(
+				'username' => $username,
+				'ip' => wfUtils::getIP(),
+			), $alertCallback);
 		}
 		
 		if (wfConfig::get('alertOn_firstAdminLoginOnly') || wfConfig::get('alertOn_firstNonAdminLoginOnly')) {
@@ -2922,9 +2932,14 @@ SQL
 					else {
 						$username = $authUser->user_login;
 						self::getLog()->logLogin('loginFailValidUsername', 1, $username);
-						if (wfConfig::get('alertOn_breachLogin')) {
-							wordfence::alert(__('User login blocked for insecure password', 'wordfence'), sprintf(__('A user with username "%s" tried to sign in to your WordPress site. Access was denied because the password being used exists on lists of passwords leaked in data breaches. Attackers use such lists to break into sites and install malicious code. Please change or reset the password (%s) to reactivate this account. Learn More: %s', 'wordfence'), $username, wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD)), wfUtils::getIP());
-						}
+						$alertCallback = array(new wfBreachLoginAlert($username, wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD), wfUtils::getIP()), 'send');
+
+						do_action('wordfence_security_event', 'breachLogin', array(
+							'username' => $username,
+							'resetPasswordURL' => wp_lostpassword_url(),
+							'supportURL' => wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD),
+							'ip' => wfUtils::getIP(),
+						), $alertCallback);
 						
 						remove_action('login_errors', 'limit_login_fixup_error_messages'); //We're forced to do this because limit-login-attempts does not have any allowances for legitimate error messages
 						self::$authError = new WP_Error('breached_password', sprintf(__('<strong>INSECURE PASSWORD:</strong> Your login attempt has been blocked because the password you are using exists on lists of passwords leaked in data breaches. Attackers use such lists to break into sites and install malicious code. Please <a href="%s">reset your password</a> to reactivate your account. <a href="%s" target="_blank" rel="noopener noreferrer">Learn More</a>'), wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD)));
@@ -2951,10 +2966,15 @@ SQL
 			else {
 				$username = $authUser->user_login;
 				self::getLog()->logLogin('loginFailValidUsername', 1, $username);
-				if (wfConfig::get('alertOn_breachLogin')) {
-					wordfence::alert(__('User login blocked for insecure password', 'wordfence'), sprintf(__('A user with username "%s" tried to sign in to your WordPress site. Access was denied because the password being used exists on lists of passwords leaked in data breaches. Attackers use such lists to break into sites and install malicious code. Please change or reset the password (%s) to reactivate this account. Learn More: %s', 'wordfence'), $username, wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD)), wfUtils::getIP());
-				}
-				
+				$alertCallback = array(new wfBreachLoginAlert($username, wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD), wfUtils::getIP()), 'send');
+
+				do_action('wordfence_security_event', 'breachLogin', array(
+					'username' => $username,
+					'resetPasswordURL' => wp_lostpassword_url(),
+					'supportURL' => wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD),
+					'ip' => wfUtils::getIP(),
+				), $alertCallback);
+
 				remove_action('login_errors', 'limit_login_fixup_error_messages'); //We're forced to do this because limit-login-attempts does not have any allowances for legitimate error messages
 				self::$authError = new WP_Error('breached_password', sprintf(__('<strong>INSECURE PASSWORD:</strong> Your login attempt has been blocked because the password you are using exists on lists of passwords leaked in data breaches. Attackers use such lists to break into sites and install malicious code. Please <a href="%s">reset your password</a> to reactivate your account. <a href="%s" target="_blank" rel="noopener noreferrer">Learn More</a>'), wp_lostpassword_url(), wfSupportController::esc_supportURL(wfSupportController::ITEM_USING_BREACH_PASSWORD)));
 				return self::$authError;
@@ -7875,7 +7895,14 @@ ALERTMSG;
 					$message .= $date . $ip . $attackMessage . "\n";
 				}
 
-				self::alert('Increased Attack Rate', $message, false);
+				$alertCallback = array(new wfIncreasedAttackRateAlert($message), 'send');
+				do_action('wordfence_security_event', 'increasedAttackRate', array(
+					'attackCount' => $attackCount,
+					'attackTable' => $attackTable,
+					'duration' => $alertInterval,
+					'ip' => wfUtils::getIP(),
+				), $alertCallback);
+
 				wfConfig::set('wafAlertLastSendTime', time());
 			}
 		}

@@ -27,7 +27,7 @@ else {
 	define('WORDFENCE_LS_FROM_CORE', ($wfCoreActive && isset($wfCoreLoading) && $wfCoreLoading));
 	
 	define('WORDFENCE_LS_VERSION', '1.0.2');
-	define('WORDFENCE_LS_BUILD_NUMBER', '1560275180');
+	define('WORDFENCE_LS_BUILD_NUMBER', '1560795818');
 	
 	if (!WORDFENCE_LS_FROM_CORE) {
 		global $wp_plugin_paths;

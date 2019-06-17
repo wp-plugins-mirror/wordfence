@@ -47,7 +47,6 @@ class wfCentralAPIRequest {
 		if (empty($args['headers'])) {
 			$args['headers'] = array();
 		}
-		$args['cookies']['XDEBUG_SESSION'] = 'XDEBUG_ECLIPSE';
 
 		$token = $this->getToken();
 		if ($token) {
@@ -500,5 +499,60 @@ class wfCentral {
 			error_log($e);
 		}
 		return false;
+	}
+
+	/**
+	 * @param string $event
+	 * @param array $data
+	 * @param callable|null $alertCallback
+	 */
+	public static function sendSecurityEvent($event, $data = array(), $alertCallback = null) {
+		$alerted = false;
+		if (!self::pluginAlertingDisabled() && is_callable($alertCallback)) {
+			call_user_func($alertCallback);
+			$alerted = true;
+		}
+
+		$siteID = wfConfig::get('wordfenceCentralSiteID');
+		$request = new wfCentralAuthenticatedAPIRequest('/site/' . $siteID . '/security-events', 'POST', array(
+			'data' => array(
+				array(
+					'type'       => 'security-event',
+					'attributes' => array(
+						'type'       => $event,
+						'data'       => $data,
+						'event_time' => microtime(true),
+					),
+				),
+			),
+		));
+		try {
+			// Attempt to send the security event to Central.
+			$response = $request->execute();
+		} catch (wfCentralAPIException $e) {
+			// If we didn't alert previously, notify the user now in the event Central is down.
+			if (!$alerted && is_callable($alertCallback)) {
+				call_user_func($alertCallback);
+			}
+		}
+	}
+
+	/**
+	 * @param $event
+	 * @param array $data
+	 * @param callable|null $alertCallback
+	 */
+	public static function sendAlertCallback($event, $data = array(), $alertCallback = null) {
+		if (is_callable($alertCallback)) {
+			call_user_func($alertCallback);
+		}
+	}
+
+	public static function pluginAlertingDisabled() {
+		if (!self::isConnected()) {
+			return false;
+		}
+
+		return wfConfig::get('wordfenceCentralPluginAlertingDisabled', false);
 	}
 }

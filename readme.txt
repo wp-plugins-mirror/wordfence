@@ -183,6 +183,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.3.4 - June 17, 2019 =
+* Improvement: Added security events and alerting features built into Wordfence Central.
+
 = 7.3.3 - June 11, 2019 =
 * Improvement: Added support for managing the login security settings to Wordfence Central.
 * Improvement: Updated the bundled root CA certificate store.
