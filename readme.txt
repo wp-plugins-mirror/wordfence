@@ -41,6 +41,8 @@ Wordfence includes an endpoint firewall and malware scanner that were built from
 * Wordfence Central is a powerful and efficient way to manage the security for multiple sites in one place.
 * Efficiently assess the security status of all your websites in one view. View detailed security findings without leaving Wordfence Central.
 * Powerful templates make configuring Wordfence a breeze.
+* Highly configurable alerts can be delivered via email, SMS or Slack. Improve the signal to noise ratio by leveraging severity-level options and a daily digest option.
+* Track and alert on important security events including administrator logins, breached password usage and surges in attack activity.
 * Free to use for unlimited sites.
 
 #### SECURITY TOOLS
