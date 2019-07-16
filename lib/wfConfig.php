@@ -1408,6 +1408,9 @@ Options -ExecCGI
 				case 'disableWAFBlacklistBlocking':
 				{
 					$wafConfig->setConfig($key, wfUtils::truthyToInt($value));
+					if (method_exists(wfWAF::getInstance()->getStorageEngine(), 'purgeIPBlocks')) {
+						wfWAF::getInstance()->getStorageEngine()->purgeIPBlocks(wfWAFStorageInterface::IP_BLOCKS_BLACKLIST);
+					}
 					$saved = true;
 					break;
 				}
@@ -1456,6 +1459,10 @@ Options -ExecCGI
 						wfConfig::set($key, '');
 					}
 					
+					if (method_exists(wfWAF::getInstance()->getStorageEngine(), 'purgeIPBlocks')) {
+						wfWAF::getInstance()->getStorageEngine()->purgeIPBlocks(wfWAFStorageInterface::IP_BLOCKS_BLACKLIST);
+					}
+					
 					$saved = true;
 					break;
 				}
@@ -1469,6 +1476,11 @@ Options -ExecCGI
 					}
 					
 					$wafConfig->setConfig('whitelistedServiceIPs', @json_encode(wfUtils::whitelistedServiceIPs()));
+					
+					if (method_exists(wfWAF::getInstance()->getStorageEngine(), 'purgeIPBlocks')) {
+						wfWAF::getInstance()->getStorageEngine()->purgeIPBlocks(wfWAFStorageInterface::IP_BLOCKS_BLACKLIST);
+					}
+					
 					$saved = true;
 					break;
 				}
@@ -1666,7 +1678,6 @@ Options -ExecCGI
 					wfConfig::set($key, $value);
 				}
 				else if (WFWAF_DEBUG) {
-					//TODO: remove me when done with QA
 					error_log("*** DEBUG: Config option '{$key}' missing save handler.");
 				}
 			}

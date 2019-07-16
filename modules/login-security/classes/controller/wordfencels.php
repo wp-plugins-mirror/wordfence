@@ -124,6 +124,15 @@ END
 				add_action('admin_notices', array($this, '_jetpack_xml_rpc_notice'));
 			}
 		}
+		
+		if (Controller_Settings::shared()->get_bool(Controller_Settings::OPTION_CAPTCHA_TEST_MODE) && Controller_CAPTCHA::shared()->enabled() && Controller_Permissions::shared()->can_manage_settings()) {
+			if (is_multisite()) {
+				add_action('network_admin_notices', array($this, '_recaptcha_test_notice'));
+			}
+			else {
+				add_action('admin_notices', array($this, '_recaptcha_test_notice'));
+			}
+		}
 	}
 	
 	/**
@@ -132,6 +141,10 @@ END
 	
 	public function _jetpack_xml_rpc_notice() {
 		echo '<div class="notice notice-warning"><p>' . sprintf(__('XML-RPC authentication is disabled. Jetpack is currently active and requires XML-RPC authentication to work correctly. <a href="%s">Manage Settings</a>', 'wordfence-2fa'), esc_url(network_admin_url('admin.php?page=WFLS#top#settings'))) . '</p></div>';
+	}
+	
+	public function _recaptcha_test_notice() {
+		echo '<div class="notice notice-warning"><p>' . sprintf(__('reCAPTCHA test mode is enabled. While enabled, login and registration requests will be checked for their score but will not be blocked if the score is below the minimum score. <a href="%s">Manage Settings</a>', 'wordfence-2fa'), esc_url(network_admin_url('admin.php?page=WFLS#top#settings'))) . '</p></div>';
 	}
 	
 	/**
@@ -150,6 +163,10 @@ END
 				delete_network_option(null, $opt);
 			}
 			delete_option($opt);
+		}
+		
+		if (Controller_Settings::shared()->get_bool(Controller_Settings::OPTION_DELETE_ON_DEACTIVATION)) {
+			Controller_DB::shared()->uninstall();
 		}
 	}
 	
@@ -242,9 +259,18 @@ END
 				wp_enqueue_style('wordfence-ls-jquery-ui-css.timepicker', Model_Asset::css('jquery-ui-timepicker-addon.css'), array(), WORDFENCE_LS_VERSION);
 			}
 			wp_enqueue_script('wordfence-ls-admin', Model_Asset::js('admin.js'), array('jquery'), WORDFENCE_LS_VERSION);
+			if (!WORDFENCE_LS_FROM_CORE) {
+				wp_register_script('chart-js', Model_Asset::js('Chart.bundle.min.js'), array('jquery'), '2.4.0');
+				wp_register_script('wordfence-select2-js', Model_Asset::js('wfselect2.min.js'), array('jquery'), WORDFENCE_LS_VERSION);
+				wp_register_style('wordfence-select2-css', Model_Asset::css('wfselect2.min.css'), array(), WORDFENCE_LS_VERSION);
+			}
+			wp_enqueue_script('chart-js');
+			wp_enqueue_script('wordfence-select2-js');
+			wp_enqueue_style('wordfence-select2-css');
 			wp_enqueue_style('wordfence-ls-admin', Model_Asset::css('admin.css'), array(), WORDFENCE_LS_VERSION);
 			wp_enqueue_style('wordfence-ls-colorbox', Model_Asset::css('colorbox.css'), array(), WORDFENCE_LS_VERSION);
 			wp_enqueue_style('wordfence-ls-ionicons', Model_Asset::css('ionicons.css'), array(), WORDFENCE_LS_VERSION);
+			if (!WORDFENCE_LS_FROM_CORE) { wp_enqueue_style('wordfence-ls-font-awesome', Model_Asset::css('font-awesome.css'), array(), WORDFENCE_LS_VERSION); }
 			wp_localize_script('wordfence-ls-admin', 'WFLSVars', array(
 				'ajaxurl' => admin_url('admin-ajax.php'),
 				'nonce' => wp_create_nonce('wp-ajax'),
@@ -399,7 +425,7 @@ END
 					// else Can't generate payload, so we'll end up re-querying the reCAPTCHA token next hit
 				}
 				
-				update_user_meta($user->ID, 'wfls-last-captcha-score', $score);
+				Controller_Users::shared()->record_captcha_score($user, $score);
 				
 				if (isset($_REQUEST['wfls-email-verification']) && !empty($_REQUEST['wfls-email-verification']) && is_string($_REQUEST['wfls-email-verification'])) {
 					$jwt = Model_JWT::decode_jwt($_REQUEST['wfls-email-verification']);
@@ -421,7 +447,7 @@ END
 				if ($requireCAPTCHA && $performVerification) {
 					$encrypted = Model_Symmetric::encrypt((string) $user->ID);
 					if ($encrypted) {
-						$jwt = new Model_JWT(array('user' => $encrypted), Controller_Time::time() + 60 * 15 /* minutes */);
+						$jwt = new Model_JWT(array('user' => $encrypted), Controller_Time::time() + 60 * WORDFENCE_LS_EMAIL_VALIDITY_DURATION_MINUTES);
 						$view = new Model_View('email/login-verification', array(
 							'siteName' => get_bloginfo('name', 'raw'),
 							'siteURL' => rtrim(site_url(), '/') . '/',
@@ -617,6 +643,8 @@ END
 		}
 		
 		if ($requireCAPTCHA) {
+			Controller_Users::shared()->record_captcha_score(null, $score);
+			
 			if (!Controller_CAPTCHA::shared()->is_human($score)) { //Score is below the human threshold, block the user registration
 				$encryptedIP = Model_Symmetric::encrypt(Model_Request::current()->ip());
 				$encryptedScore = Model_Symmetric::encrypt($score);

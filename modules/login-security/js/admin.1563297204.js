@@ -290,6 +290,36 @@
 					}
 				}, 4);
 			});
+			
+			//Menu option
+			$('.wfls-option.wfls-option-toggled-select > .wfls-option-content > ul > li.wfls-option-select select, .wfls-option.wfls-option-select > .wfls-option-content > ul > li.wfls-option-select select, .wf-option.wfls-option-select > li.wfls-option-select select').each(function() {
+				if (!$.fn.wfselect2) { return; }
+
+				var width = (WFLS.screenSize(500) ? '200px' : 'resolve');
+				if ($(this).data('preferredWidth')) {
+					width = $(this).data('preferredWidth');
+				}
+
+				$(this).wfselect2({
+					minimumResultsForSearch: -1,
+					width: width
+				}).on('change', function () {
+					var optionElement = $(this).closest('.wfls-option');
+					var option = optionElement.data('selectOption');
+					var value = $(this).val();
+
+					var originalValue = optionElement.data('originalSelectValue');
+					if (originalValue == value) {
+						delete WFLS.pendingChanges[option];
+					}
+					else {
+						WFLS.pendingChanges[option] = value;
+					}
+
+					$(optionElement).trigger('change', [false]);
+					WFLS.updatePendingChanges();
+				});
+			}).triggerHandler('change');
 
 			//Text area option
 			$('.wfls-option.wfls-option-textarea > .wfls-option-content > ul > li.wfls-option-textarea textarea').on('change paste keyup', function() {

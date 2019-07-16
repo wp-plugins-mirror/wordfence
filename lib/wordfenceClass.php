@@ -3264,6 +3264,12 @@ SQL
 		if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
 			$type = 2;
 		}
+		else if (defined('DOING_AJAX') && DOING_AJAX) {
+			$type = 3;
+			if (isset($_REQUEST['action']) && ($_REQUEST['action'] == 'wordfence_ls_authenticate' || $_REQUEST['action'] == 'nopriv_wordfence_ls_authenticate')) {
+				$type = 301;
+			}
+		}
 		else if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] == $wploginPath) {
 			$type = 1;
 		}
@@ -5753,6 +5759,9 @@ HTML;
 			add_action('wp_ajax_wordfence_' . $func, 'wordfence::ajaxReceiver');
 		}
 		
+		wp_register_script('chart-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/Chart.bundle.min.js'), array('jquery'), '2.4.0');
+		wp_register_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery'), WORDFENCE_VERSION);
+		wp_register_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
 		wp_register_style('wordfence-font-awesome-style', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wf-font-awesome.css'), '', WORDFENCE_VERSION);
 
 		if (isset($_GET['page']) && (preg_match('/^Wordfence/', @$_GET['page']) || ($_GET['page'] == 'WFLS' && wfOnboardingController::shouldShowNewTour(wfOnboardingController::TOUR_LOGIN_SECURITY)))) {
@@ -6245,8 +6254,8 @@ JQUERY;
 		}
 	}
 	public static function menu_tools() {
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery'), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
+		wp_enqueue_script('wordfence-select2-js');
 
 		$subpage = filter_input(INPUT_GET, 'subpage', FILTER_SANITIZE_STRING);
 		switch ($subpage) {
@@ -6331,10 +6340,10 @@ JQUERY;
 		wp_enqueue_style('wordfence-jquery-ui-structure-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui.structure.min.css'), array(), WORDFENCE_VERSION);
 		wp_enqueue_style('wordfence-jquery-ui-theme-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui.theme.min.css'), array(), WORDFENCE_VERSION);
 		wp_enqueue_style('wordfence-jquery-ui-timepicker-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui-timepicker-addon.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
 		
 		wp_enqueue_script('wordfence-timepicker-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/jquery-ui-timepicker-addon.js'), array('jquery', 'jquery-ui-datepicker', 'jquery-ui-slider'), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
+		wp_enqueue_script('wordfence-select2-js');
 		
 		try {
 			$wafData = self::_getWAFData();
@@ -6384,11 +6393,11 @@ JQUERY;
 		wp_enqueue_style('wordfence-jquery-ui-structure-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui.structure.min.css'), array(), WORDFENCE_VERSION);
 		wp_enqueue_style('wordfence-jquery-ui-theme-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui.theme.min.css'), array(), WORDFENCE_VERSION);
 		wp_enqueue_style('wordfence-jquery-ui-timepicker-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/jquery-ui-timepicker-addon.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
 
 		wp_enqueue_script('wordfence-timepicker-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/jquery-ui-timepicker-addon.js'), array('jquery', 'jquery-ui-datepicker', 'jquery-ui-slider'), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
-		wp_enqueue_script('chart-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/Chart.bundle.min.js'), array('jquery'), '2.4.0');
+		wp_enqueue_script('wordfence-select2-js');
+		wp_enqueue_script('chart-js');
 
 		try {
 			$wafData = self::_getWAFData();
@@ -6447,9 +6456,9 @@ JQUERY;
 		return '<div id="wordfenceConfigWarning" class="error fade"><p><strong>The Wordfence Live Traffic feature has been disabled because you have ' . $plugin . ' active which is not compatible with Wordfence Live Traffic.</strong> If you want to reenable Wordfence Live Traffic, you need to deactivate ' . $plugin . ' and then go to the Wordfence options page and reenable Live Traffic there. Wordfence does work with ' . $plugin . ', however Live Traffic will be disabled and the Wordfence firewall will also count less hits per visitor because of the ' . $plugin . ' caching function. All other functions should work correctly.</p></div>';
 	}
 	public static function menu_dashboard() {
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
-		wp_enqueue_script('chart-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/Chart.bundle.min.js'), array('jquery'), '2.4.0');
+		wp_enqueue_style('wordfence-select2-css');
+		wp_enqueue_script('wordfence-select2-js');
+		wp_enqueue_script('chart-js');
 		
 		if (wfConfig::get('keyType') == wfAPI::KEY_TYPE_PAID_EXPIRED || (wfConfig::get('keyType') == wfAPI::KEY_TYPE_PAID_CURRENT && wfConfig::get('keyExpDays') < 30)) {
 			$api = new wfAPI(wfConfig::get('apiKey', ''), wfUtils::getWPVersion());
@@ -6469,8 +6478,8 @@ JQUERY;
 		require('menu_dashboard.php');
 	}
 	public static function menu_scan() {
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
+		wp_enqueue_script('wordfence-select2-js');
 		
 		if (isset($_GET['subpage']) && $_GET['subpage'] == 'scan_options') {
 			require('menu_scanner_options.php');
@@ -6485,8 +6494,8 @@ JQUERY;
 	}
 	
 	public static function menu_support() {
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery'), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
+		wp_enqueue_script('wordfence-select2-js');
 		
 		require('menu_support.php');
 	}
@@ -6494,8 +6503,8 @@ JQUERY;
 	public static function menu_wordfence_central() {
 		wfConfig::set('showWfCentralUI', 1);
 
-		wp_enqueue_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
-		wp_enqueue_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery'), WORDFENCE_VERSION);
+		wp_enqueue_style('wordfence-select2-css');
+		wp_enqueue_script('wordfence-select2-js');
 
 		require('menu_wordfence_central.php');
 	}
@@ -7862,7 +7871,7 @@ ALERTMSG;
 					$paramKey = base64_decode($actionData['paramKey']);
 					$paramValue = base64_decode($actionData['paramValue']);
 					if (strlen($paramValue) > 100) {
-						$paramValue = substr($paramValue, 0, 100) . chr(2026);
+						$paramValue = substr($paramValue, 0, 100) . '...';
 					}
 					
 					if (preg_match('/([a-z0-9_]+\.[a-z0-9_]+)(?:\[(.+?)\](.*))?/i', $paramKey, $matches)) {
