@@ -1,30 +1,30 @@
 <?php
-require_once('wordfenceConstants.php');
-require_once('wfScanEngine.php');
-require_once('wfScan.php');
-require_once('wfCrawl.php');
-require_once 'Diff.php';
-require_once 'Diff/Renderer/Html/SideBySide.php';
-require_once 'wfAPI.php';
-require_once 'wfIssues.php';
-require_once('wfDB.php');
-require_once('wfUtils.php');
-require_once('wfLog.php');
-require_once('wfConfig.php');
-require_once('wfSchema.php');
-require_once('wfCache.php');
-require_once('wfCrypt.php');
-require_once('wfMD5BloomFilter.php');
-require_once 'wfView.php';
-require_once 'wfHelperString.php';
-require_once 'wfDirectoryIterator.php';
-require_once 'wfUpdateCheck.php';
-require_once 'wfActivityReport.php';
-require_once 'wfHelperBin.php';
-require_once 'wfDiagnostic.php';
-require_once('wfStyle.php');
-require_once('wfDashboard.php');
-require_once('wfNotification.php');
+require_once(dirname(__FILE__) . '/wordfenceConstants.php');
+require_once(dirname(__FILE__) . '/wfScanEngine.php');
+require_once(dirname(__FILE__) . '/wfScan.php');
+require_once(dirname(__FILE__) . '/wfCrawl.php');
+require_once(dirname(__FILE__) . '/Diff.php');
+require_once(dirname(__FILE__) . '/Diff/Renderer/Html/SideBySide.php');
+require_once(dirname(__FILE__) . '/wfAPI.php');
+require_once(dirname(__FILE__) . '/wfIssues.php');
+require_once(dirname(__FILE__) . '/wfDB.php');
+require_once(dirname(__FILE__) . '/wfUtils.php');
+require_once(dirname(__FILE__) . '/wfLog.php');
+require_once(dirname(__FILE__) . '/wfConfig.php');
+require_once(dirname(__FILE__) . '/wfSchema.php');
+require_once(dirname(__FILE__) . '/wfCache.php');
+require_once(dirname(__FILE__) . '/wfCrypt.php');
+require_once(dirname(__FILE__) . '/wfMD5BloomFilter.php');
+require_once(dirname(__FILE__) . '/wfView.php');
+require_once(dirname(__FILE__) . '/wfHelperString.php');
+require_once(dirname(__FILE__) . '/wfDirectoryIterator.php');
+require_once(dirname(__FILE__) . '/wfUpdateCheck.php');
+require_once(dirname(__FILE__) . '/wfActivityReport.php');
+require_once(dirname(__FILE__) . '/wfHelperBin.php');
+require_once(dirname(__FILE__) . '/wfDiagnostic.php');
+require_once(dirname(__FILE__) . '/wfStyle.php');
+require_once(dirname(__FILE__) . '/wfDashboard.php');
+require_once(dirname(__FILE__) . '/wfNotification.php');
 
 require_once(dirname(__FILE__) . '/../models/page/wfPage.php');
 require_once(dirname(__FILE__) . '/../models/common/wfTab.php');
@@ -54,12 +54,12 @@ require_once(dirname(__FILE__) . '/wfJWT.php');
 require_once(dirname(__FILE__) . '/wfCentralAPI.php');
 
 if (class_exists('WP_REST_Users_Controller')) { //WP 4.7+
-	require_once('wfRESTAPI.php');
+	require_once(dirname(__FILE__) . '/wfRESTAPI.php');
 }
 if (wfCentral::isSupported()) { //WP 4.4.0+
-	require_once('rest-api/wfRESTAuthenticationController.php');
-	require_once('rest-api/wfRESTConfigController.php');
-	require_once('rest-api/wfRESTScanController.php');
+	require_once(dirname(__FILE__) . '/rest-api/wfRESTAuthenticationController.php');
+	require_once(dirname(__FILE__) . '/rest-api/wfRESTConfigController.php');
+	require_once(dirname(__FILE__) . '/rest-api/wfRESTScanController.php');
 }
 
 class wordfence {
@@ -1370,6 +1370,9 @@ SQL
 		if (wfUtils::isAdmin() && !$wafDisabled) {
 			wp_enqueue_style('wordfenceAJAXcss', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wordfenceBox.css'), '', WORDFENCE_VERSION);
 			wp_enqueue_script('wordfenceAJAXjs', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/admin.ajaxWatcher.js'), array('jquery'), WORDFENCE_VERSION);
+			wp_localize_script('wordfenceAJAXjs', 'WFAJAXWatcherVars', array(
+				'nonce' => wp_create_nonce('wf-waf-error-page'),
+			));
 		}
 	}
 	public static function enqueueDashboard() {
@@ -1395,7 +1398,7 @@ SQL
 		//This is messy, but not sure of a better way to do this without guaranteeing we get $wp_version
 		require(ABSPATH . 'wp-includes/version.php'); /** @var string $wp_version */
 		self::$wordfence_wp_version = $wp_version;
-		require_once('wfScan.php');
+		require_once(dirname(__FILE__) . '/wfScan.php');
 		wfScan::wfScanMain();
 
 	} //END doScan
@@ -1659,7 +1662,7 @@ SQL
 		if ($lockout !== false) {
 			$lockout->recordBlock();
 			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-			require('wfLockedOut.php');
+			require(dirname(__FILE__) . '/wfLockedOut.php');
 		}
 		
 		if (empty($_POST['user_login'])) { return; }
@@ -1690,7 +1693,7 @@ SQL
 			if($forgotAttempts >= wfConfig::get('loginSec_maxForgotPasswd')){
 				self::lockOutIP($IP, "Exceeded the maximum number of tries to recover their password which is set at: " . wfConfig::get('loginSec_maxForgotPasswd') . ". The last username or email they entered before getting locked out was: '" . $_POST['user_login'] . "'");
 				$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-				require('wfLockedOut.php');
+				require(dirname(__FILE__) . '/wfLockedOut.php');
 			}
 			set_transient($tKey, $forgotAttempts, wfConfig::get('loginSec_countFailMins') * 60);
 		}
@@ -2165,6 +2168,7 @@ SQL
 					'whitelistedServiceIPs' => @json_encode(wfUtils::whitelistedServiceIPs()),
 					'howGetIPs'      => (string) wfConfig::get('howGetIPs'),
 					'howGetIPs_trusted_proxies' => wfConfig::get('howGetIPs_trusted_proxies', ''),
+					'detectProxyRecommendation' => (string) wfConfig::get('detectProxyRecommendation'),
 					'other_WFNet'    => !!wfConfig::get('other_WFNet', true), 
 					'pluginABSPATH'	 => ABSPATH,
 					'serverIPs'		 => json_encode(wfUtils::serverIPs()),
@@ -2172,6 +2176,10 @@ SQL
 					'betaThreatDefenseFeed' => !!wfConfig::get('betaThreatDefenseFeed'),
 					'disableWAFIPBlocking' => wfConfig::get('disableWAFIPBlocking'),
 				);
+				if (wfUtils::isAdmin()) {
+					$errorNonceKey = 'errorNonce_' . get_current_user_id();
+					$configDefaults[$errorNonceKey] = wp_create_nonce('wf-waf-error-page'); //Used by the AJAX watcher script
+				}
 				foreach ($configDefaults as $key => $value) {
 					$waf->getStorageEngine()->setConfig($key, $value, 'synced');
 				}
@@ -3033,7 +3041,7 @@ SQL
 						self::getLog()->logLogin('loginFailInvalidUsername', true, $username);
 					}
 					$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-					require('wfLockedOut.php');
+					require(dirname(__FILE__) . '/wfLockedOut.php');
 				}
 			}
 			$tKey = 'wflginfl_' . bin2hex(wfUtils::inet_pton($IP));
@@ -3047,7 +3055,7 @@ SQL
 				if($tries >= wfConfig::get('loginSec_maxFailures')){
 					self::lockOutIP($IP, "Exceeded the maximum number of login failures which is: " . wfConfig::get('loginSec_maxFailures') . ". The last username they tried to sign in with was: '" . $username . "'");
 					$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-					require('wfLockedOut.php');
+					require(dirname(__FILE__) . '/wfLockedOut.php');
 				}
 				set_transient($tKey, $tries, wfConfig::get('loginSec_countFailMins') * 60);
 			} else if(is_object($authUser) && get_class($authUser) == 'WP_User'){
@@ -3291,7 +3299,7 @@ SQL
 		if ($lockout !== false) {
 			$lockout->recordBlock();
 			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-			require('wfLockedOut.php');
+			require(dirname(__FILE__) . '/wfLockedOut.php');
 		}
 		
 		self::doEarlyAccessLogging(); //Rate limiting
@@ -3301,7 +3309,7 @@ SQL
 		if ($lockout !== false) {
 			$lockout->recordBlock();
 			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-			require('wfLockedOut.php');
+			require(dirname(__FILE__) . '/wfLockedOut.php');
 		}
 		
 		if (isset($_POST['wordfence_twoFactorUser'])) { //Final stage of login -- get and verify 2fa code, make sure we load the appropriate user
@@ -3337,7 +3345,7 @@ SQL
 		if ($lockout !== false) {
 			$lockout->recordBlock();
 			$customText = wpautop(wp_strip_all_tags(wfConfig::get('blockCustomText', '')));
-			require('wfLockedOut.php');
+			require(dirname(__FILE__) . '/wfLockedOut.php');
 		}
 		
 		if (isset($_POST['wordfence_twoFactorUser'])) { //Final stage of login -- get and verify 2fa code, make sure we load the appropriate user
@@ -3418,7 +3426,7 @@ SQL
 		$body = "This email is the diagnostic from " . site_url() . ".\nThe IP address that requested this was: " . wfUtils::getIP() . "\nTicket Number/Forum Username: " . $_POST['ticket'];
 		$sendingDiagnosticEmail = true;
 		ob_start();
-		require 'menu_tools_diagnostic.php';
+		require(dirname(__FILE__) . '/menu_tools_diagnostic.php');
 		$body = nl2br($body) . ob_get_clean();
 		$findReplace = array(
 			'<div class="wf-block-header">' => '<div style="margin:20px 0px 0px;padding:6px 4px;background-color:#222;color:#fff;width:926px;">',
@@ -4441,7 +4449,7 @@ SQL
 		}
 		
 		if (!function_exists('get_home_path')) {
-			include_once ABSPATH . 'wp-admin/includes/file.php';
+			include_once(ABSPATH . 'wp-admin/includes/file.php');
 		}
 		
 		$homeURL = get_home_url();
@@ -4534,7 +4542,7 @@ HTACCESS;
 			$reverseLookup = $response['reverseLookup'];
 			$results = $response['results'];
 			ob_start();
-			require('IPTrafList.php');
+			require(dirname(__FILE__) . '/IPTrafList.php');
 			$content = ob_get_clean();
 			return array('ok' => 1, 'result' => $content);
 		} catch (InvalidArgumentException $e) {
@@ -5284,15 +5292,15 @@ HTACCESS;
 		} else if($wfFunc == 'viewOption'){
 			self::wfFunc_viewOption();
 		} else if($wfFunc == 'sysinfo') {
-			require( 'sysinfo.php' );
+			require(dirname(__FILE__) . '/sysinfo.php' );
 		} else if($wfFunc == 'dbview'){
-			require('dbview.php');
+			require(dirname(__FILE__) . '/dbview.php');
 		} else if($wfFunc == 'cronview') {
-			require('cronview.php');
+			require(dirname(__FILE__) . '/cronview.php');
 		} else if($wfFunc == 'conntest'){
-			require('conntest.php');
+			require(dirname(__FILE__) . '/conntest.php');
 		} else if($wfFunc == 'unknownFiles'){
-			require('unknownFiles.php');
+			require(dirname(__FILE__) . '/unknownFiles.php');
 		} else if($wfFunc == 'IPTraf'){
 			self::wfFunc_IPTraf();
 		} else if($wfFunc == 'viewActivityLog'){
@@ -5447,7 +5455,7 @@ HTML;
 	public static function shutdownAction(){
 	}
 	public static function wfFunc_viewActivityLog(){
-		require('viewFullActivityLog.php');
+		require(dirname(__FILE__) . '/viewFullActivityLog.php');
 		exit(0);
 	}
 	public static function wfFunc_IPTraf(){
@@ -5456,7 +5464,7 @@ HTML;
 			$response = self::IPTraf($IP);
 			$reverseLookup = $response['reverseLookup'];
 			$results = $response['results'];
-			require('IPTraf.php');
+			require(dirname(__FILE__) . '/IPTraf.php');
 			exit(0);
 		} catch (InvalidArgumentException $e) {
 			echo $e->getMessage();
@@ -5553,7 +5561,7 @@ HTML;
 			}
 		} catch(Exception $e){ $fileSize = 'Unknown file size.'; }
 
-		require 'wfViewResult.php';
+		require(dirname(__FILE__) . '/wfViewResult.php');
 		exit(0);
 	}
 	public static function wfFunc_diff(){
@@ -5590,7 +5598,7 @@ HTML;
 			$renderer = new Diff_Renderer_Html_SideBySide;
 			$diffResult = $diff->Render($renderer);
 		}
-		require 'diffResult.php';
+		require(dirname(__FILE__) . '/diffResult.php');
 		exit(0);
 	}
 
@@ -5760,7 +5768,7 @@ HTML;
 		}
 		
 		wp_register_script('chart-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/Chart.bundle.min.js'), array('jquery'), '2.4.0');
-		wp_register_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery'), WORDFENCE_VERSION);
+		wp_register_script('wordfence-select2-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/wfselect2.min.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
 		wp_register_style('wordfence-select2-css', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wfselect2.min.css'), array(), WORDFENCE_VERSION);
 		wp_register_style('wordfence-font-awesome-style', wfUtils::getBaseURL() . wfUtils::versionedAsset('css/wf-font-awesome.css'), '', WORDFENCE_VERSION);
 
@@ -6286,7 +6294,7 @@ JQUERY;
 					$content = self::_menu_tools_livetraffic();
 				}
 		}
-		require 'menu_tools.php';
+		require(dirname(__FILE__) . '/menu_tools.php');
 	}
 	
 	private static function _menu_tools_livetraffic() {
@@ -6300,14 +6308,14 @@ JQUERY;
 		wp_enqueue_script('wordfence-live-traffic-js', wfUtils::getBaseURL() . wfUtils::versionedAsset('js/admin.liveTraffic.js'), array('jquery', 'jquery-ui-tooltip'), WORDFENCE_VERSION);
 		
 		ob_start();
-		require 'menu_tools_livetraffic.php';
+		require(dirname(__FILE__) . '/menu_tools_livetraffic.php');
 		$content = ob_get_clean();
 		return $content;
 	}
 	
 	private static function _menu_tools_whois() {
 		ob_start();
-		require 'menu_tools_whois.php';
+		require(dirname(__FILE__) . '/menu_tools_whois.php');
 		$content = ob_get_clean();
 		return $content;
 	}
@@ -6316,21 +6324,21 @@ JQUERY;
 		$emailForm = true;
 		$inEmail = false;
 		ob_start();
-		require 'menu_tools_diagnostic.php';
+		require(dirname(__FILE__) . '/menu_tools_diagnostic.php');
 		$content = ob_get_clean();
 		return $content;
 	}
 	
 	private static function _menu_tools_importexport() {
 		ob_start();
-		require 'menu_tools_importExport.php';
+		require(dirname(__FILE__) . '/menu_tools_importExport.php');
 		$content = ob_get_clean();
 		return $content;
 	}
 	
 	private static function _menu_tools_twofactor() {
 		ob_start();
-		require 'menu_tools_twoFactor.php';
+		require(dirname(__FILE__) . '/menu_tools_twoFactor.php');
 		$content = ob_get_clean();
 		return $content;
 	}
@@ -6381,7 +6389,7 @@ JQUERY;
 			update permissions on the parent directory so the web server can write to it.';
 		}
 		
-		require 'menu_options.php';
+		require(dirname(__FILE__) . '/menu_options.php');
 	}
 	
 	public static function menu_blocking() {
@@ -6436,13 +6444,13 @@ JQUERY;
 		}
 		
 		if (isset($_GET['subpage']) && $_GET['subpage'] == 'waf_options') {
-			require('menu_firewall_waf_options.php');
+			require(dirname(__FILE__) . '/menu_firewall_waf_options.php');
 		}
 		else if (isset($_GET['subpage']) && $_GET['subpage'] == 'blocking_options') {
-			require('menu_firewall_blocking_options.php');
+			require(dirname(__FILE__) . '/menu_firewall_blocking_options.php');
 		}
 		else {
-			require('menu_firewall.php');
+			require(dirname(__FILE__) . '/menu_firewall.php');
 		}
 	}
 
@@ -6471,33 +6479,33 @@ JQUERY;
 		}
 		
 		if (isset($_GET['subpage']) && $_GET['subpage'] == 'global_options') {
-			require('menu_dashboard_options.php');
+			require(dirname(__FILE__) . '/menu_dashboard_options.php');
 			return;
 		}
 		
-		require('menu_dashboard.php');
+		require(dirname(__FILE__) . '/menu_dashboard.php');
 	}
 	public static function menu_scan() {
 		wp_enqueue_style('wordfence-select2-css');
 		wp_enqueue_script('wordfence-select2-js');
 		
 		if (isset($_GET['subpage']) && $_GET['subpage'] == 'scan_options') {
-			require('menu_scanner_options.php');
+			require(dirname(__FILE__) . '/menu_scanner_options.php');
 			return;
 		}
 		else if (isset($_GET['subpage']) && $_GET['subpage'] == 'scan_credentials') {
-			require('menu_scanner_credentials.php');
+			require(dirname(__FILE__) . '/menu_scanner_credentials.php');
 			return;
 		}
 
-		require('menu_scanner.php');
+		require(dirname(__FILE__) . '/menu_scanner.php');
 	}
 	
 	public static function menu_support() {
 		wp_enqueue_style('wordfence-select2-css');
 		wp_enqueue_script('wordfence-select2-js');
 		
-		require('menu_support.php');
+		require(dirname(__FILE__) . '/menu_support.php');
 	}
 
 	public static function menu_wordfence_central() {
@@ -6506,7 +6514,7 @@ JQUERY;
 		wp_enqueue_style('wordfence-select2-css');
 		wp_enqueue_script('wordfence-select2-js');
 
-		require('menu_wordfence_central.php');
+		require(dirname(__FILE__) . '/menu_wordfence_central.php');
 	}
 
 	public static function fsActionRestoreFileCallback() {
@@ -8584,7 +8592,7 @@ if (file_exists(%1$s)) {
 		// Step 2: Makes POST request to `/central/api/wf/site/<guid>` endpoint passing in the new public key.
 		// Uses JWT from auth grant endpoint as auth.
 
-		require_once WORDFENCE_PATH . '/crypto/vendor/paragonie/sodium_compat/autoload-fast.php';
+		require_once(WORDFENCE_PATH . '/crypto/vendor/paragonie/sodium_compat/autoload-fast.php');
 
 		$accessToken = wfConfig::get('wordfenceCentralAccessToken');
 		if (!$accessToken) {

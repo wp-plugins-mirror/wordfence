@@ -8,62 +8,73 @@
 					if (wordfenceAJAXWatcher.blockWarningOpen) {
 						return;
 					}
-					
-					var requestURL = ajaxSettings.url;
-					if (requestURL.length > 63) {
-						requestURL = requestURL.substring(0, 30) + '...' + requestURL.substring(requestURL.length - 30);
-					}
-					var requestURLEscaped = $('<div/>').text(requestURL).html();
-					var responseDOM = $(jqXHR.responseText);
-					var formAction = responseDOM.filter('#whitelist-form').add(responseDOM.find('#whitelist-form')).attr('action');
-					var inputs = responseDOM.filter('input[name]').add(responseDOM.find('input[name]'));
-					var queryParams = {}; 
-					for (var i = 0; i < inputs.length; i++) {
-						queryParams[inputs[i].name] = inputs[i].value;
-					}
-					
-					if (!(typeof formAction === "string")) { //Only progress if it's our plugin doing the blocking
-						return;
-					}
 
-					wordfenceAJAXWatcher.blockWarningOpen = true;
-					$.wordfenceBox({
-						closeButton: false,
-						width: '400px',
-						html: "<h3>Background Request Blocked</h3><p>Wordfence Firewall blocked a background request to WordPress for the URL <code>" + requestURLEscaped + "</code>. If this occurred as a result of an intentional action, you may consider whitelisting the request to allow it in the future.</p><p class=\"wf-right\"><a href=\"https://www.wordfence.com/help/?query=ajax-blocked\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"wfboxhelp\"></a><a href=\"#\" class=\"button\" id=\"background-block-whitelist\">Whitelist this action</a> <a href=\"#\" class=\"button\" id=\"background-block-dismiss\">Dismiss</a></p>",
-						onComplete: function() {
-							$('#background-block-dismiss').click(function(event) {
-								event.preventDefault();
-								event.stopPropagation();
-								$.wordfenceBox.close();
-							});
-							
-							$('#background-block-whitelist').click(function(event) {
-								event.preventDefault();
-								event.stopPropagation();
-
-								if (confirm('Are you sure you want to whitelist this action?')) {
-									$.ajax({
-										method: 'POST',
-										url: formAction,
-										data: queryParams,
-										global: false,
-										success: function() {
-											alert('The request has been whitelisted. Please try it again.');
-											$.wordfenceBox.close();
-										},
-										error: function() {
-											alert('An error occurred when adding the request to the whitelist.');
-											$.wordfenceBox.close();
+					if (jqXHR.responseJSON) {
+						//Do nothing
+					}
+					else {
+						//Match nonce in response to verify it's our error page, which will be in the form <!-- WFWAF NONCE: abcdef1234 -->
+						var nonceRegex = /<!-- WFWAF NONCE: ([a-f0-9]+) -->/;
+						var nonceMatches = nonceRegex.exec(jqXHR.responseText);
+						if (nonceMatches && nonceMatches[1] == WFAJAXWatcherVars.nonce) {
+							var requestURL = ajaxSettings.url;
+							if (requestURL.length > 63) {
+								requestURL = requestURL.substring(0, 30) + '...' + requestURL.substring(requestURL.length - 30);
+							}
+	
+							var requestURLEscaped = $('<div/>').text(requestURL).html();
+							var responseDOM = $.parseHTML(jqXHR.responseText);
+							var formAction = $(responseDOM).filter('#whitelist-form').add($(responseDOM).find('#whitelist-form')).attr('action');
+							var inputs = $(responseDOM).filter('input[name]').add($(responseDOM).find('input[name]'));
+							var queryParams = {};
+							for (var i = 0; i < inputs.length; i++) {
+								queryParams[inputs[i].name] = inputs[i].value;
+							}
+	
+							if (!(typeof formAction === "string")) { //Only progress if it's our plugin doing the blocking
+								return;
+							}
+	
+							wordfenceAJAXWatcher.blockWarningOpen = true;
+							$.wordfenceBox({
+								closeButton: false,
+								width: '400px',
+								html: "<h3>Background Request Blocked</h3><p>Wordfence Firewall blocked a background request to WordPress for the URL <code>" + requestURLEscaped + "</code>. If this occurred as a result of an intentional action, you may consider whitelisting the request to allow it in the future.</p><p class=\"wf-right\"><a href=\"https://www.wordfence.com/help/?query=ajax-blocked\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"wfboxhelp\"></a><a href=\"#\" class=\"button\" id=\"background-block-whitelist\">Whitelist this action</a> <a href=\"#\" class=\"button\" id=\"background-block-dismiss\">Dismiss</a></p>",
+								onComplete: function() {
+									$('#background-block-dismiss').click(function(event) {
+										event.preventDefault();
+										event.stopPropagation();
+										$.wordfenceBox.close();
+									});
+	
+									$('#background-block-whitelist').click(function(event) {
+										event.preventDefault();
+										event.stopPropagation();
+	
+										if (confirm('Are you sure you want to whitelist this action?')) {
+											$.ajax({
+												method: 'POST',
+												url: formAction,
+												data: queryParams,
+												global: false,
+												success: function() {
+													alert('The request has been whitelisted. Please try it again.');
+													$.wordfenceBox.close();
+												},
+												error: function() {
+													alert('An error occurred when adding the request to the whitelist.');
+													$.wordfenceBox.close();
+												}
+											});
 										}
 									});
+								},
+								onClosed: function() {
+									wordfenceAJAXWatcher.blockWarningOpen = false;
 								}
 							});
-						},
-						onClosed: function() {
-							wordfenceAJAXWatcher.blockWarningOpen = false;
 						}
-					});
+					}
 				});
 			}
 		}

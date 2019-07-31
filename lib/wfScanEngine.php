@@ -1,11 +1,11 @@
 <?php
-require_once('wordfenceClass.php');
-require_once('wordfenceHash.php');
-require_once('wfAPI.php');
-require_once('wordfenceScanner.php');
-require_once('wfIssues.php');
-require_once('wfDB.php');
-require_once('wfUtils.php');
+require_once(dirname(__FILE__) . '/wordfenceClass.php');
+require_once(dirname(__FILE__) . '/wordfenceHash.php');
+require_once(dirname(__FILE__) . '/wfAPI.php');
+require_once(dirname(__FILE__) . '/wordfenceScanner.php');
+require_once(dirname(__FILE__) . '/wfIssues.php');
+require_once(dirname(__FILE__) . '/wfDB.php');
+require_once(dirname(__FILE__) . '/wfUtils.php');
 class wfScanEngine {
 	const SCAN_MANUALLY_KILLED = -999;
 	
@@ -146,7 +146,7 @@ class wfScanEngine {
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
 		$this->malwarePrefixesHash = $malwarePrefixesHash;
 		$this->coreHashesHash = $coreHashesHash;
-		include('wfDict.php'); //$dictWords
+		include(dirname(__FILE__) . '/wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
 		$this->scanMode = $scanMode;
 		
@@ -179,7 +179,7 @@ class wfScanEngine {
 	public function __wakeup(){
 		$this->cycleStartTime = time();
 		$this->api = new wfAPI($this->apiKey, $this->wp_version);
-		include('wfDict.php'); //$dictWords
+		include(dirname(__FILE__) . '/wfDict.php'); //$dictWords
 		$this->dictWords = $dictWords;
 		$this->scanController = new wfScanner($this->scanMode);
 	}
@@ -1298,7 +1298,7 @@ class wfScanEngine {
 	public function scanUserPassword($userID){
 		$suspended = wp_suspend_cache_addition();
 		wp_suspend_cache_addition(true);
-		require_once( ABSPATH . 'wp-includes/class-phpass.php');
+		require_once(ABSPATH . 'wp-includes/class-phpass.php');
 		$passwdHasher = new PasswordHash(8, TRUE);
 		$userDat = get_userdata($userID);
 		if ($userDat === false) {
@@ -2126,7 +2126,7 @@ class wfScanEngine {
 		}
 		
 		if(! function_exists( 'get_plugins')){
-			require_once ABSPATH . '/wp-admin/includes/plugin.php';
+			require_once(ABSPATH . '/wp-admin/includes/plugin.php');
 		}
 		$pluginData = get_plugins();
 		$plugins = array();
@@ -2158,7 +2158,7 @@ class wfScanEngine {
 		}
 		
 		if (!function_exists('wp_get_themes')) {
-			require_once ABSPATH . '/wp-includes/theme.php';
+			require_once(ABSPATH . '/wp-includes/theme.php');
 		}
 		$themeData = wp_get_themes();
 		$themes = array();

@@ -59,6 +59,7 @@ class wfDiagnostic
 				'tests' => array(
 					'wfVersion' => __('Wordfence Version', 'wordfence'),
 					'geoIPVersion' => __('GeoIP Version', 'wordfence'),
+					'cronStatus' => __('Cron Status', 'wordfence'),
 				),
 			),
 			'Filesystem' => array(
@@ -177,6 +178,22 @@ class wfDiagnostic
 	
 	public function geoIPVersion() {
 		return array('test' => true, 'infoOnly' => true, 'message' => wfUtils::geoIPVersion());
+	}
+	
+	public function cronStatus() {
+		$cron = _get_cron_array();
+		$overdue = 0;
+		foreach ($cron as $timestamp => $values) {
+			if (is_array($values)) {
+				foreach ($values as $cron_job => $v) {
+					if (is_numeric($timestamp)) {
+						if ((time() - 1800) > $timestamp) { $overdue++; }
+					}
+				}
+			}
+		}
+		
+		return array('test' => true, 'infoOnly' => true, 'message' => $overdue ? ($overdue == 1 ? __('1 Job Overdue', 'wordfence') : sprintf(__('%d Jobs Overdue', 'wordfence'), $overdue)) : __('Normal', 'wordfence'));
 	}
 	
 	public function geoIPError() {

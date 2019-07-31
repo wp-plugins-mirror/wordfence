@@ -1,5 +1,5 @@
 <?php
-require_once('wfUtils.php');
+require_once(dirname(__FILE__) . '/wfUtils.php');
 class wfCrawl {
 	const GOOGLE_BOT_VERIFIED = 'verified';
 	const GOOGLE_BOT_FAKE = 'fakeBot';

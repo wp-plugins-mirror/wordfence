@@ -1,5 +1,5 @@
 <?php
-require_once('wfConfig.php');
+require_once(dirname(__FILE__) . '/wfConfig.php');
 class wfUtils {
 	private static $isWindows = false;
 	public static $scanLockFH = false;
@@ -523,7 +523,7 @@ class wfUtils {
 	public static function whitelistPresets() {
 		static $_cachedPresets = null;
 		if ($_cachedPresets === null) {
-			include('wfIPWhitelist.php'); /** @var array $wfIPWhitelist */
+			include(dirname(__FILE__) . '/wfIPWhitelist.php'); /** @var array $wfIPWhitelist */
 			$currentPresets = wfConfig::getJSON('whitelistPresets', array());
 			if (is_array($currentPresets)) {
 				$_cachedPresets = array_merge($wfIPWhitelist, $currentPresets);
@@ -991,7 +991,7 @@ class wfUtils {
 	public static function isValidEmail($email, $strict = false) {
 		//We don't default to strict, full validation because poorly-configured servers can crash due to the regex PHP uses in filter_var($email, FILTER_VALIDATE_EMAIL)
 		if ($strict) {
-			return filter_var($email, FILTER_VALIDATE_EMAIL !== false);
+			return (filter_var($email, FILTER_VALIDATE_EMAIL) !== false);
 		}
 		
 		return preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/i', $email) === 1;
@@ -1018,7 +1018,7 @@ class wfUtils {
 	public static function tmpl($file, $data){
 		extract($data);
 		ob_start();
-		include $file;
+		include dirname(__FILE__) . DIRECTORY_SEPARATOR . $file;
 		return ob_get_contents() . (ob_end_clean() ? "" : "");
 	}
 	public static function bigRandomHex(){
@@ -1403,7 +1403,7 @@ class wfUtils {
 		return $tooBig;
 	}
 	public static function countryCode2Name($code){
-		require('wfBulkCountries.php'); /** @var array $wfBulkCountries */
+		require(dirname(__FILE__) . '/wfBulkCountries.php'); /** @var array $wfBulkCountries */
 		if(isset($wfBulkCountries[$code])){
 			return $wfBulkCountries[$code];
 		} else {
@@ -1718,7 +1718,7 @@ class wfUtils {
 
 		if (file_exists($readmePath)) {
 			$readmePathInfo = pathinfo($readmePath);
-			require_once ABSPATH . WPINC . '/pluggable.php';
+			require_once(ABSPATH . WPINC . '/pluggable.php');
 			$hiddenReadmeFile = $readmePathInfo['filename'] . '.' . wp_hash('readme') . '.' . $readmePathInfo['extension'];
 			return @rename($readmePath, $readmePathInfo['dirname'] . '/' . $hiddenReadmeFile);
 		}
@@ -1734,7 +1734,7 @@ class wfUtils {
 			$readmePath = ABSPATH . 'readme.html';
 		}
 		$readmePathInfo = pathinfo($readmePath);
-		require_once ABSPATH . WPINC . '/pluggable.php';
+		require_once(ABSPATH . WPINC . '/pluggable.php');
 		$hiddenReadmeFile = $readmePathInfo['dirname'] . '/' . $readmePathInfo['filename'] . '.' . wp_hash('readme') . '.' . $readmePathInfo['extension'];
 		if (file_exists($hiddenReadmeFile)) {
 			return @rename($hiddenReadmeFile, $readmePath);
@@ -2403,11 +2403,12 @@ class wfUtils {
 		static $encodings = array();
 		static $overloaded = null;
 		
-		if (is_null($overloaded))
+		if (is_null($overloaded)) {
+			// phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.mbstring_func_overloadDeprecated
 			$overloaded = function_exists('mb_internal_encoding') && (ini_get('mbstring.func_overload') & 2);
+		}
 		
-		if (false === $overloaded)
-			return;
+		if (false === $overloaded) { return; }
 		
 		if (!$reset) {
 			$encoding = mb_internal_encoding();

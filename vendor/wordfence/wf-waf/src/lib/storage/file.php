@@ -323,6 +323,7 @@ class wfWAFStorageFile implements wfWAFStorageInterface {
 		$row[] = $failedRulesString;
 		$row[] = $request->getProtocol() === 'https' ? 1 : 0;
 		$row[] = (string) $request;
+		// phpcs:ignore PHPCompatibility.FunctionUse.ArgumentFunctionsReportCurrentValue.NeedsInspection
 		$args = func_get_args();
 		$row = array_merge($row, array_slice($args, 4));
 

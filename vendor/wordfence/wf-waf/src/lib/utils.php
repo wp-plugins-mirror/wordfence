@@ -291,6 +291,7 @@ class wfWAFUtils {
 			}
 		}
 		if (function_exists('mcrypt_create_iv')) {
+			// phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.mcrypt_create_ivDeprecatedRemoved,PHPCompatibility.Extensions.RemovedExtensions.mcryptDeprecatedRemoved,PHPCompatibility.Constants.RemovedConstants.mcrypt_dev_urandomDeprecatedRemoved
 			$rand = @mcrypt_create_iv($bytes, MCRYPT_DEV_URANDOM);
 			if (is_string($rand) && wfWAFUtils::strlen($rand) === $bytes) {
 				return $rand;
@@ -345,6 +346,7 @@ class wfWAFUtils {
 	 * @return array|string
 	 */
 	public static function stripMagicQuotes($subject) {
+		// phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.magic_quotes_sybaseDeprecatedRemoved
 		$sybase = ini_get('magic_quotes_sybase');
 		$sybaseEnabled = ((is_numeric($sybase) && $sybase) ||
 			(is_string($sybase) && $sybase && !in_array(wfWAFUtils::strtolower($sybase), array(
@@ -401,11 +403,12 @@ class wfWAFUtils {
 		static $encodings = array();
 		static $overloaded = null;
 
-		if (is_null($overloaded))
-			$overloaded = function_exists('mb_internal_encoding') && (ini_get('mbstring.func_overload') & 2);
+		if (is_null($overloaded)) {
+			// phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.mbstring_func_overloadDeprecated
+			$overloaded = function_exists('mb_internal_encoding') && (ini_get('mbstring.func_overload') & 2); 
+		}
 
-		if (false === $overloaded)
-			return;
+		if (false === $overloaded) { return; }
 
 		if (!$reset) {
 			$encoding = mb_internal_encoding();
@@ -840,7 +843,9 @@ class wfWAFUtils {
 	}
 	
 	public static function rawPOSTBody() {
+		// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
 		global $HTTP_RAW_POST_DATA;
+		// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
 		if (empty($HTTP_RAW_POST_DATA)) { //Defined if always_populate_raw_post_data is on, PHP < 7, and the encoding type is not multipart/form-data
 			$avoidPHPInput = false;
 			try {
@@ -859,10 +864,12 @@ class wfWAFUtils {
 				
 				//For our purposes, we don't currently need the raw POST body if it's multipart/form-data since the data will be in $_POST/$_FILES. If we did, we could reconstruct the body here.
 				
+				// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
 				$HTTP_RAW_POST_DATA = $data;
 			}
 		}
 		else {
+			// phpcs:ignore PHPCompatibility.Variables.RemovedPredefinedGlobalVariables.http_raw_post_dataDeprecatedRemoved
 			$data =& $HTTP_RAW_POST_DATA;
 		}
 		return $data;

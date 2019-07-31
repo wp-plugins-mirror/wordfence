@@ -170,7 +170,6 @@ if (isset($_GET['source']) && wfPage::isValidPage($_GET['source'])) {
 				'wf-option-scansEnabled-dns' => __('Scan for unauthorized DNS changes', 'wordfence'),
 				'wf-option-other-scanOutside' => __('Scan files outside your WordPress installation', 'wordfence'),
 				'wf-option-scansEnabled-scanImages' => __('Scan images, binary, and other files as if they were executable', 'wordfence'),
-				'wf-option-scansEnabled-highSense' => __('Enable HIGH SENSITIVITY scanning (may give false positives)', 'wordfence'),
 				'wf-option-lowResourceScansEnabled' => __('Use low resource scanning (reduces server load by lengthening the scan duration)', 'wordfence'),
 				'wf-option-scan-maxIssues' => __('Limit the number of issues sent in the scan results email', 'wordfence'),
 				'wf-option-scan-maxDuration' => __('Time limit that a scan can run in seconds', 'wordfence'),

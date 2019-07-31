@@ -730,8 +730,16 @@ class wfConfig {
 				}
 				else {
 					if (!self::getDB()->queryWrite(sprintf("insert ignore into " . self::table() . " (name, val, autoload) values (%%s, X'%s', 'no')", $dataChunk), $chunkedValueKey . $chunks)) {
-						$errno = mysql_errno($wpdb->dbh);
-						wordfence::status(2, 'error', "Error writing value chunk for {$key} (MySQL error: [$errno] {$wpdb->last_error})");
+						if ($useMySQLi) {
+							$errno = mysqli_errno($wpdb->dbh);
+							wordfence::status(2, 'error', "Error writing value chunk for {$key} (MySQL error: [$errno] {$wpdb->last_error})");
+						}
+						else if (function_exists('mysql_errno')) {
+							// phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.mysql_DeprecatedRemoved
+							$errno = mysql_errno($wpdb->dbh);
+							wordfence::status(2, 'error', "Error writing value chunk for {$key} (MySQL error: [$errno] {$wpdb->last_error})");
+						}
+						
 						return false;
 					}
 				}

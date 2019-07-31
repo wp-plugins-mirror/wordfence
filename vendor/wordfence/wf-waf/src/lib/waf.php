@@ -1146,6 +1146,10 @@ HTML
 			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL', null, 'synced');
 			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL', null, 'synced');
 			$customText = wfWAF::getInstance()->getStorageEngine()->getConfig('blockCustomText', null, 'synced');
+			$errorNonce = '';
+			if ($authCookie = wfWAF::getInstance()->parseAuthCookie()) {
+				$errorNonce = wfWAF::getInstance()->getStorageEngine()->getConfig('errorNonce_' . (int) $authCookie['userID'], '', 'synced');
+			}
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -1156,6 +1160,7 @@ HTML
 			'homeURL' => $homeURL,
 			'siteURL' => $siteURL,
 			'customText' => $customText,
+			'errorNonce' => $errorNonce,
 		))->render();
 	}
 	
@@ -1168,6 +1173,10 @@ HTML
 			$homeURL = wfWAF::getInstance()->getStorageEngine()->getConfig('homeURL', null, 'synced');
 			$siteURL = wfWAF::getInstance()->getStorageEngine()->getConfig('siteURL', null, 'synced');
 			$customText = wfWAF::getInstance()->getStorageEngine()->getConfig('blockCustomText', null, 'synced');
+			$errorNonce = '';
+			if ($authCookie = wfWAF::getInstance()->parseAuthCookie()) {
+				$errorNonce = wfWAF::getInstance()->getStorageEngine()->getConfig('errorNonce_' . (int) $authCookie['userID'], '', 'synced');
+			}
 		}
 		catch (Exception $e) {
 			//Do nothing
@@ -1179,6 +1188,7 @@ HTML
 			'homeURL' => $homeURL,
 			'siteURL' => $siteURL,
 			'customText' => $customText,
+			'errorNonce' => $errorNonce,
 		))->render();
 	}
 

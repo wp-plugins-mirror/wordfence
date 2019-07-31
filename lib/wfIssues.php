@@ -1,5 +1,5 @@
 <?php
-require_once('wfUtils.php');
+require_once(dirname(__FILE__) . '/wfUtils.php');
 class wfIssues {
 	//Possible responses from `addIssue`
 	const ISSUE_ADDED = 'a';

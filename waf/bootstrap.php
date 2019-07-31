@@ -10,9 +10,9 @@ if (!defined('WFWAF_AUTO_PREPEND')) {
 	define('WFWAF_AUTO_PREPEND', true);
 }
 
-require_once dirname(__FILE__) . '/wfWAFUserIPRange.php';
-require_once dirname(__FILE__) . '/wfWAFIPBlocksController.php';
-require_once dirname(__FILE__) . '/../vendor/wordfence/wf-waf/src/init.php';
+require_once(dirname(__FILE__) . '/wfWAFUserIPRange.php');
+require_once(dirname(__FILE__) . '/wfWAFIPBlocksController.php');
+require_once(dirname(__FILE__) . '/../vendor/wordfence/wf-waf/src/init.php');
 
 class wfWAFWordPressRequest extends wfWAFRequest {
 	
@@ -36,10 +36,32 @@ class wfWAFWordPressRequest extends wfWAFRequest {
 			return $theIP;
 		}
 		$howGet = wfWAF::getInstance()->getStorageEngine()->getConfig('howGetIPs', null, 'synced');
-		if (is_string($howGet) && is_array($_SERVER) && array_key_exists($howGet, $_SERVER)) {
-			$ips[] = array($_SERVER[$howGet], $howGet);
+		if ($howGet) {
+			if (is_string($howGet) && is_array($_SERVER) && array_key_exists($howGet, $_SERVER)) {
+				$ips[] = array($_SERVER[$howGet], $howGet);
+			}
+			
+			if ($howGet != 'REMOTE_ADDR') {
+				$ips[] = array((is_array($_SERVER) && array_key_exists('REMOTE_ADDR', $_SERVER)) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1', 'REMOTE_ADDR');
+			}
 		}
-		$ips[] = array((is_array($_SERVER) && array_key_exists('REMOTE_ADDR', $_SERVER)) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1', 'REMOTE_ADDR');
+		else {
+			$recommendedField = wfWAF::getInstance()->getStorageEngine()->getConfig('detectProxyRecommendation', null, 'synced');
+			if (!empty($recommendedField) && $recommendedField != 'UNKNOWN' && $recommendedField != 'DEFERRED') {
+				if (isset($_SERVER[$recommendedField])) {
+					$ips[] = array($_SERVER[$recommendedField], $recommendedField);
+				}
+			}
+			
+			$ips[] = array((is_array($_SERVER) && array_key_exists('REMOTE_ADDR', $_SERVER)) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1', 'REMOTE_ADDR');
+			if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+				$ips[] = array($_SERVER['HTTP_X_FORWARDED_FOR'], 'HTTP_X_FORWARDED_FOR');
+			}
+			if (isset($_SERVER['HTTP_X_REAL_IP'])) {
+				$ips[] = array($_SERVER['HTTP_X_REAL_IP'], 'HTTP_X_REAL_IP');
+			}
+		}
+		
 		$cleanedIP = $this->_getCleanIPAndServerVar($ips);
 		if (is_array($cleanedIP)) {
 			list($ip, $variable) = $cleanedIP;

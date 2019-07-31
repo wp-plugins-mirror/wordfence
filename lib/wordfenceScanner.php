@@ -1,7 +1,7 @@
 <?php
-require_once('wordfenceConstants.php');
-require_once('wordfenceClass.php');
-require_once('wordfenceURLHoover.php');
+require_once(dirname(__FILE__) . '/wordfenceConstants.php');
+require_once(dirname(__FILE__) . '/wordfenceClass.php');
+require_once(dirname(__FILE__) . '/wordfenceURLHoover.php');
 class wordfenceScanner {
 	/*
 	 * Mask to return all patterns in the exclusion list.
