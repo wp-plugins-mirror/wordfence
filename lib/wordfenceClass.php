@@ -156,6 +156,8 @@ class wordfence {
 					}
 				} catch (wfWAFStorageFileException $e) {
 					error_log($e->getMessage());
+				} catch (wfWAFStorageEngineMySQLiException $e) {
+					error_log($e->getMessage());
 				}
 			}
 		}
@@ -2213,7 +2215,11 @@ SQL
 
 				if (empty($_GET['wordfence_syncAttackData'])) {
 					$table_wfHits = wfDB::networkTable('wfHits');
-					$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$table_wfHits}");
+					if ($waf->getStorageEngine() instanceof wfWAFStorageMySQL) {
+						$lastAttackMicroseconds = floatval($waf->getStorageEngine()->getConfig('lastAttackDataTruncateTime'));
+					} else {
+						$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$table_wfHits}");
+					}
 					if (get_site_option('wordfence_lastSyncAttackData', 0) < time() - 4) {
 						if ($waf->getStorageEngine()->hasNewerAttackData($lastAttackMicroseconds)) {
 							if (get_site_option('wordfence_syncingAttackData') <= time() - 60) {
@@ -2271,6 +2277,8 @@ SQL
 				}
 			} catch (wfWAFStorageFileException $e) {
 				// We don't have anywhere to write files in this scenario.
+			} catch (wfWAFStorageEngineMySQLiException $e) {
+				// Ignore and continue
 			}
 		}
 
@@ -4406,6 +4414,11 @@ SQL
 					'error' => __('An error occurred while saving the configuration.', 'wordfence'),
 				);
 			}
+			catch (wfWAFStorageEngineMySQLiException $e) {
+				return array(
+					'error' => __('An error occurred while saving the configuration.', 'wordfence'),
+				);
+			}
 			catch (Exception $e) {
 				return array(
 					'error' => $e->getMessage(),
@@ -5684,6 +5697,8 @@ HTML;
 				}
 			} catch (wfWAFStorageFileException $e) {
 				error_log($e->getMessage());
+			} catch (wfWAFStorageEngineMySQLiException $e) {
+				error_log($e->getMessage());
 			}
 		}
 
@@ -6387,6 +6402,17 @@ JQUERY;
 			$logPath = str_replace(ABSPATH, '~/', WFWAF_LOG_PATH);
 			$storageExceptionMessage = 'We were unable to write to ' . $logPath . ' which the WAF uses for storage. Please
 			update permissions on the parent directory so the web server can write to it.';
+		} catch (wfWAFStorageEngineMySQLiException $e) {
+			$wafData = array(
+				'learningMode' => false,
+				'rules' => array(),
+				'whitelistedURLParams' => array(),
+				'disabledRules' => array(),
+				'isPaid' => (bool) wfConfig::get('isPaid', 0),
+			);
+			$logPath = null;
+			$storageExceptionMessage = 'An error occured when fetching the WAF configuration from the database. <pre>' .
+				esc_html($e->getMessage()) . '</pre>';
 		}
 		
 		require(dirname(__FILE__) . '/menu_options.php');
@@ -6441,6 +6467,17 @@ JQUERY;
 			$logPath = str_replace(ABSPATH, '~/', WFWAF_LOG_PATH);
 			$storageExceptionMessage = 'We were unable to write to ' . $logPath . ' which the WAF uses for storage. Please
 			update permissions on the parent directory so the web server can write to it.';
+		} catch (wfWAFStorageEngineMySQLiException $e) {
+			$wafData = array(
+				'learningMode' => false,
+				'rules' => array(),
+				'whitelistedURLParams' => array(),
+				'disabledRules' => array(),
+				'isPaid' => (bool) wfConfig::get('isPaid', 0),
+			);
+			$logPath = null;
+			$storageExceptionMessage = 'An error occured when fetching the WAF configuration from the database. <pre>' .
+				esc_html($e->getMessage()) . '</pre>';
 		}
 		
 		if (isset($_GET['subpage']) && $_GET['subpage'] == 'waf_options') {
@@ -7400,33 +7437,35 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 
 		$whitelistedURLParams = (array) wfWAF::getInstance()->getStorageEngine()->getConfig('whitelistedURLParams', array(), 'livewaf');
 		$data['whitelistedURLParams'] = array();
-		foreach ($whitelistedURLParams as $urlParamKey => $rules) {
-			list($path, $paramKey) = explode('|', $urlParamKey);
-			$whitelistData = null;
-			foreach ($rules as $ruleID => $whitelistedData) {
-				if ($whitelistData === null) {
-					$whitelistData = $whitelistedData;
-					continue;
+		if (is_array($whitelistedURLParams)) {
+			foreach ($whitelistedURLParams as $urlParamKey => $rules) {
+				list($path, $paramKey) = explode('|', $urlParamKey);
+				$whitelistData = null;
+				foreach ($rules as $ruleID => $whitelistedData) {
+					if ($whitelistData === null) {
+						$whitelistData = $whitelistedData;
+						continue;
+					}
+					if ($ruleID === 'all') {
+						$whitelistData = $whitelistedData;
+						break;
+					}
 				}
-				if ($ruleID === 'all') {
-					$whitelistData = $whitelistedData;
-					break;
-				}
-			}
 
-			if (is_array($whitelistData) && array_key_exists('userID', $whitelistData) && function_exists('get_user_by')) {
-				$user = get_user_by('id', $whitelistData['userID']);
-				if ($user) {
-					$whitelistData['username'] = $user->user_login;
+				if (is_array($whitelistData) && array_key_exists('userID', $whitelistData) && function_exists('get_user_by')) {
+					$user = get_user_by('id', $whitelistData['userID']);
+					if ($user) {
+						$whitelistData['username'] = $user->user_login;
+					}
 				}
-			}
 
-			$data['whitelistedURLParams'][] = array(
-				'path'     => $path,
-				'paramKey' => $paramKey,
-				'ruleID'   => array_keys($rules),
-				'data'     => $whitelistData,
-			);
+				$data['whitelistedURLParams'][] = array(
+					'path'     => $path,
+					'paramKey' => $paramKey,
+					'ruleID'   => array_keys($rules),
+					'data'     => $whitelistData,
+				);
+			}
 		}
 
 		$data['disabledRules'] = (array) wfWAF::getInstance()->getStorageEngine()->getConfig('disabledRules');
@@ -7456,7 +7495,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 		
 		$currentAutoPrependFile = ini_get('auto_prepend_file');
 		$currentAutoPrepend = null;
-		if (isset($_POST['currentAutoPrepend'])) {
+		if (isset($_POST['currentAutoPrepend']) && !WF_IS_WP_ENGINE) {
 			$currentAutoPrepend = $_POST['currentAutoPrepend'];
 		}
 		
@@ -7659,7 +7698,7 @@ to your httpd.conf if using Apache, or find documentation on how to disable dire
 				return $response;
 			}
 			else { //.user.ini and .htaccess modified if applicable and waiting period elapsed or otherwise ready to advance to next step
-				if (WFWAF_AUTO_PREPEND && !WFWAF_SUBDIRECTORY_INSTALL) { //.user.ini modified, but the WAF is still enabled
+				if (WFWAF_AUTO_PREPEND && !WFWAF_SUBDIRECTORY_INSTALL && !WF_IS_WP_ENGINE) { //.user.ini modified, but the WAF is still enabled
 					$retryAttempted = (isset($_POST['retryAttempted']) && $_POST['retryAttempted']);
 					$userIniError = '<p class="wf-error">';
 					$userIniError .= __('Extended Protection Mode has not been disabled. This may be because <code>auto_prepend_file</code> is configured somewhere else or the value is still cached by PHP.', 'wordfence');
@@ -8109,19 +8148,28 @@ ALERTMSG;
 		$log = self::getLog();
 		$waf = wfWAF::getInstance();
 		$table_wfHits = wfDB::networkTable('wfHits');
-		$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$table_wfHits}");
+		if ($waf->getStorageEngine() instanceof wfWAFStorageMySQL) {
+			$lastAttackMicroseconds = floatval($waf->getStorageEngine()->getConfig('lastAttackDataTruncateTime'));
+		} else {
+			$lastAttackMicroseconds = $wpdb->get_var("SELECT MAX(attackLogTime) FROM {$table_wfHits}");
+		}
+
 		if ($waf->getStorageEngine()->hasNewerAttackData($lastAttackMicroseconds)) {
 			$attackData = $waf->getStorageEngine()->getNewestAttackDataArray($lastAttackMicroseconds);
 			if ($attackData) {
 				foreach ($attackData as $request) {
-					if (count($request) !== 9 && count($request) !== 10 /* with metadata */) {
+					if (count($request) !== 9 && count($request) !== 10 /* with metadata */ && count($request) !== 11) {
 						continue;
 					}
 
 					list($logTimeMicroseconds, $requestTime, $ip, $learningMode, $paramKey, $paramValue, $failedRules, $ssl, $requestString) = $request;
 					$metadata = null;
-					if (count($request) == 10) {
+					$recordID = null;
+					if (array_key_exists(9, $request)) {
 						$metadata = $request[9];
+					}
+					if (array_key_exists(10, $request)) {
+						$recordID = $request[10];
 					}
 
 					// Skip old entries and hits in learning mode, since they'll get picked up anyways.
@@ -8132,6 +8180,10 @@ ALERTMSG;
 					$statusCode = 403;
 
 					$hit = new wfRequestModel();
+					if (is_numeric($recordID)) {
+						$hit->id = $recordID;
+					}
+
 					$hit->attackLogTime = $logTimeMicroseconds;
 					$hit->ctime = $requestTime;
 					$hit->IP = wfUtils::inet_pton($ip);

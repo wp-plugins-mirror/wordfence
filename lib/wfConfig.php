@@ -491,6 +491,8 @@ class wfConfig {
 				wfWAF::getInstance()->getStorageEngine()->setConfig($key, $val, 'synced');
 			} catch (wfWAFStorageFileException $e) {
 				error_log($e->getMessage());
+			} catch (wfWAFStorageEngineMySQLiException $e) {
+				error_log($e->getMessage());
 			}
 		}
 		
@@ -880,7 +882,7 @@ class wfConfig {
 	}
 	public static function liveTrafficEnabled(&$overriden = null){
 		$enabled = self::get('liveTrafficEnabled');
-		if (WORDFENCE_DISABLE_LIVE_TRAFFIC || function_exists('wpe_site')) {
+		if (WORDFENCE_DISABLE_LIVE_TRAFFIC || WF_IS_WP_ENGINE) {
 			$enabled = false;
 			if ($overriden !== null) {
 				$overriden = true;
@@ -1419,6 +1421,20 @@ Options -ExecCGI
 					if (method_exists(wfWAF::getInstance()->getStorageEngine(), 'purgeIPBlocks')) {
 						wfWAF::getInstance()->getStorageEngine()->purgeIPBlocks(wfWAFStorageInterface::IP_BLOCKS_BLACKLIST);
 					}
+					if ($value) {
+						$cron = wfWAF::getInstance()->getStorageEngine()->getConfig('cron', array(), 'livewaf');
+						if (!is_array($cron)) {
+							$cron = array();
+						}
+						foreach ($cron as $cronKey => $cronJob) {
+							if ($cronJob instanceof wfWAFCronFetchBlacklistPrefixesEvent) {
+								unset($cron[$cronKey]);
+							}
+						}
+						$cron[] = new wfWAFCronFetchBlacklistPrefixesEvent(time() - 1);
+						wfWAF::getInstance()->getStorageEngine()->setConfig('cron', $cron, 'livewaf');
+					}
+
 					$saved = true;
 					break;
 				}

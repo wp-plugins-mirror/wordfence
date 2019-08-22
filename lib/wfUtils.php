@@ -2337,19 +2337,22 @@ class wfUtils {
 	}
 	
 	public static function wafInstallationType() {
+		$storage = 'file';
+		if (defined('WFWAF_STORAGE_ENGINE')) { $storage = WFWAF_STORAGE_ENGINE; }
+		
 		try {
 			$status = (defined('WFWAF_ENABLED') && !WFWAF_ENABLED) ? 'disabled' : wfWaf::getInstance()->getStorageEngine()->getConfig('wafStatus');
 			if (defined('WFWAF_ENABLED') && !WFWAF_ENABLED) {
-				return "{$status}|const";
+				return "{$status}|const|{$storage}";
 			}
 			else if (defined('WFWAF_SUBDIRECTORY_INSTALL') && WFWAF_SUBDIRECTORY_INSTALL) {
-				return "{$status}|subdir";
+				return "{$status}|subdir|{$storage}";
 			}
 			else if (defined('WFWAF_AUTO_PREPEND') && WFWAF_AUTO_PREPEND) {
-				return "{$status}|extended";
+				return "{$status}|extended|{$storage}";
 			}
 			
-			return "{$status}|basic";
+			return "{$status}|basic|{$storage}";
 		}
 		catch (Exception $e) {
 			//Do nothing
