@@ -46,7 +46,7 @@
 			basePageName: '',
 			pendingChanges: {},
 			scanStalled: false,
-			siteCleaningIssueTypes: ['file', 'checkGSB', 'checkSpamIP', 'commentBadURL', 'dnsChange', 'knownfile', 'optionBadURL', 'postBadTitle', 'postBadURL', 'spamvertizeCheck', 'suspiciousAdminUsers'],
+			siteCleaningIssueTypes: ['file', 'checkGSB', 'checkSpamIP', 'commentBadURL', 'knownfile', 'optionBadURL', 'postBadTitle', 'postBadURL', 'spamvertizeCheck', 'suspiciousAdminUsers'],
 
 			//Screen sizes
 			SCREEN_XS: 'xs',

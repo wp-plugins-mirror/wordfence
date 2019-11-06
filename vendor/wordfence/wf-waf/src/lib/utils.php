@@ -353,6 +353,7 @@ class wfWAFUtils {
 					'off',
 					'false'
 				))));
+		// phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.get_magic_quotes_gpcDeprecated
 		if ((function_exists("get_magic_quotes_gpc") && get_magic_quotes_gpc()) || $sybaseEnabled) {
 			return self::stripslashes_deep($subject);
 		}

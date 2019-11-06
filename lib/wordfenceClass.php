@@ -397,7 +397,7 @@ class wordfence {
 		if(self::$runInstallCalled){ return; }
 		self::$runInstallCalled = true;
 		if (function_exists('ignore_user_abort')) {
-			ignore_user_abort(true);
+			@ignore_user_abort(true);
 		}
 		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		$previous_version = ((is_multisite() && function_exists('get_network_option')) ? get_network_option(null, 'wordfence_version', '0.0.0') : get_option('wordfence_version', '0.0.0'));
@@ -1298,7 +1298,7 @@ SQL
 
 		add_action('wordfence_processAttackData', 'wordfence::processAttackData');
 		if (!empty($_GET['wordfence_syncAttackData']) && get_site_option('wordfence_syncingAttackData') <= time() - 60 && get_site_option('wordfence_lastSyncAttackData', 0) < time() - 4) {
-			ignore_user_abort(true);
+			@ignore_user_abort(true);
 			update_site_option('wordfence_syncingAttackData', time());
 			header('Content-Type: text/javascript');
 			define('WORDFENCE_SYNCING_ATTACK_DATA', true);
@@ -1394,7 +1394,7 @@ SQL
 		die("WFSCANTESTOK");
 	}
 	public static function ajax_doScan_callback(){
-		ignore_user_abort(true);
+		@ignore_user_abort(true);
 		self::$wordfence_wp_version = false;
 		if (!defined('DONOTCACHEDB')) { define('DONOTCACHEDB', true); }
 		//This is messy, but not sure of a better way to do this without guaranteeing we get $wp_version

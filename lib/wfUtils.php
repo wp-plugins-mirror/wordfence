@@ -2155,9 +2155,9 @@ class wfUtils {
 		else if (is_multisite()) {
 			$current_network = get_network();
 			if ( 'relative' == $scheme )
-				$url = $current_network->path;
+				$url = rtrim($current_network->path, '/');
 			else
-				$url = 'http://' . $current_network->domain . $current_network->path;
+				$url = 'http://' . rtrim($current_network->domain, '/') . '/' . trim($current_network->path, '/');
 		}
 		
 		if ( ! in_array( $scheme, array( 'http', 'https', 'relative' ) ) ) {
@@ -2187,11 +2187,12 @@ class wfUtils {
 		if (function_exists('get_bloginfo') && empty($homeurl)) {
 			if (is_multisite()) {
 				$homeurl = network_home_url();
-				$homeurl = rtrim($homeurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 			}
 			else {
 				$homeurl = home_url();
 			}
+			
+			$homeurl = rtrim($homeurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 		}
 		
 		if (wfConfig::get('wp_home_url') !== $homeurl) {
@@ -2204,11 +2205,12 @@ class wfUtils {
 		if (function_exists('get_bloginfo') && empty($homeurl)) {
 			if (is_multisite()) {
 				$homeurl = network_home_url($path, $scheme);
-				$homeurl = rtrim($homeurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 			}
 			else {
 				$homeurl = home_url($path, $scheme);
 			}
+			
+			$homeurl = rtrim($homeurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 		}
 		else {
 			$homeurl = set_url_scheme($homeurl, $scheme);
@@ -2238,9 +2240,9 @@ class wfUtils {
 		else if (is_multisite()) {
 			$current_network = get_network();
 			if ( 'relative' == $scheme )
-				$url = $current_network->path;
+				$url = rtrim($current_network->path, '/');
 			else
-				$url = 'http://' . $current_network->domain . $current_network->path;
+				$url = 'http://' . rtrim($current_network->domain, '/') . '/' . trim($current_network->path, '/');
 		}
 		
 		if ( ! in_array( $scheme, array( 'http', 'https', 'relative' ) ) ) {
@@ -2270,11 +2272,12 @@ class wfUtils {
 		if (function_exists('get_bloginfo') && empty($siteurl)) {
 			if (is_multisite()) {
 				$siteurl = network_site_url();
-				$siteurl = rtrim($siteurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 			}
 			else {
 				$siteurl = site_url();
 			}
+			
+			$siteurl = rtrim($siteurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 		}
 		
 		if (wfConfig::get('wp_site_url') !== $siteurl) {
@@ -2299,6 +2302,8 @@ class wfUtils {
 			else {
 				$siteurl = site_url($path, $scheme);
 			}
+			
+			$siteurl = rtrim($siteurl, '/'); //Because previously we used get_bloginfo and it returns http://example.com without a '/' char.
 		}
 		else {
 			$siteurl = set_url_scheme($siteurl, $scheme);

@@ -3,7 +3,7 @@ Contributors: mmaunder, wfryan, wfmatt, wfmattr
 Tags: security, firewall, malware scanner, web application firewall, two factor authentication, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Requires PHP: 5.3
-Tested up to: 5.2
+Tested up to: 5.3
 Stable tag: 7.4.0
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
@@ -104,7 +104,6 @@ We offer a Premium API key that gives you real-time updates to the Threat Defens
 * See all your traffic in real-time, including robots, humans, 404 errors, logins and logouts and who is consuming most of your content. Enhances your situational awareness of which security threats your site is facing.
 * A real-time view of all traffic including automated bots that often constitute security threats that Javascript analytics packages never show you.
 * Real-time traffic includes reverse DNS and city-level geolocation. Know which geographic area security threats originate from.
-* Monitor your DNS security for unauthorized DNS changes.
 * Monitors disk space which is related to security because many DDoS attacks attempt to consume all disk space to create denial of service.
 
 = What login security features are included =
@@ -112,7 +111,6 @@ We offer a Premium API key that gives you real-time updates to the Threat Defens
 * See all your traffic in real-time, including robots, humans, 404 errors, logins and logouts and who is consuming most of your content. Enhances your situational awareness of which security threats your site is facing.
 * A real-time view of all traffic including automated bots that often constitute security threats that Javascript analytics packages never show you.
 * Real-time traffic includes reverse DNS and city-level geolocation. Know which geographic area security threats originate from.
-* Monitor your DNS security for unauthorized DNS changes.
 * Monitors disk space which is related to security because many DDoS attacks attempt to consume all disk space to create denial of service.
 
 = How will I be alerted if my site has a security problem? =
@@ -184,6 +182,18 @@ Secure your website with Wordfence.
 9. Logging in is easy with Wordfence 2FA.
 
 == Changelog ==
+
+= 7.4.1 - November 6, 2019 =
+* Improvement: Updated the bundled GeoIP database.
+* Improvement: Minor changes to ensure compatibility with PHP 7.4.
+* Improvement: Updated the WHOIS lookup for better reliability.
+* Improvement: Added better diagnostic data when the WAF MySQL storage engine is active.
+* Improvement: Improved the messaging when switching between premium and free licenses.
+* Change: Deprecated DNS changes scan.
+* Change: The plugin will no longer email alerts when Central is managing them.
+* Fix: Added error suppression to ignore_user_abort calls to silence it on hosts with it disabled.
+* Fix: Improved path generation to better avoid outputting extra slashes in URLs.
+* Fix: Applied a length limit to malware reporting to avoid failures due to large content size.
 
 = 7.4.0 - August 22, 2019 =
 * Improvement: Added a MySQL-based configuration and data storage for the WAF to expand the number of hosting environments supported. For more detail, see: https://www.wordfence.com/help/firewall/mysqli-storage-engine/
