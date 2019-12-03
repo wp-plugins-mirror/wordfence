@@ -183,6 +183,16 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.4.2 - December 3, 2019 =
+* Improvement: Increased performance of IP CIDR range comparisons.
+* Improvement: Added parameter signature to remote scanning for better validation during forking.
+* Change: Removed duplicate browser label in Live Traffic.
+* Fix: Added compensation for PHP 7.4 deprecation notice with get_magic_quotes_gpc.
+* Fix: Fixed potential notice in dashboard widget when no updates are found.
+* Fix: Updated JS hashing library to compensate for a variable name collision that could occur.
+* Fix: Fixed an issue where certain symlinks could cause a scan to erroneously skip files.
+* Fix: Fixed PHP memory test for newer PHP versions whose optimizations prevented it from allocating memory as desired.
+
 = 7.4.1 - November 6, 2019 =
 * Improvement: Updated the bundled GeoIP database.
 * Improvement: Minor changes to ensure compatibility with PHP 7.4.
