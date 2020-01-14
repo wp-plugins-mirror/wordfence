@@ -479,6 +479,7 @@ class wfScanner {
 	 * @return array
 	 */
 	private function _scanJobsForStage($stage) {
+		$always = array();
 		$options = array();
 		switch ($stage) {
 			case self::STAGE_SPAMVERTISING_CHECKS:
@@ -519,6 +520,11 @@ class wfScanner {
 				);
 				break;
 			case self::STAGE_MALWARE_SCAN:
+				if ($this->scanType() != self::SCAN_TYPE_QUICK) {
+					$always = array(
+						'checkSkippedFiles',
+					);
+				}
 				$options = array(
 					'scansEnabled_malware',
 					'scansEnabled_fileContents',
@@ -557,7 +563,7 @@ class wfScanner {
 			}
 		}
 		
-		return $filteredOptions;
+		return array_merge($filteredOptions, $always);
 	}
 	
 	/**
@@ -591,9 +597,9 @@ class wfScanner {
 				continue;
 			}
 			
-			$options = $this->_scanJobsForStage($stage);
-			if (count($options)) {
-				$parameters['expected'] = count($options);
+			$jobs = $this->_scanJobsForStage($stage);
+			if (count($jobs)) {
+				$parameters['expected'] = count($jobs);
 			}
 			else {
 				$parameters['status'] = self::STATUS_DISABLED;
