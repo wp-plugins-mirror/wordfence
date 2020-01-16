@@ -183,6 +183,9 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.4.5 - January 15, 2020 =
+* Improvement: Improved WAF coverage for an Infinite WP authentication bypass vulnerability.
+
 = 7.4.4 - January 14, 2020 =
 * Fix: Fixed a UI issue where the scan summary status marker for malware didn't always match the findings.
 

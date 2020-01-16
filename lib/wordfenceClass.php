@@ -1119,8 +1119,9 @@ SQL
 		$iwpRule = new wfWAFRule(wfWAF::getInstance(), 0x80000000, null, 'auth-bypass', 100, 'Infinite WP Client - Authentication Bypass < 1.9.4.5', 0, 'block', null);
 		wfWAF::getInstance()->setRules(wfWAF::getInstance()->getRules() + array(0x80000000 => $iwpRule));
 
-		if (preg_match('/^.*?_IWP_JSON_PREFIX_(.*)$/s', wfWAF::getInstance()->getRequest()->getRawBody(), $matches)) {
-			$iwpRequest = json_decode(base64_decode($matches[1]), true);
+		if (strrpos(wfWAF::getInstance()->getRequest()->getRawBody(), '_IWP_JSON_PREFIX_') !== false) {
+			$iwpRequestDataArray = explode('_IWP_JSON_PREFIX_', wfWAF::getInstance()->getRequest()->getRawBody());
+			$iwpRequest = json_decode(trim(base64_decode($iwpRequestDataArray[1])), true);
 			if (is_array($iwpRequest)) {
 				if (array_key_exists('iwp_action', $iwpRequest) &&
 					($iwpRequest['iwp_action'] === 'add_site' || $iwpRequest['iwp_action'] === 'readd_site')
