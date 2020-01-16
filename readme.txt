@@ -4,7 +4,7 @@ Tags: security, firewall, malware scanner, web application firewall, two factor 
 Requires at least: 3.9
 Requires PHP: 5.3
 Tested up to: 5.3
-Stable tag: 7.4.4
+Stable tag: 7.4.5
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
 
@@ -184,7 +184,7 @@ Secure your website with Wordfence.
 == Changelog ==
 
 = 7.4.5 - January 15, 2020 =
-* Improvement: Improved WAF coverage for an Infinite WP authentication bypass vulnerability.
+* Improvement: Improved WAF coverage for an Infinite WP authentication bypass vulnerability. Credit to Marc Montpas for finding a bypass.
 
 = 7.4.4 - January 14, 2020 =
 * Fix: Fixed a UI issue where the scan summary status marker for malware didn't always match the findings.
