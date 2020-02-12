@@ -183,8 +183,16 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.4.6 - February 12, 2020 =
+* Improvement: Enhanced the detection ability of the WAF for SQLi attacks.
+* Improvement: Updated the bundled GeoIP database.
+* Improvement: Modified some country names in the block configuration to align with those shown in Live Traffic.
+* Change: Moved the skipped files scan check to the Server State category.
+* Fix: Fixed an issue where after scrolling on the Live Traffic page, updates would no longer automatically load.
+* Fix: Modified the number of login records kept to align better with Live Traffic so they're trimmed around the same time.
+
 = 7.4.5 - January 15, 2020 =
-* Improvement: Improved WAF coverage for an Infinite WP authentication bypass vulnerability. Credit to Marc Montpas for finding a bypass.
+* Improvement: Improved WAF coverage for an Infinite WP authentication bypass vulnerability.
 
 = 7.4.4 - January 14, 2020 =
 * Fix: Fixed a UI issue where the scan summary status marker for malware didn't always match the findings.
