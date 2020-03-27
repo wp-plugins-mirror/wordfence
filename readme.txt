@@ -3,7 +3,7 @@ Contributors: mmaunder, wfryan, wfmatt, wfmattr
 Tags: security, firewall, malware scanner, web application firewall, two factor authentication, block hackers, country blocking, clean hacked site, blacklist, waf, login security
 Requires at least: 3.9
 Requires PHP: 5.3
-Tested up to: 5.3
+Tested up to: 5.4
 Stable tag: 7.4.6
 
 Secure your website with the most comprehensive WordPress security plugin. Firewall, malware scan, blocking, live traffic, login security & more.
