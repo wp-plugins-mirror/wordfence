@@ -183,6 +183,10 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.2 - March 24, 2021 =
+
+* Fix: Fixed fatal error on single-sites running WordPress <4.9.
+
 = 7.5.1 - March 24, 2021 =
 
 * Fix: Fixed fatal error when viewing the Login Security settings page from an allowlisted IP.
