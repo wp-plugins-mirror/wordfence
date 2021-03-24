@@ -183,6 +183,10 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.1 - March 24, 2021 =
+
+* Fix: Fixed fatal error when viewing the Login Security settings page from an allowlisted IP.
+
 = 7.5.0 - March 24, 2021 =
 
 * Improvement: Translation-readiness: All user-facing strings are now run through WordPress's i18n functions.
