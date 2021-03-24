@@ -183,6 +183,19 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.0 - March 24, 2021 =
+
+* Improvement: Translation-readiness: All user-facing strings are now run through WordPress's i18n functions.
+* Improvement: Remove legacy admin functions no longer used within the UI.
+* Improvement: Local GeoIP database update.
+* Improvement: Remove Lynwood IP range from allowlist, and add new AWS IP range.
+* Fix: Fixed bug with unlocking a locked out IP without correctly resetting its failure counters.
+* Fix: Sites using deleted premium licenses correctly revert to free license behavior.
+* Fix: When enabled, cookies are now set for the correct roles on previously used devices.
+* Fix: WAF cron jobs are now skipped when running on the CLI.
+* Fix: PHP 8.0 compatibility - prevent syntax error when linting files.
+* Fix: Fixed issue where PHP 8 notice sometimes cannot be dismissed.
+
 = 7.4.14 - December 3, 2020 =
 
 * Improvement: Added option to disable application passwords.
