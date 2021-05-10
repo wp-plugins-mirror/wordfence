@@ -183,6 +183,22 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.3 - May 10, 2021 =
+
+* Improvement: Expanded WAF capabilities including better JSON and user permission handling
+* Improvement: Switched to relative paths in WAF auto_prepend file to increase portability
+* Improvement: Eliminated unnecessary calls to Wordfence servers
+* Fix: Prevented errors on PHP 8.0 when disk_free_space and/or disk_total_space are included in disabled_functions
+* Fix: Fixed PHP notices caused by unexpected plugin version data
+* Fix: Gracefully handle unexpected responses from Wordfence servers
+* Fix: Time field now displays correctly on "See Recent Traffic" overlay
+* Fix: Corrected typo on Diagnostics page
+* Fix: Corrected IP counts on activity report
+* Fix: Added missing line break in scan result emails
+* Fix: Sending test activity report now provides success/failure response
+* Fix: Reduced SQLi false positives caused by comma-separated strings
+* Fix: Fixed JS error when resolving last scan result
+
 = 7.5.2 - March 24, 2021 =
 
 * Fix: Fixed fatal error on single-sites running WordPress <4.9.
