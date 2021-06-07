@@ -183,6 +183,10 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.4 - June 7, 2021 =
+
+* Fix: Resolve conflict with woocommerce-gateway-amazon-payments-advanced plugin
+
 = 7.5.3 - May 10, 2021 =
 
 * Improvement: Expanded WAF capabilities including better JSON and user permission handling
