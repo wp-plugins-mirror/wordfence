@@ -183,6 +183,10 @@ Secure your website with Wordfence.
 
 == Changelog ==
 
+= 7.5.6 - October 18, 2021 =
+* Fix: Prevented login errors with WooCommerce integration when manual username entry is enabled on the WooCommerce registration form
+* Fix: Corrected theme incompatibilities with WooCommerce integration
+
 = 7.5.5 - August 16, 2021 =
 * Improvement: Enhanced accessibility
 * Improvement: Replaced regex in scan log with signature ID
